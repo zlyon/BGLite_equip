@@ -37,7 +37,7 @@ It **does not modify a single file of BGLite**; instead it restores the features
 
 ## My personal recommendation
 
-> **The following is my personal opinion. It is not the opinion of the original author 苍穹之霜, and it does not represent the official team.**
+> **The following is my personal opinion. It is not the opinion of the original author MoonForWow, and it does not represent the official team.**
 
 | Your situation | My recommendation |
 |---|---|
@@ -48,7 +48,7 @@ It **does not modify a single file of BGLite**; instead it restores the features
 **Why I recommend the original BiaoGeX:**
 
 - It is **the original author's own work** — **more native and more complete**. Features and updates take it as the reference; this companion addon only ports and completes it.
-- **It even supports 无限服** (interface `16001`), which **BGLite does not** — so for 无限服 players, the original is the only option.
+- **It even supports World of Warcraft: Forever** (interface `16001`), which **BGLite does not** — so for World of Warcraft: Forever players, the original is the only option.
 - Outside the CN realms, the "official addon vs. full feature set" trade-off does not exist at all, so **adding an extra layer is unnecessary**.
 
 **Therefore:** this companion addon is not here to replace BiaoGeX — it gives players who choose the official BGLite a solution with **nothing left out**.
@@ -73,7 +73,7 @@ It **does not modify a single file of BGLite**; instead it restores the features
 | Mists of Pandaria | 5.5.x | ✅ |
 | Retail | 12.x | ✅ |
 | Titan (`Titan Reforged Classic`) | 3.80.x (`38000` / `38001` / `38002`) | ✅ |
-| 无限服 (`WoW Forever` / Classic+) | 1.60.x (`16001`) | ❌ |
+| World of Warcraft: Forever (Classic+) | 1.60.x (`16001`) | ❌ |
 
 ## What it restores
 
@@ -108,7 +108,7 @@ It **does not modify a single file of BGLite**; instead it restores the features
 
 ## Credits
 
-- Original BiaoGe / BiaoGeX author: **苍穹之霜**
+- Original BiaoGe / BiaoGeX author: **MoonForWow**
 - BGLite Pure Edition: **World of Warcraft CN operation team (NetEase / Leihuo)**, repackaged
 - This addon (BGLite_equip companion): **zlyon**
 
