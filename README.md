@@ -1,0 +1,235 @@
+# BGLite_equip
+
+[English](#english) 丨 [简体中文](#简体中文)
+
+> **Links**
+>
+> - **CurseForge:** <https://www.curseforge.com/wow/addons/bglite-equip>
+> - **Downloads (all releases):** <https://github.com/zlyon/BGLite_equip/releases>
+> - **Screenshot:**
+
+![BGLite_equip](docs/screenshot_cf.png)
+
+---
+
+# English
+
+**BGLite_equip** is a "feature-completion" addon for the BiaoGe auction spreadsheet — it restores, as an **independent addon**, the features that BGLite Pure Edition has trimmed away.
+
+It modifies **not a single BGLite file**; it simply layers on top of it. With this companion installed, BGLite keeps working exactly as before, while you also get a complete auction-spreadsheet feature set — item library and wishlist, preset and psychology prices, trade history and automatic bookkeeping, auto-start auction, character overview, damage-reduction chain and positioning map, item tooltip extensions and more. Nothing left out.
+
+**What it means:** feature completeness is no longer tied to your choice of addon. You don't have to switch addons to get the features, and you don't have to worry that adding a feature addon will destabilise the addon you already use — **keep your existing addon as it is, and you have a complete auction spreadsheet.**
+
+## Why it is needed
+
+**1. BGLite is the official addon.**
+It is repackaged and published by the World of Warcraft CN operation team (NetEase / Leihuo). To stay compliant and lightweight, it has trimmed away a large number of features unrelated to basic auctions. Yet many players trust only official addons, or their environment permits official addons only — which is entirely reasonable. This companion addon exists precisely for those players.
+
+**2. But BiaoGeX and the official BGLite cannot coexist.**
+Both declare the **same saved-variables table** (`## SavedVariables: BiaoGe`) and occupy the same set of global UI frames and function names — enabling both at once will overwrite each other's data and delete each other's windows. **It is strictly an either/or choice:** enabling BiaoGeX means you must disable BGLite, and vice versa.
+
+**3. So players are forced to choose.**
+If you want the official addon, you have to give up the item library, the wishlist, trade history, the character overview, item tooltip extensions and many other things you use every single day.
+
+**4. This companion addon removes that trade-off.**
+It **does not modify a single file of BGLite**; instead it restores the features trimmed from the official Pure Edition in the form of an **independent addon**. Your choice now becomes:
+
+> **Keep using the official addon — compliant and safe — while getting the full feature set of BiaoGeX.**
+
+## My personal recommendation
+
+> **The following is my personal opinion. It is not the opinion of the original author 苍穹之霜, and it does not represent the official team.**
+
+| Your situation | My recommendation |
+|---|---|
+| **Free to choose your addons** | ⭐ **Use the original author's BiaoGeX** |
+| **Playing outside the CN realms** (US / EU / Asia, etc.) | ⭐ **The original BiaoGeX is especially recommended** |
+| Trust official addons more / only official addons are permitted | **BGLite + this companion addon** |
+
+**Why I recommend the original BiaoGeX:**
+
+- It is **the original author's own work** — **more native and more complete**. Features and updates take it as the reference; this companion addon only ports and completes it.
+- **It even supports 无限服** (interface `16001`), which **BGLite does not** — so for 无限服 players, the original is the only option.
+- Outside the CN realms, the "official addon vs. full feature set" trade-off does not exist at all, so **adding an extra layer is unnecessary**.
+
+**Therefore:** this companion addon is not here to replace BiaoGeX — it gives players who choose the official BGLite a solution with **nothing left out**.
+
+## Dependency (important)
+
+- **BGLite must be installed as well**, and it must be working properly (this addon is merely a patch layer on top of it).
+- This addon does not bundle BGLite, nor does it replace or overwrite any of its files; the relationship is "base + patch".
+- This addon writes its saved data to `MyUnderpants` (a separate saved-variables table shared with the character-overview addon) and **does not read or write BGLite's `BiaoGe` data**.
+- ⚠ **Do not enable it together with BiaoGe / BiaoGeX** (see point 2 above — they will damage each other).
+
+## Supported versions
+
+**Whatever versions BGLite supports, this addon supports** (the detection logic is identical to BGLite's, switching automatically by client interface number):
+
+| Client | Interface | Supported |
+|---|---|---|
+| Classic Era (Classic / Anniversary / Season of Discovery) | 1.15.x | ✅ |
+| The Burning Crusade | 2.5.x | ✅ |
+| Wrath of the Lich King | 3.4.x | ✅ |
+| Cataclysm | 4.4.x | ✅ |
+| Mists of Pandaria | 5.5.x | ✅ |
+| Retail | 12.x | ✅ |
+| Titan (`Titan Reforged Classic`) | 3.80.x (`38000` / `38001` / `38002`) | ✅ |
+| 无限服 (`WoW Forever` / Classic+) | 1.60.x (`16001`) | ❌ |
+
+## What it restores
+
+| Module | Description |
+|---|---|
+| Item library / Wishlist | Item library window, wishlist, watch & reminders, set and class filters |
+| Preset price / Psychology price | Auction preset prices, psychology-price entry button and hotkeys |
+| History / Trade records | History table, history summary, automatic trade bookkeeping (including the case of an immediate follow-up trade right after one completes) |
+| Auto-start auction | A button at the bottom of the un-auctioned list: automatically starts auctions, front to back, for items that already have a preset price (the right-click menu sets the max number of simultaneous auctions, 4–10, and "only auction items with quantity 1") |
+| Channel / Query history | Trade and chat history, records of players you have looked up |
+| Group-join greeting | Automatically greets new members when they join the group |
+| One-click holiday dungeon | A one-click button on the looking-for-group frame |
+| Character overview | Cooldown / badge / gold overview for every character on the account (a separate window, reads and writes `MyUnderpants`) |
+| Damage-reduction chain / Positioning map | Receives and displays the mitigation-chain progress bars and the boss positioning map your raid leader sends through the TuanJian assistant addon (TuanJian must be installed as well) |
+| Item expiration reminders | "Expired" item hints and filtering |
+| Info bar / Drop sources | Info-bar shortcuts, drop-source lookup (AtlasLoot enhancement) |
+| Item tooltip extensions | Hovering an item shows the historical price range, preset auction price and psychology price |
+| Mount data / MoP currency mapping | Mount source data, Mists of Pandaria currency mapping |
+
+## Installation
+
+1. Download the zip of the latest release from [Releases](https://github.com/zlyon/BGLite_equip/releases) (or from [CurseForge](https://www.curseforge.com/wow/addons/bglite-equip)) and extract it into World of Warcraft's `Interface/AddOns/` folder;
+2. Make sure `AddOns/BGLite/` and `AddOns/BGLite_equip/` **both exist**, and **do not** enable `AddOns/BiaoGe/` or `AddOns/BiaoGeX/` at the same time;
+3. In game, type `/bgr` (or click the minimap button) to open settings → the "Complementary Features" tab.
+
+## Compliance & safety
+
+- **No privacy exposure:** this addon does not collect, upload or forward any of the player's data, and contains no logic that sends local information outwards. Its contents have been statically reviewed file by file.
+- **Fully open, unencrypted, unobfuscated source:** everything is plain-text Lua, reviewable line by line, with no compiled artifacts and no obfuscated code.
+- **All addon-channel messages are official, pre-existing content:** every addon-channel message this addon involves (starting an auction, refunding a failed auction, etc.) **reuses BGLite's official auction message formats and protocols as they are**; this addon **creates no new broadcast content and adds no new communication channel**. The auction process itself requires the addon channel, and in that respect this addon behaves exactly like the official BGLite.
+- **Does not modify the official addon:** this addon exists independently; it neither rewrites nor replaces any BGLite file, so uninstalling it leaves BGLite as it was.
+
+## Credits
+
+- Original BiaoGe / BiaoGeX author: **苍穹之霜**
+- BGLite Pure Edition: **World of Warcraft CN operation team (NetEase / Leihuo)**, repackaged
+- This addon (BGLite_equip companion): **zlyon**
+
+This addon is an **unofficial** companion, with **no affiliation whatsoever** to the authors and teams listed above. The code it contains that was ported from BiaoGe remains the copyright of the original author. All recommendations in this description are zlyon's personal opinion.
+
+## Features not included
+
+The following features are **not provided at all**:
+YY reviews, raid board, world-boss CD broadcast, 集结号 integration, reporting, shopping / store-related.
+
+The reasons differ: either their core mechanism is custom addon-channel communication (YY reviews, raid board, world-boss CD broadcast), or they depend on external addons (集结号, store), or the original author has already disabled them himself (reporting). **This addon follows exactly one principle — it only decides "whether to port this feature":** if yes, any broadcasts inside it are kept exactly as BGLite has them; if no, the whole feature is dropped.
+
+---
+
+# 简体中文
+
+**BGLite_equip 补充包**是一个金团表格「功能补全」插件 —— 把《BiaoGeX 金团表格》中那些被 BGLite 纯净版裁剪掉的功能，以**独立插件**的形式补回来。
+
+它不修改 BGLite 的任何一个文件，而是叠加在它之上。装上本补充包，BGLite 继续照原样工作，同时你得到一整套完整的金团表格功能 —— 装备库与心愿单、预设价格与心理价格、历史账单与交易自动记账、全自动发起拍卖、角色总览、减伤链与站位图、物品提示增强等等，一个不少。
+
+**它的意义**：让功能的完整性不再和插件选择挂钩。你不必为了功能去换插件，也不必担心装功能插件会破坏原有插件的稳定性 —— **保留原有插件不动，就能拥有一套完整的金团表格。**
+
+## 为什么需要它
+
+**1. BGLite 是官方插件。**
+它由魔兽世界国服运营团队（网易雷火）二创出品。为了合规与轻量，它裁剪掉了大量与基础拍卖无关的功能。而很多玩家只信任、或所在环境只允许启用官方插件 —— 这完全合理，本补充包正是为这些玩家做的。
+
+**2. 但 BiaoGeX 与官方 BGLite 无法共存。**
+两者声明的是**同一个存档表**（`## SavedVariables: BiaoGe`），并占用同一套全局界面框架与函数命名 —— 同时启用会互相覆盖数据、互相删除界面。**它们是二选一的关系**：启用 BiaoGeX 就必须禁用 BGLite，反之亦然。
+
+**3. 于是玩家被迫取舍。**
+想用官方插件，就得放弃装备库、心愿单、历史账单、角色总览、物品提示增强等等天天在用的功能。
+
+**4. 本补充包解决这个取舍。**
+它**不修改 BGLite 的任何一个文件**，把官方纯净版裁剪掉的功能，以**独立插件**的形式补回来。玩家的选择从此变成：
+
+> **在合规、安全的前提下继续使用官方插件，同时获得 BiaoGeX 的全部功能。**
+
+## 我个人的推荐
+
+> **以下是我的个人建议，不是原作者苍穹之霜的意见，也不代表官方。**
+
+| 你的情况 | 我的推荐 |
+|---|---|
+| **能自由选择插件** | ⭐ **优先使用原作者的 BiaoGeX** |
+| **非国服玩家**（美服 / 欧服 / 亚服等） | ⭐ **特别推荐原版 BiaoGeX** |
+| 更信任官方插件 / 所在环境只允许官方插件 | **BGLite + 本补充包** |
+
+**为什么我推荐原版 BiaoGeX：**
+
+- 它是**原作者自己的作品**，**更原生、更完善** —— 功能与更新都以它为准，本补充包做的只是移植与补全；
+- **它甚至支持无限服**（接口号 `16001`），而 **BGLite 不支持无限服** —— 对无限服玩家来说，原版是唯一选择；
+- 非国服玩家不存在「官方插件 与 完整功能 二选一」这个取舍，**额外多装一层没有必要**。
+
+**所以**：本补充包不是来替代 BiaoGeX 的，而是给「选择使用官方 BGLite」的玩家一个**不留遗憾**的方案。
+
+## 依赖（重要）
+
+- **必须同时安装 BGLite**，并保证它能正常运行（本插件只是它的补丁层）。
+- 本插件不内嵌 BGLite，也不替换、不覆盖它的任何文件；两者是「本体 + 补丁」的关系。
+- 本插件的存档写入 `MyUnderpants`（与角色总览插件共用的独立存档表），**不读写 BGLite 的 `BiaoGe` 数据**。
+- ⚠ **不要与 BiaoGe / BiaoGeX 同时启用**（见上文第 2 点，会互相破坏）。
+
+## 支持的版本
+
+**BGLite 支持哪些版本，本插件就支持哪些版本**（判定方式与 BGLite 完全一致，按客户端接口号自动切换）：
+
+| 客户端 | 接口号 | 支持 |
+|---|---|---|
+| 经典旧世（经典/周年纪念/探索赛季） | 1.15.x | ✅ |
+| 燃烧的远征 | 2.5.x | ✅ |
+| 巫妖王之怒 | 3.4.x | ✅ |
+| 大灾变 | 4.4.x | ✅ |
+| 熊猫人之谜 | 5.5.x | ✅ |
+| 正式服 | 12.x | ✅ |
+| 泰坦（`Titan Reforged Classic`） | 3.80.x（`38000` / `38001` / `38002`） | ✅ |
+| 无限服（`WoW Forever` / Classic+） | 1.60.x（`16001`） | ❌ |
+
+## 补回了什么
+
+| 模块 | 说明 |
+|---|---|
+| 装备库 / 心愿单 | 装备库窗口、心愿清单、关注与提醒、套装与职业过滤 |
+| 预设价格 / 心理价格 | 拍卖预设价、心理价格入口按钮与快捷键 |
+| 历史账单 / 交易记录 | 历史表格、历史汇总、交易自动记账（含刚成交立刻再交易的场景） |
+| 全自动发起拍卖 | 未拍列表底部按钮：对已有预设价格的装备从前往后自动开拍（右键菜单可设最大同时拍卖数 4~10、只拍数量为 1 的装备） |
+| 历史喊话 / 查询记录 | 交易与喊话历史、查询过的玩家记录 |
+| 进组欢迎语 | 新成员进组自动欢迎 |
+| 一键指定节日副本 | 排队框架上的一键指定按钮 |
+| 角色总览 | 全账号角色的副本 CD / 牌子 / 金币总览（独立窗口，读写 `MyUnderpants`） |
+| 减伤链 / 站位图 | 接收并显示团长通过团减助手（TuanJian）发送的减伤链进度条与站位图（需同时安装团减助手） |
+| 装备过期提醒 | 装备「过期」提示与筛选 |
+| 信息条 / 掉落来源 | 信息条快捷入口、掉落来源查询（AtlasLoot 增强） |
+| 物品提示增强 | 鼠标悬停物品显示历史价格区间、预设拍卖价、心理价格 |
+| 坐骑数据 / MOP 货币映射 | 坐骑来源数据、MOP 货币映射 |
+
+## 安装
+
+1. 从 [Releases](https://github.com/zlyon/BGLite_equip/releases)（或 [CurseForge](https://www.curseforge.com/wow/addons/bglite-equip)）下载最新版 zip，解压到魔兽世界的 `Interface/AddOns/` 目录；
+2. 确认 `AddOns/BGLite/` 与 `AddOns/BGLite_equip/` **同时存在**，且**不要**同时启用 `AddOns/BiaoGe/` 或 `AddOns/BiaoGeX/`；
+3. 进游戏后 `/bgr`（或点小地图按钮）打开设置 → 「补充功能」页签。
+
+## 合规与安全
+
+- **不涉及隐私传播**：本插件不采集、不上传、不转发玩家的任何数据，不含任何把本地信息对外发送的逻辑。内容经过逐文件静态审阅。
+- **代码完全公开、未加密、未混淆**：全部为纯文本 Lua 源码，可逐行审阅，没有任何编译产物或混淆代码。
+- **插件频道通讯均为官方既有内容**：本插件涉及的全部插件频道消息（开拍、流拍退款等）都**沿用 BGLite 官方既有的拍卖消息格式与协议**，本插件**不自创任何新的广播内容、不新增任何通讯频道**。拍卖流程本身必须使用插件频道，这部分与官方 BGLite 行为完全一致。
+- **不修改官方插件**：本插件独立存在，不改写、不替换 BGLite 的任何文件，卸载后 BGLite 恢复原样。
+
+## 版权与致谢
+
+- BiaoGe / BiaoGeX 原作者：**苍穹之霜**
+- BGLite 纯净版：**魔兽世界国服运营团队（网易雷火）** 二创
+- 本插件（BGLite_equip 补充包）：**zlyon**
+
+本插件是**非官方**补充包，与上述作者及团队**均无隶属关系**。插件内含的、由 BiaoGe 移植而来的代码，其著作权归原作者所有。文中推荐意见均为 zlyon 的个人意见。
+
+## 未移植的功能
+
+以下功能**整体不提供**：
+YY 评价、团队看板、世界BOSS CD 广播、集结号集成、举报、购物 / 商城相关。
+
+原因各不相同：这类功能要么核心机制就是自定义插件频道通讯（YY 评价、团队看板、世界BOSS CD 广播），要么依赖外部插件（集结号、商城），要么原作者本人已主动关闭（举报）。**本插件的取舍原则只有一条 —— 只判断「这个功能要不要移植」**：要移植的，其中的广播原样随 BGLite 保留；不要移植的，整块功能抛弃。
