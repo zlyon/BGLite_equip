@@ -298,6 +298,56 @@ Section("补丁下发", function()
             eid.BT = merged
             eid.HS = nil
         end)
+        Section("心理价格自动出价", function()
+            local original = BG.HookCreateAuction
+            if type(original) ~= "function" then return end
+            local L = ns.L
+
+            local function SetBestPriceAuto(f, itemID)
+                if not BG.GetBestPrice then return end
+                if not (f and f.autoFrame and f.autoMoneyEdit and f.autoButton) then return end
+                if f.isAuto then return end
+                local price = tonumber(BG.GetBestPrice(itemID))
+                if not price or price <= 0 then return end
+                local money = tonumber(f.money) or 0
+                if f.start then
+                    if price < money then return end
+                elseif price <= money then
+                    return
+                end
+                BG.After(random(400, 800) / 1000, function()
+                    f.autoFrame:Show()
+                    f.autoMoneyEdit:SetText(price)
+                    f.autoMoneyEdit:SetCursorPosition(0)
+                    BG.After(0, function()
+                        if f.autoButton:IsEnabled() then
+                            f.autoButton:Click()
+                            if f.isAuto and BG.DisableBestPrice then
+                                BG.DisableBestPrice(itemID)
+                            end
+                            if BG.SendSystemMessage then
+                                BG.SendSystemMessage(format(L["已开始自动出价：%s %s。"], f.link, BG.FormatNumber(price, 2)))
+                            end
+                        end
+                    end)
+                end)
+                return true
+            end
+
+            BG.HookCreateAuction = function(f)
+                original(f)
+                local leiting
+                for _, FB in ipairs(BG.GetAllFB()) do
+                    if BG.GetLeiTingItem(f.itemID, FB) ~= f.itemID then
+                        leiting = BG.GetLeiTingItem(f.itemID, FB)
+                        break
+                    end
+                end
+                local itemID = leiting or f.itemID
+                SetBestPriceAuto(f, itemID)
+            end
+        end)
+
         Section("正式服金币超上限阈值", function()
             if not BG.IsRetail then return end
             local top = BG.tradeGoldTop

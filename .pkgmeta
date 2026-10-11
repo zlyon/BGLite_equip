@@ -8,3 +8,6 @@ ignore:
   - README.md
   - docs
   - CHANGELOG.md
+  - .github
+  - .gitignore
+  - .pkgmeta
