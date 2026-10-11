@@ -1,0 +1,10 @@
+package-as: BGLite_equip
+enable-nolib-creation: no
+
+manual-changelog: CHANGELOG.md
+changelog-title: BGLite_equip
+
+ignore:
+  - README.md
+  - docs
+  - CHANGELOG.md
