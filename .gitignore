@@ -1,0 +1,8 @@
+# 打包/发布产物
+*.zip
+addon_version.txt
+
+# 系统/编辑器
+Thumbs.db
+.DS_Store
+*.bak

@@ -1,0 +1,56 @@
+## Interface: 11508, 11509, 20506, 30405, 38002, 40402, 50503, 50504, 50505, 120005, 120007, 120100
+## Title: |cff00BFFFBGLite_equip补充包|r
+## Notes: BGLite_equip补充包（作者 zlyon）：BGLite 功能补全包，恢复装备库/心愿单/预设价格/历史账单/交易记录/历史喊话/进组欢迎语/一键指定节日副本/角色总览/减伤链进度条/站位图/心理价格/装备过期提醒/信息条/查询记录/掉落来源/坐骑数据，补回物品工具提示（历史价格区间/预设拍卖价/心理价格）与 MOP 货币映射；游戏设置页、主界面标题与说明书均标注本补充包版本与作者。依赖 BGLite
+## IconTexture: Interface\AddOns\BGLite\Media\icon\icon.tga
+## Author: zlyon
+## Dependencies: BGLite
+## LoadOnDemand: 0
+## SavedVariables: MyUnderpants
+## Version: 1.0.37
+
+Libs\LibBase64\LibBase64.lua
+Init.lua
+Templates.xml
+Locales\zhCN.lua
+Locales\zhTW.lua
+Locales\enUS.lua
+Libs\EnchantData\Enchant.lua
+
+Core\Patch.lua
+Core\ModernScroll.lua
+Core\DB_Mount.lua
+Core\BestPrice.lua
+Core\ItemOutTime.lua
+Core\WhoHistory.lua
+Core\InfoBar.lua
+Core\AtlasLoot.lua
+Core\ItemTooltipExt.lua
+Core\ModulesOptions.lua
+Core\DB_Shopping.lua
+Core\DB_FilterClassItem.lua
+Core\DB_Loot_ULDtitan.lua
+Core\Hope.lua
+Core\ItemLib.lua
+Core\FilterClassItem.lua
+Core\Shopping.lua
+Core\AuctionPreset.lua
+Core\AuctionAuto.lua
+Core\TradePatch.lua
+Core\ChannelHistory.lua
+Core\Welcome.lua
+Core\LFDFastQueue.lua
+Core\History.lua
+Core\HistorySummary.lua
+Core\RoleOverviewDB.lua
+Core\BagSync.lua
+Core\EquipViewer.lua
+Core\RoleOverview_core.lua
+Core\RoleOverview.lua
+Core\RoleOverviewSort.lua
+Core\RoleOverviewStart.lua
+Core\RoleOverviewOptions.lua
+Core\BoardReceiver.lua
+Core\Map.lua
+Core\MapOptions.lua
+Core\Integration.lua
+Core\FineEnhancement.lua
