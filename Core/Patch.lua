@@ -364,6 +364,41 @@ Section("补丁下发", function()
                 end
             end
         end)
+        Section("预设价自动开拍", function()
+            local original = BG.StartAuction
+            if type(original) ~= "function" then return end
+            BG.StartAuction = function(link, bt, isNotAuctioned, notAlt, isRightButton, noSound, callback)
+                local oldFrame = BG.StartAucitonFrame
+                original(link, bt, isNotAuctioned, notAlt, isRightButton, noSound, callback)
+                if BG.StartAucitonFrame == oldFrame then return end
+                local mainFrame = BG.StartAucitonFrame
+                if not (mainFrame and mainFrame.bt and mainFrame.itemFrame) then return end
+                if BiaoGe.Auction.mod ~= "roll" and isRightButton and BiaoGe.auctionPreset then
+                    local _duration = tonumber(BiaoGe.Auction.duration)
+                    local duration = _duration and _duration > 0 and _duration
+                    if duration then
+                        local tbl = {}
+                        for _, FB in pairs(BG.FBtable) do
+                            if FB == BG.FB1 then
+                                tinsert(tbl, 1, FB)
+                            else
+                                tinsert(tbl, FB)
+                            end
+                        end
+                        local itemID = BG.GetLeiTingItem(mainFrame.itemFrame.itemID)
+                        for _, FB in ipairs(tbl) do
+                            local preset = BiaoGe.auctionPreset[FB]
+                            local money = preset and preset.money and preset.money[itemID]
+                            if money then
+                                mainFrame.bt.money = money
+                                mainFrame.bt:GetScript("OnClick")(mainFrame.bt)
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+        end)
     end)
 
     BGE.Init2(function()

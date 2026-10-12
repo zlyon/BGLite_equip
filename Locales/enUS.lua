@@ -41,7 +41,7 @@ do --英语说明书
         "|cffFFFFFF-Role Overview:|r /BGR shows every character's gear, lockouts, reputations and holiday bosses (separate saved data)",
         "|cffFFFFFF-Accounting Fixes:|r restores the filter / highlight / loot-notice functions that BGLite stripped",
         " ",
-        "|cff00BFFF- New in this build (ported from upstream BiaoGe v2.3.4) -|r",
+        "|cff00BFFF- New in this build -|r",
         "|cffFFFFFF-Mental Price:|r set a target price per item, shown right in its tooltip",
         "|cffFFFFFF  How to set:|r the 'Mental Price' button right of the filter bar on the Table page; or ALT+right-click (member) / CTRL+ALT+click (looter) gear",
         "|cffFFFFFF-Tradeable Timer:|r voice + text warning before a raid item stops being tradeable (leader / looter only)",
@@ -56,12 +56,6 @@ do --英语说明书
         " ",
         "|cffFFD700Author: zlyon|r",
         " ",
-    }
-    ns.updateText_now = {
-
-    }
-    ns.updateText_before = {
-
     }
 end
 
@@ -91,8 +85,6 @@ do
     L['用户信息'] = "User Info"
     L['用户ID：%s'] = "User ID: %s"
     L['用户名：%s'] = "Username: %s"
-    L['订阅剩余时间：%s'] = "Subscription Remaining: %s"
-    L['订阅有效期：%s'] = "Subscription Valid Until: %s"
     L['天'] = "Days"
     L['流拍装备卖店总价：%s金'] = "Total vendor value of unsold items: %s Gold"
     L["搜索装备/买家/金额"] = "Search Item / Buyer / Amount"
@@ -393,7 +385,6 @@ do
     L["全选"] = "Select All"
     L["取消全选"] = "Cancel Select All"
     L["确定清空表格"] = "Confirm Empty Form"
-    L["|cffff0000（订阅已过期或未开更新器）"] = "|cffff0000 (subscription expired or no updater on)"
     L["|cffff0000（BiaoGeLib插件被禁用）"] = "|cffff0000 (BiaoGeLib plugin disabled)"
     L["海达希亚"] = "Haidahia"
     L["清空表格时自定义分钱人数"] = "Custom penny count when clearing the form"
@@ -450,7 +441,6 @@ do
     L["< 交易记账成功 >|r\n项目：|cffff0000罚款|r\n玩家：%s\n金额：%s%d|rg"] = "< Record Success >|r\nItem:|cffff0000Fine|r\nPlayer:%s\nAmount:%s%d|rg"
     L["魔古山宝库"] = "Magic Ancient Mountain Treasure Trove"
     L["v3.1：修复了输入框变绿的问题"] = "v3.1: Fixed the problem of input box turning green"
-    L["|cffff0000（未订阅）"] = "|cffff0000 (unsubscribed)"
     L["|cffff0000（插件被禁用）"] = "|cffff0000 (plugin disabled)"
     L["插件"] = "AddOn"
     L["已放金币：%s"] = "Gold released: %s"
@@ -518,7 +508,6 @@ do
     L["|cff808080（鼠标中键固定显示，长按SHIFT显示当前服务器角色%s）|r"] = "|cff808080 (middle mouse button fixed display, long press SHIFT to display current server Character %s)|r"
     L["|cff808080（%s固定显示，长按SHIFT显示全服务器角色%%s）|r"] = "|cff808080 (%s fixed display, long press SHIFT to display full server Character %%s)|r"
     L["|cff808080（%s固定显示，长按SHIFT显示当前服务器角色%%s）|r"] = "|cff808080 (%s fixed display, long press SHIFT to display current server Character %%s)|r"
-    L["|cffff0000（该团长为毛团，请注意！如想举报更多毛团，请在抖音发视频后@苍穹之霜）|r"] = "|cffff0000 (This leader is a Maoist group! If you want to report more hairy corps, please post a video on ShakeShack and then @ CangDaoFrost)|r"
     L["你没有安装官方WCL插件。"] = "You do not have the official WCL plugin installed."
     L["拍卖过程中不会显示当前出价最高人是谁，拍卖结束后才会知晓。"] = "The auction process will not show who the current highest bidder is, it will only be known after the auction ends."
     L["如需强制清除欠款，需按下ALT后才能清除！"] = "If you need to force clear the outstanding amount, you need to press ALT before clearing it!"
@@ -697,7 +686,6 @@ do
     L["BiaoGe沟通交流群"] = "BiaoGe Communication Group"
     L["BiaoGe插件未来的更新计划共享在在线文档。"] = "BiaoGe plugin's future update plan is shared in an online document."
     L["你可以浏览该内容，留下你的建议。"] = "You can browse that content and leave your suggestions."
-    L["你可以在这里订阅我的账号苍穹之霜，提前体验订阅模块和同步模块。"] = "You can subscribe to my account Cang Dome Frost here to experience the subscription module and synchronization module in advance."
     L["团长YY(根据聊天记录生成)"] = "Group Leader YY (generated from chat logs)"
     L["上下布局"] = "Top-down layout"
     L["左右布局"] = "Left/Right Layout"
@@ -734,9 +722,6 @@ do
     L["10黑曜石"] = "10 Obsidian"
     L["25宝库"] = "25 Treasure Trove"
     L["10宝库"] = "10 Treasure Chest"
-    L["你可以在这里订阅我的账号苍穹之霜。"] = "You can subscribe to my account Frost of the Vault here."
-    L["订阅模块"] = "Subscription Module"
-    L["同步模块"] = "Synchronized Modules"
     L["炼金研究"] = "Alchemical Research"
     L["大雕文"] = "Large Sculptures"
     L["小雕文"] = "Minor Sculptures"
@@ -749,7 +734,6 @@ do
     L["冰川背包"] = "Glacier Backpack"
     L["删除角色总览数据"] = "Delete Character Overview"
     L["，长按ALT仅显示本账号角色"] = "If you press and hold ALT, it will only show the Character of your account."
-    L["以及多个没有留名的爱发电用户"] = "and many other users who have not left their names on the list."
     L["自动加入集结号频道"] = "Auto Join Rally Channel"
     L["进入游戏后，自动加入集结号频道，让你提前获取组队消息。"] = "When you enter the game, you will automatically join the Rally channel, so that you can get the group news in advance."
     L["而且，关闭集结号界面时不会自动退出该频道，这样可以一直同步组队消息，让你随时打开集结号都能查看全部活动。"] = "Moreover, the channel will not be automatically exited when rfing the Rally interface, so that you can always synchronize the group news, so that you can check all the activities whenever you open the Rally."
@@ -804,7 +788,6 @@ do
     L["版本："] = "Version:"
     L["错误："] = "Error:"
     L["栈："] = "Stack:"
-    L["爱发电"] = "AidouPower"
     L["感谢以下玩家的发电："] = "Thanks to the following players for generating power:"
     L["（点击复制网址）"] = "(Click to copy URL)"
     L["团长或物品分配者ALT+点击背包/表格/聊天框装备，来打开拍卖面板。"] = "Group Leader or Item Dispenser ALT+click on the backpack/form/chat box Gear to open the Auction Panel."
@@ -2181,7 +2164,6 @@ do
     L["第一代拍卖"] = "First-Gen Auction"
     L["第二代拍卖"] = "Second-Gen Auction"
     L["已暂停"] = "Paused"
-    L['需要团员的BiaoGe版本高于v2.0.0，否则团员无法看见拍卖框。'] = "All raid members must run BiaoGe v2.0.0 or newer to view the auction frame."
     L["正在核对"] = "Verifying..."
     L["忽略战网绑定"] = "Ignore Battle.net Bound Filter"
     L["忽略战网绑定的装备"] = "Ignore Battle.net Bound Items"
@@ -2201,8 +2183,6 @@ do
     L['%s 提醒你拍卖未拍装备：\n\n%s%s'] = "%s reminds you to auction an unauctioned item:\n\n%s%s"
     L['向团长申请重拍'] = "Request Re-Auction from Leader"
     L['提醒团长拍卖'] = "Remind Leader to Auction"
-    L['团长的BiaoGe版本高于v2.0.7时才能收到你的请求。'] = "The raid leader needs BiaoGe v2.0.7+ to receive your request."
-    L['团长的BiaoGe版本高于%s时才能收到你的请求。'] = "The raid leader needs BiaoGe %s+ to receive your request."
     L["%s向你申请重拍流拍装备：%s（%s金）。"] = "%s wants to re-auction unsold item: %s (%s Gold)."
     L["%s提醒你拍卖未拍装备：%s。"] = "%s reminds you to auction an unauctioned item: %s."
     L["常规模式"] = "Normal Mode"
