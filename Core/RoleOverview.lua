@@ -285,6 +285,9 @@ function BG.RoleOverviewUI()
             BGE.Once("FBCDchoice", 261007, function()
                 MyUnderpants.FBCDchoice["ULDtitan"] = 1
             end)
+            BGE.Once("FBCDchoice", 261015, function()
+                MyUnderpants.FBCDchoice.algalonKey = 1
+            end)
         elseif BG.IsCTM then
         elseif BG.IsMOP then
             BGE.Once("FBCDchoice", 260802, function()
@@ -608,6 +611,7 @@ function BG.RoleOverviewUI()
                 -- { name = "dungeonMoney", name2 = L["随机本金币惩罚"], name3 = L["金币惩罚"], id = 1284288, color = "FF8C00", type = "buff" },
                 { name = "holiday", name2 = L["节日本"], color = "FF8C00", type = "quest" },
                 { name = "dayQuestCount", name2 = L["日常"], color = "FF8C00", type = "quest" },
+                { name = "algalonKey", name2 = L["观星钥匙"], color = "FF8C00", type = "quest" },
                 -- 专业
                 { name = "professionCD", name2 = L["专业技能CD"], color = "ADFF2F", type = "profession" },
                 { name = "ignore_alchemy_yanjiu", name2 = L["忽略炼金研究（需重载）"], color = "ADFF2F", type = "profession" },
@@ -619,7 +623,7 @@ function BG.RoleOverviewUI()
                 { name = "ignore_tailor_bingchuanbeibao", name2 = L["忽略冰川背包（需重载）"], color = "ADFF2F", type = "profession" },
             }
             BG.FBCount = 16
-            BG.dayQuestCount = 7
+            BG.dayQuestCount = 8
             BG.skillCount = 8
             -- 声望
             BG.factionTbl = {
@@ -908,8 +912,9 @@ function BG.RoleOverviewUI()
             }
             for _, p in ipairs({
                 {
+                    { name = 'UOK', id = 3095, mythicDiff = 233 }, -- The Unbinding of Kith'ix，使用弹性史诗难度
                     { name = 'VA', id = 3004 },
-                    { name = 'TG', id = 2987 },
+                    { name = 'TG', id = 2987, mythicDiff = 233 },  -- 潮缚石窟使用弹性史诗难度
                 },
                 {
                     { name = 'Micosis', id = 1592 },
@@ -925,7 +930,7 @@ function BG.RoleOverviewUI()
                             name2 = GetRealZoneText(fbs.id),
                             color = "00BFFF",
                             fbId = fbs.id,
-                            diff = hard[2],
+                            diff = hard[1] == 'M' and fbs.mythicDiff or hard[2],
                             type = "fb"
                         })
                     end
@@ -1436,6 +1441,25 @@ function BG.RoleOverviewUI()
             end
         end
 
+        -- 永久任务：登录时追溯，交任务后更新，不参与每日/每周重置
+        if BG.IsTitan then
+            BG.permanentQuests = {
+                [13818] = "algalonKey", -- 25人：英雄：奥尔加隆
+            }
+        end
+        local function SavePermanentQuest(questID)
+            local questName = BG.permanentQuests and BG.permanentQuests[questID]
+            if not questName then return end
+            local colorplayer = SetClassCFF(player, "player")
+            MyUnderpants.QuestCD[realmID][player][questName] = {
+                name = questName,
+                player = player,
+                colorplayer = colorplayer,
+                questID = questID,
+                permanent = true,
+            }
+        end
+
         -- MOP收菜
         if BG.IsMOP then
             -- 开垦：开始计时，收菜显示打勾
@@ -1466,6 +1490,7 @@ function BG.RoleOverviewUI()
         BG.RegisterEvent("QUEST_TURNED_IN", function(self, event, questID)
             UpdateDayQuest(questID)
             UpdateWeekQuest(questID)
+            SavePermanentQuest(questID)
             BG.After(1, function()
                 UpdateDayQuestCount()
             end)
@@ -1485,7 +1510,9 @@ function BG.RoleOverviewUI()
                                 end
                                 for _, questName in ipairs(questList) do
                                     local v = _G[db].QuestCD[realmID][player][questName]
-                                    if v.endtime and time < v.endtime then
+                                    if v.permanent then
+                                        -- 永久任务不参与重置
+                                    elseif v.endtime and time < v.endtime then
                                         v.resettime = v.endtime - time
                                     else
                                         local skillID = GetQuestSkillID(questName)
@@ -1536,6 +1563,13 @@ function BG.RoleOverviewUI()
                             SaveWeekQuest(questName, _questID)
                             break
                         end
+                    end
+                end
+            end
+            if BG.permanentQuests then
+                for questID in pairs(BG.permanentQuests) do
+                    if C_QuestLog.IsQuestFlaggedCompleted(questID) then
+                        SavePermanentQuest(questID)
                     end
                 end
             end

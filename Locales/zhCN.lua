@@ -2218,6 +2218,7 @@ do
     L["|cffffff00十字军宝珠"] = true
     L["|cffffff00符文宝珠"] = true
     L["祖格周常"] = true
+    L["观星钥匙"] = true
     L["部分Boss自动切换分配品质"] = true
     L["比如进入祖格的疯狂之缘时，自动把分配品质切换为绿色。"] = true
     L["Alt+点击才能生效"] = true

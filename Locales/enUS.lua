@@ -2079,6 +2079,7 @@ do
     L["|cffffff00十字军宝珠"] = "|cffffff00Crusader's Orb"
     L["|cffffff00符文宝珠"] = "|cffffff00Runed Orb"
     L["祖格周常"] = "Zul'Gurub Weekly"
+    L["观星钥匙"] = "Algalon Key"
     L["部分Boss自动切换分配品质"] = "Auto switch loot quality for certain bosses"
     L["比如进入祖格的疯狂之缘时，自动把分配品质切换为绿色。"] = "For example, loot quality will switch to green automatically at Madness's Edge in Zul'Gurub."
     L["Alt+点击才能生效"] = "Alt+Click to activate"
