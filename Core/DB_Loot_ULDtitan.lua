@@ -33,9 +33,60 @@ do
         end
     end
 
-    AddLoot(10, 45935, 45940)
-    AddLoot(11, 45972, 45976)
+    AddLoot(1, 45283)
+    AddLoot(2, 45298)
+    AddLoot(3, 45316)
+    AddLoot(4, 45675, 45679, 45680)
+    AddLoot(5, 45324, 45333, 45607)
+    AddLoot(7, 45864)
+    AddLoot(8, 45458, 45612, 45873)
+    AddLoot(9, 45570, 45893, 45894)
+    AddLoot(10, 45613, 45935, 45940)
+    AddLoot(11, 45620, 45972, 45976)
     AddLoot(12, 45996, 46008)
+    AddLoot(14, 46053)
+    AddLoot(15, 34057)
+end
+
+-- 兑换产物补全
+do
+    local FB = "ULDtitan"
+    local loot = BG.Loot[FB]
+    local bossLoot = loot and loot.N
+
+    local function AddOther(boss, ...)
+        local t = bossLoot and bossLoot["boss" .. boss .. "other"]
+        if type(t) ~= "table" then return end
+        for _, id in ipairs({ ... }) do
+            local haved
+            for _, v in ipairs(t) do
+                if v == id then
+                    haved = true
+                    break
+                end
+            end
+            if not haved then tinsert(t, id) end
+        end
+    end
+
+    AddOther(8, 46111, 46118)
+    AddOther(9, 46115, 46120)
+    AddOther(10, 46116, 46121)
+    AddOther(11, 46113, 46119)
+    AddOther(13, 46117, 46122)
+    AddOther(14, 45588, 45618, 45608, 45614)
+
+    if type(loot.ExchangeItems) == "table" and type(loot.ExchangeItems[270187]) == "table" then
+        local haved
+        for _, v in ipairs(loot.ExchangeItems[270187]) do
+            if v == 287189 then
+                haved = true
+                break
+            end
+        end
+        if not haved then tinsert(loot.ExchangeItems[270187], 287189) end
+        AddOther(15, 287189)
+    end
 end
 
 do

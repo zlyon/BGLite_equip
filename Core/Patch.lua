@@ -253,10 +253,114 @@ local function EnsureOptionsVerText()
 end
 BGE.EnsureOptionsVerText = EnsureOptionsVerText
 
+local function EnsureCPMoneyPatch()
+    Section("橙片单价", function()
+        if not BG.IsWLK then return end
+        BG.spFB = BG.spFB or {}
+        BG.spFB.ULDtitan = { 270187 }
+
+        if BGE.__CPMoneyUI then return end
+        if not (BG.MainFrame and BG.Frame and BG.editTemplate) then return end
+        if not (BG.SetEditBaseClass and BG.PairFBItem and BG.OnEnterDelay and BG.OnLeaveDelay) then return end
+        local GetItemID = ns.GetItemID
+        if not GetItemID then return end
+        BGE.__CPMoneyUI = true
+
+        local L = ns.L
+        BiaoGe.cp = BiaoGe.cp or {}
+
+        if not BGE.__CPMoneyFuncs then
+            BGE.__CPMoneyFuncs = true
+
+            function BG.UpdateCPMoney(itemID, count, FB, b, i)
+                local money = tonumber(BiaoGe.cp[itemID])
+                if money and money ~= 0 then
+                    local sum = money * count
+                    BG.Frame[FB]["boss" .. b]["jine" .. i]:SetText(sum)
+                    BiaoGe[FB]["boss" .. b]["jine" .. i] = sum
+                end
+            end
+
+            function BG.SetBiaoGeCPMoney(FB, onlyItemID)
+                local FB = FB or BG.FB1
+                local items = BG.spFB and BG.spFB[FB]
+                if not items then return end
+                for _, itemID in ipairs(items) do
+                    local money = tonumber(BiaoGe.cp[itemID])
+                    if (not onlyItemID or onlyItemID == itemID) and money and money ~= 0 then
+                        BG.PairFBItem(function(item, _, _, b, i)
+                            local text = item:GetText()
+                            if GetItemID(text) == itemID then
+                                local count = tonumber(strmatch(text, "x(%d+)$"))
+                                if not count and text:match("|h|r$") then
+                                    count = 1
+                                end
+                                if count then
+                                    BG.UpdateCPMoney(itemID, count, FB, b, i)
+                                end
+                            end
+                        end, nil, nil, FB)
+                    end
+                end
+            end
+
+            -- 记录点：拾取自动入表后刷新
+            BG.RegisterEvent("CHAT_MSG_LOOT", function()
+                BG.After(0.5, function()
+                    if BG.SetBiaoGeCPMoney then BG.SetBiaoGeCPMoney() end
+                end)
+            end)
+            -- 记录点：账单生成完毕后刷新
+            hooksecurefunc(BG, "CreateBillByAuctionLog", function(FB)
+                BG.After(0.2, function()
+                    if BG.SetBiaoGeCPMoney then BG.SetBiaoGeCPMoney(FB) end
+                end)
+            end)
+        end
+
+        for FB, items in pairs(BG.spFB or {}) do
+            if BG["Frame" .. FB] then
+                for index, itemID in ipairs(items) do
+                    local t = BG["Frame" .. FB]:CreateFontString()
+                    t:SetFont(BIAOGE_TEXT_FONT, 13, "OUTLINE")
+                    t:SetPoint("TOPLEFT", BG.MainFrame, "TOPLEFT", 20 + (index - 1) * 210, -30)
+                    t:SetTextColor(1, 1, 1)
+                    t:SetText(L["橙片单价："])
+
+                    local edit = CreateFrame("EditBox", nil, BG["Frame" .. FB], BG.editTemplate)
+                    edit:SetSize(100, 20)
+                    edit:SetPoint("LEFT", t, "RIGHT", 10, 0)
+                    edit:SetText(BiaoGe.cp[itemID] or "")
+                    edit:SetAutoFocus(false)
+                    edit:SetNumeric(true)
+                    edit:SetScale(.9)
+                    edit.itemID = itemID
+                    edit.FB = FB
+                    BG.SetEditBaseClass(edit)
+                    edit:SetScript("OnTextChanged", function(self)
+                        if not self:HasFocus() then return end
+                        BiaoGe.cp[self.itemID] = tonumber(self:GetText())
+                        BG.SetBiaoGeCPMoney(self.FB, self.itemID)
+                    end)
+                    BG.OnEnterDelay(edit, function(self)
+                        GameTooltip:SetOwner(self, "ANCHOR_RIGHT", 0, 0)
+                        GameTooltip:ClearLines()
+                        GameTooltip:AddLine(L["橙片单价"], 1, 1, 1, true)
+                        GameTooltip:AddLine(format(L["设置好单价后，表格会根据橙片%s数量自动计算其总价。"], select(2, GetItemInfo(self.itemID)) or ""), 1, 0.82, 0, true)
+                        GameTooltip:Show()
+                    end)
+                    BG.OnLeaveDelay(edit)
+                end
+            end
+        end
+    end)
+end
+
 local function EnsurePatches()
     EnsureVerText()
     EnsureShuoMingShuHook()
     EnsureOptionsVerText()
+    EnsureCPMoneyPatch()
 end
 
 function BGE.PatchStatus()
@@ -406,7 +510,14 @@ Section("补丁下发", function()
             if not BG.IsWLK then return end
             local al = BG.autoLoot and BG.autoLoot.info
             if not al then return end
-            al[603] = { gem = { itemIDs = { 45087 }, isGem = true, title = ns.L["|cffffff00符文宝珠"] } }
+            al[603] = {
+                gem = { itemIDs = { 45087 }, isGem = true, title = ns.L["|cffffff00符文宝珠"] },
+                {
+                    key = "fragment",
+                    itemID = BG.IsTitan and 270187 or 45038,
+                    title = ns.L["|cffff8000橙片"],
+                },
+            }
         end)
     end)
 

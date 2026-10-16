@@ -430,8 +430,16 @@ BGE.Init2(function()
                     local nameText = _G[btName .. "Name"]
                     local btID = merchantButton.id
 
-                    name, texture, price, stackCount, numAvailable,
-                    isPurchasable, isUsable, extendedCost, currencyID = GetMerchantItemInfo(index);
+                    if GetMerchantItemInfo then
+                        name, texture, price, stackCount, numAvailable,
+                        isPurchasable, isUsable, extendedCost, currencyID = GetMerchantItemInfo(index);
+                    elseif C_MerchantFrame and C_MerchantFrame.GetItemInfo then
+                        local info = C_MerchantFrame.GetItemInfo(index)
+                        name, texture, price, stackCount, numAvailable,
+                        isPurchasable, isUsable, extendedCost, currencyID =
+                            info.name, info.texture, info.price, info.stackCount, info.numAvailable,
+                            info.isPurchasable, info.isUsable, info.hasExtendedCost, info.currencyID
+                    end
                     if (currencyID) then
                         name, texture, numAvailable = CurrencyContainerUtil.GetCurrencyContainerInfo(currencyID, numAvailable, name, texture, nil);
                     end
@@ -505,7 +513,11 @@ BGE.Init2(function()
                         isKnownHeirloom = false;
                     end
 
-                    itemButton.showNonrefundablePrompt = isHeirloom;
+                    if C_MerchantFrame and C_MerchantFrame.IsMerchantItemRefundable then
+                        itemButton.showNonrefundablePrompt = not C_MerchantFrame.IsMerchantItemRefundable(index);
+                    else
+                        itemButton.showNonrefundablePrompt = isHeirloom;
+                    end
 
                     itemButton.hasItem = true;
                     itemButton:SetID(index);

@@ -3263,3 +3263,13 @@ do
     L["输入要删除的角色名（当前服务器）。删除后该角色的全部数据（CD/货币/备注/装备等）将被清除。"] = "Enter the character name to delete (on this realm). All data for that character (cooldowns, currency, notes, gear, etc.) will be removed."
     L["没有找到%s的角色总览数据。"] = "No character overview data found for %s."
 end
+
+do -- 橙片单价 / 全自动拍卖结束语音（BiaoGeX 3.0.8）
+    L["|cffff8000橙片"] = "|cffff8000Orange Shard"
+    L["橙片单价："] = "Fragment unit price:"
+    L["橙片单价"] = "Fragment unit price"
+    L["设置好单价后，表格会根据橙片%s数量自动计算其总价。"] = "After setting the unit price, the ledger automatically calculates the total based on the number of fragments %s."
+    L["结束后语音提醒"] = "Voice alert when finished"
+    L["自动拍卖结束后，如仍有装备未拍卖，则播放语音提醒。"] = "Plays a voice alert if items remain unauctioned when auto auctions end."
+    L["自动拍卖完成，剩余装备需手动拍卖。"] = "Automatic auctioning is complete. The remaining items must be auctioned manually."
+end

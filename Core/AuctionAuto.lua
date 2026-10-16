@@ -12,6 +12,7 @@ BGE.Init(function()
     BiaoGe.Auction = BiaoGe.Auction or {}
     BiaoGe.Auction.autoStartMax = max(4, min(10, tonumber(BiaoGe.Auction.autoStartMax) or 6))
     BiaoGe.Auction.autoStartOnlySingle = BiaoGe.Auction.autoStartOnlySingle ~= 0 and 1 or 0
+    BiaoGe.Auction.autoStartEndVoice = BiaoGe.Auction.autoStartEndVoice ~= 0 and 1 or 0
 
     local auctionLogFrame = BG.auctionLogFrame
     if not auctionLogFrame then return end
@@ -138,6 +139,7 @@ local function GetAutoStartAuctionItem()
         auctioned[itemID] = (auctioned[itemID] or 0) + 1
     end
 
+    local hasRemaining = false
     for b = 1, Maxb[FB] do
         for i = 1, BG.GetMaxi(FB, b) do
             local item = BG.Frame[FB]["boss" .. b]["zhuangbei" .. i]
@@ -146,13 +148,15 @@ local function GetAutoStartAuctionItem()
             if itemID and auctioned[itemID] and auctioned[itemID] > 0 then
                 auctioned[itemID] = auctioned[itemID] - 1
             elseif itemID then
+                hasRemaining = true
                 local money = moneyDB[BG.GetLeiTingItem(itemID, FB)]
                 if money and (BiaoGe.Auction.autoStartOnlySingle ~= 1 or notAuctionedCounts[itemID] == 1) then
-                    return itemID, link, money
+                    return itemID, link, money, hasRemaining
                 end
             end
         end
     end
+    return nil, nil, nil, hasRemaining
 end
 
 local function AutoStartAuctionCheck()
@@ -175,8 +179,14 @@ local function AutoStartAuctionCheck()
     end
     if windowCount >= maxCount then return end
 
-    local itemID, link, money = GetAutoStartAuctionItem()
+    local itemID, link, money, hasRemaining = GetAutoStartAuctionItem()
     if not itemID then
+        if BG.auctionLogFrame.autoStartAuctionStarted and hasRemaining then
+            BG.SendSystemMessage(L["自动拍卖完成，剩余装备需手动拍卖。"])
+            if BiaoGe.Auction.autoStartEndVoice == 1 then
+                BG.PlaySound("autoStartAuctionEnd")
+            end
+        end
         StopAutoStartAuction()
         return
     end
@@ -189,6 +199,7 @@ local function AutoStartAuctionCheck()
     local mod = BiaoGe.Auction.mod
     local resetThreshold = max(tonumber(BiaoGe.Auction.resetThreshold) or 0, 10)
     BG.SendStartAuctionMsg(isGen2, itemID, money, duration, mod, link, resetThreshold)
+    BG.auctionLogFrame.autoStartAuctionStarted = true
 end
 
 local function GetDelayTime()
@@ -259,6 +270,18 @@ function BG.ShowAutoStartAuctionMenu(self)
         end,
     })
     tinsert(menu, {
+        text = L["结束后语音提醒"],
+        checked = BiaoGe.Auction.autoStartEndVoice == 1,
+        classicChecks = true,
+        tooltipTitle = L["结束后语音提醒"],
+        tooltipText = L["自动拍卖结束后，如仍有装备未拍卖，则播放语音提醒。"],
+        tooltipOnButton = true,
+        func = function()
+            BiaoGe.Auction.autoStartEndVoice = BiaoGe.Auction.autoStartEndVoice == 1 and 0 or 1
+            LibBG:CloseDropDownMenus()
+        end,
+    })
+    tinsert(menu, {
         text = CANCEL,
         notCheckable = true,
         func = LibBG.CloseDropDownMenus,
@@ -272,3 +295,36 @@ end
         UpdateAutoStartAuctionButton()
     end)
 end)
+
+-- 「自动拍卖结束」语音注册（上游 BiaoGeX 3.0.8）
+local function RegisterAutoStartAuctionEndSound()
+    if not (type(BG.soundTbl2) == "table" and type(BG.soundAuthor) == "table") then return end
+    if BGE.__autoStartAuctionEndSound then return end
+
+    local soundName = "自动拍卖结束"
+    local exists
+    for _, v in ipairs(BG.soundTbl2) do
+        if v.ID == "autoStartAuctionEnd" then
+            exists = true
+            break
+        end
+    end
+    if not exists then
+        tinsert(BG.soundTbl2, { ID = "autoStartAuctionEnd", name = soundName })
+    end
+
+    for _, sa in ipairs(BG.soundAuthor) do
+        local key = "sound_autoStartAuctionEnd" .. sa.ID
+        if BG[key] == nil then
+            if sa.isBiaoGe then
+                BG[key] = "Interface\\AddOns\\" .. AddonName .. "\\Media\\sound\\AI\\autoStartAuctionEnd"
+            else
+                BG[key] = format("Interface\\AddOns\\%s\\sound\\%s", sa.addonName, soundName)
+            end
+        end
+    end
+    BGE.__autoStartAuctionEndSound = true
+end
+BGE.Init(RegisterAutoStartAuctionEndSound)
+BGE.Init2(RegisterAutoStartAuctionEndSound)
+BGE.Init3(RegisterAutoStartAuctionEndSound)

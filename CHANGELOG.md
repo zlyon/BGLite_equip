@@ -1,10 +1,13 @@
 What's new:
 
-  * Role Overview: added the Algalon Key to the Titan Reforged daily quest list. Turned-in 25H Algalon quests are tracked permanently and no longer reset on daily/weekly resets.
-  * Retail: added the new raid The Unbinding of Kith'ix and fixed the Mythic cooldown display for The Tidebound Grotto.
-
+- Ulduar: added one-click master-loot assignment and preset unit price for Orange Shards; the table now auto-calculates the total price.
+- New voice alert when fully automatic auctioning ends, with a toggle in the right-click menu (on by default).
+- Fixed the merchant item list on modern clients.
+- Updated Ulduar loot and exchange data.
 
 更新内容：
 
-  * 角色总览：时光服日常列表新增「观星钥匙」，25人英雄奥尔加隆任务交完后常驻显示，不再参与每日/每周重置。
-  * 正式服：新增团本「基希克斯破封」；修复潮缚石窟史诗难度副本CD不显示的问题。
+- 奥杜尔：新增橙片一键指定分配与预设橙片单价（入口在表格左上角），表格会根据橙片数量自动计算总价。
+- 新增全自动拍卖结束后的语音提醒，可在右键菜单中开关（默认开启）。
+- 修复新版客户端下商人商品列表的显示问题。
+- 更新奥杜尔掉落与兑换数据。
