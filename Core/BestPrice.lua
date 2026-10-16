@@ -8,6 +8,8 @@ local SendSystemMessage = BG.SendSystemMessage
 local player = BG.playerName
 local realmID = GetRealmID()
 
+local MAX_ROW = 15
+
 function BG.IsSetBestPriceKeyDown(isRightClick)
     if BG.SetBestPrice then
         if BG.IsML then
@@ -34,7 +36,7 @@ BGE.Init2(function()
 
     local function BestPriceIsFull(itemID)
         local hasEmptyRow
-        for ri = 1, 10 do
+        for ri = 1, MAX_ROW do
             local data = bestPriceDB[ri]
             local equipment = data and data.equipment or ""
             if itemID and GetItemID(equipment) == itemID then
@@ -125,7 +127,7 @@ BGE.Init2(function()
 
     local function GetBestPriceCount()
         local count = 0
-        for ri = 1, 10 do
+        for ri = 1, MAX_ROW do
             local data = NormalizeRow(ri)
             if data.enabled and data.price > 0 and GetItemID(data.equipment) then
                 count = count + 1
@@ -138,7 +140,7 @@ BGE.Init2(function()
         if entryButton then
             local count = GetBestPriceCount()
             local r, g, b = 0.5, 0.5, 0.5
-            if count == 10 then
+            if count == MAX_ROW then
                 r, g, b = 1, 0, 0
             elseif count > 0 then
                 r, g, b = 0, 1, 0
@@ -151,7 +153,7 @@ BGE.Init2(function()
         local itemID = GetItemID(link)
         local rowIndex
 
-        for ri = 1, 10 do
+        for ri = 1, MAX_ROW do
             local data = NormalizeRow(ri)
             if itemID and GetItemID(data.equipment) == itemID then
                 rowIndex = ri
@@ -162,7 +164,7 @@ BGE.Init2(function()
             end
         end
 
-        rowIndex = rowIndex or 10
+        rowIndex = rowIndex or MAX_ROW
 
         local data = NormalizeRow(rowIndex)
         data.enabled = true
@@ -178,7 +180,7 @@ BGE.Init2(function()
     function BG.GetBestPrice(itemID)
         itemID = tonumber(itemID)
         if itemID then
-            for ri = 1, 10 do
+            for ri = 1, MAX_ROW do
                 local data = NormalizeRow(ri)
                 if data.enabled and data.price > 0 and GetItemID(data.equipment) == itemID then
                     return data.price
@@ -192,7 +194,7 @@ BGE.Init2(function()
         itemID = tonumber(itemID)
         if not itemID then return end
 
-        for ri = 1, 10 do
+        for ri = 1, MAX_ROW do
             local data = NormalizeRow(ri)
             if GetItemID(data.equipment) == itemID then
                 data.enabled = false
@@ -206,7 +208,7 @@ BGE.Init2(function()
     end
 
     local function RefreshAllRows()
-        for ri = 1, 10 do
+        for ri = 1, MAX_ROW do
             if rows[ri] then
                 RefreshRow(rows[ri], NormalizeRow(ri))
             end
@@ -215,14 +217,14 @@ BGE.Init2(function()
     end
 
     local function SetAllRowsEnabled(enabled)
-        for ri = 1, 10 do
+        for ri = 1, MAX_ROW do
             NormalizeRow(ri).enabled = enabled and true or false
         end
         RefreshAllRows()
     end
 
     local function ClearAllRows()
-        for ri = 1, 10 do
+        for ri = 1, MAX_ROW do
             local data = NormalizeRow(ri)
             data.enabled = true
             data.equipment = ""
@@ -589,7 +591,7 @@ BGE.Init2(function()
             f:EnableMouse(true)
             f:SetMovable(true)
             f:SetToplevel(true)
-            f:SetSize(410, 338)
+            f:SetSize(410, 448)
             if parent then
                 f:SetPoint("BOTTOM", parent, "TOP")
             else
@@ -626,10 +628,10 @@ BGE.Init2(function()
             headerX = headerX + headerW[i] + 5
         end
 
-        -- 实例化 10 行
+        -- 实例化 MAX_ROW 行
         local rowStartY = headerY - 18
         local rowHeight = 22
-        for ri = 1, 10 do
+        for ri = 1, MAX_ROW do
             rows[ri] = CreateRow(f, ri, rowStartY - (ri - 1) * rowHeight)
         end
 

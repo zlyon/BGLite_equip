@@ -407,6 +407,10 @@ Section("补丁下发", function()
             if type(original) ~= "function" then return end
             local L = ns.L
 
+            -- 同一批开拍中的重复装备只自动出价一次：在延迟启动前就抢占占用标记，
+            -- 避免两件相同物品（如套装代币）在 DisableBestPrice 生效前的空窗内都触发出价。
+            local claimedPrice = {}
+
             local function SetBestPriceAuto(f, itemID)
                 if not BG.GetBestPrice then return end
                 if not (f and f.autoFrame and f.autoMoneyEdit and f.autoButton) then return end
@@ -419,11 +423,14 @@ Section("补丁下发", function()
                 elseif price <= money then
                     return
                 end
+                if claimedPrice[itemID] then return end
+                claimedPrice[itemID] = true
                 BG.After(random(400, 800) / 1000, function()
                     f.autoFrame:Show()
                     f.autoMoneyEdit:SetText(price)
                     f.autoMoneyEdit:SetCursorPosition(0)
                     BG.After(0, function()
+                        claimedPrice[itemID] = nil
                         if f.autoButton:IsEnabled() then
                             f.autoButton:Click()
                             if f.isAuto and BG.DisableBestPrice then
