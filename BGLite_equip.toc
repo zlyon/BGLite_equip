@@ -6,7 +6,7 @@
 ## Dependencies: BGLite
 ## LoadOnDemand: 0
 ## SavedVariables: MyUnderpants
-## Version: 1.0.42
+## Version: 1.0.43
 
 Libs\LibBase64\LibBase64.lua
 Init.lua
