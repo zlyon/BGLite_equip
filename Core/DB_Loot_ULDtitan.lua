@@ -76,6 +76,12 @@ do
     AddOther(13, 46117, 46122)
     AddOther(14, 45588, 45618, 45608, 45614)
 
+    -- 回复代码阿尔法（奥尔加隆奖励四选一）的兑换映射，补官方缺失，
+    -- 使装备库心愿能像套装一样换算到兑换物
+    if type(loot.ExchangeItems) == "table" and type(loot.ExchangeItems[46053]) ~= "table" then
+        loot.ExchangeItems[46053] = { 45588, 45618, 45608, 45614 }
+    end
+
     if type(loot.ExchangeItems) == "table" and type(loot.ExchangeItems[270187]) == "table" then
         local haved
         for _, v in ipairs(loot.ExchangeItems[270187]) do
