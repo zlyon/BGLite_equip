@@ -27,130 +27,130 @@ local FBCD = "RaidCD"
 local MONEY = "MONEY"
 
 function BG.RoleOverviewUI()
-    if MyUnderpants.FBCD then
-        MyUnderpants[FBCD] = BG.Copy(MyUnderpants.FBCD)
-        MyUnderpants.FBCD = nil
+    if BGLite_equip.FBCD then
+        BGLite_equip[FBCD] = BG.Copy(BGLite_equip.FBCD)
+        BGLite_equip.FBCD = nil
     end
-    if MyUnderpants.Money then
-        MyUnderpants[MONEY] = BG.Copy(MyUnderpants.Money)
-        MyUnderpants.Money = nil
+    if BGLite_equip.Money then
+        BGLite_equip[MONEY] = BG.Copy(BGLite_equip.Money)
+        BGLite_equip.Money = nil
     end
 
-    MyUnderpants[FBCD] = MyUnderpants[FBCD] or {}
-    MyUnderpants[FBCD][realmID] = MyUnderpants[FBCD][realmID] or {}
+    BGLite_equip[FBCD] = BGLite_equip[FBCD] or {}
+    BGLite_equip[FBCD][realmID] = BGLite_equip[FBCD][realmID] or {}
 
-    MyUnderpants[MONEY] = MyUnderpants[MONEY] or {}
-    MyUnderpants[MONEY][realmID] = MyUnderpants[MONEY][realmID] or {}
-    MyUnderpants[MONEY][realmID][player] = MyUnderpants[MONEY][realmID][player] or {}
+    BGLite_equip[MONEY] = BGLite_equip[MONEY] or {}
+    BGLite_equip[MONEY][realmID] = BGLite_equip[MONEY][realmID] or {}
+    BGLite_equip[MONEY][realmID][player] = BGLite_equip[MONEY][realmID][player] or {}
 
-    MyUnderpants.roleOverviewNote = MyUnderpants.roleOverviewNote or {}
-    MyUnderpants.roleOverviewNote[realmID] = MyUnderpants.roleOverviewNote[realmID] or {}
+    BGLite_equip.roleOverviewNote = BGLite_equip.roleOverviewNote or {}
+    BGLite_equip.roleOverviewNote[realmID] = BGLite_equip.roleOverviewNote[realmID] or {}
 
     -- 选择初始化
     if BG.IsTBC then
         BGE.Once("FBCDchoiceDefault", 260213, function()
-            MyUnderpants.FBCDchoice = nil
-            MyUnderpants.MONEYchoice = nil
+            BGLite_equip.FBCDchoice = nil
+            BGLite_equip.MONEYchoice = nil
         end)
     end
     if BG.IsRetail then
         BGE.Once("FBCDchoiceDefault", 260425, function()
-            MyUnderpants.FBCDchoice = nil
-            MyUnderpants.MONEYchoice = nil
+            BGLite_equip.FBCDchoice = nil
+            BGLite_equip.MONEYchoice = nil
         end)
     end
-    if not MyUnderpants.FBCDchoice then
-        MyUnderpants.FBCDchoice = {}
+    if not BGLite_equip.FBCDchoice then
+        BGLite_equip.FBCDchoice = {}
         if BG.IsVanilla then
-            MyUnderpants.FBCDchoice["NAXX"] = 1
-            MyUnderpants.FBCDchoice["TAQ"] = 1
-            MyUnderpants.FBCDchoice["BWL"] = 1
-            MyUnderpants.FBCDchoice["OL"] = 1
-            MyUnderpants.FBCDchoice["MC"] = 1
-            MyUnderpants.FBCDchoice["AQL"] = 1
-            MyUnderpants.FBCDchoice["ZUG"] = 1
-            MyUnderpants.FBCDchoice["BWLsod"] = 1
-            MyUnderpants.FBCDchoice["ZUGsod"] = 1
-            MyUnderpants.FBCDchoice["TCV"] = 1
-            MyUnderpants.FBCDchoice["MCsod"] = 1
-            MyUnderpants.FBCDchoice["OLsod"] = 1
-            MyUnderpants.FBCDchoice["SC"] = 1
-            MyUnderpants.FBCDchoice["TTS"] = 1
-            MyUnderpants.FBCDchoice["professionCD"] = 1
+            BGLite_equip.FBCDchoice["NAXX"] = 1
+            BGLite_equip.FBCDchoice["TAQ"] = 1
+            BGLite_equip.FBCDchoice["BWL"] = 1
+            BGLite_equip.FBCDchoice["OL"] = 1
+            BGLite_equip.FBCDchoice["MC"] = 1
+            BGLite_equip.FBCDchoice["AQL"] = 1
+            BGLite_equip.FBCDchoice["ZUG"] = 1
+            BGLite_equip.FBCDchoice["BWLsod"] = 1
+            BGLite_equip.FBCDchoice["ZUGsod"] = 1
+            BGLite_equip.FBCDchoice["TCV"] = 1
+            BGLite_equip.FBCDchoice["MCsod"] = 1
+            BGLite_equip.FBCDchoice["OLsod"] = 1
+            BGLite_equip.FBCDchoice["SC"] = 1
+            BGLite_equip.FBCDchoice["TTS"] = 1
+            BGLite_equip.FBCDchoice["professionCD"] = 1
         elseif BG.IsTBC then
-            MyUnderpants.FBCDchoice["TK"] = 1
-            MyUnderpants.FBCDchoice["SSC"] = 1
-            MyUnderpants.FBCDchoice["GL"] = 1
-            MyUnderpants.FBCDchoice["ML"] = 1
-            MyUnderpants.FBCDchoice["KZ"] = 1
+            BGLite_equip.FBCDchoice["TK"] = 1
+            BGLite_equip.FBCDchoice["SSC"] = 1
+            BGLite_equip.FBCDchoice["GL"] = 1
+            BGLite_equip.FBCDchoice["ML"] = 1
+            BGLite_equip.FBCDchoice["KZ"] = 1
         elseif BG.IsWLK_80 then
-            MyUnderpants.FBCDchoice["25RS"] = 1
-            MyUnderpants.FBCDchoice["10RS"] = 1
-            MyUnderpants.FBCDchoice["25ICC"] = 1
-            MyUnderpants.FBCDchoice["10ICC"] = 1
-            MyUnderpants.FBCDchoice["25VOA"] = 1
-            MyUnderpants.FBCDchoice["10VOA"] = 1
-            MyUnderpants.FBCDchoice["gamma"] = 1
-            MyUnderpants.FBCDchoice["heroe"] = 1
-            MyUnderpants.FBCDchoice["week1"] = 1
-            MyUnderpants.FBCDchoice["faction1156"] = 1
+            BGLite_equip.FBCDchoice["25RS"] = 1
+            BGLite_equip.FBCDchoice["10RS"] = 1
+            BGLite_equip.FBCDchoice["25ICC"] = 1
+            BGLite_equip.FBCDchoice["10ICC"] = 1
+            BGLite_equip.FBCDchoice["25VOA"] = 1
+            BGLite_equip.FBCDchoice["10VOA"] = 1
+            BGLite_equip.FBCDchoice["gamma"] = 1
+            BGLite_equip.FBCDchoice["heroe"] = 1
+            BGLite_equip.FBCDchoice["week1"] = 1
+            BGLite_equip.FBCDchoice["faction1156"] = 1
         elseif BG.IsTitan then
-            MyUnderpants.FBCDchoice["ULDtitan"] = 1
-            MyUnderpants.FBCDchoice["SWtitan"] = 1
-            MyUnderpants.FBCDchoice["ZAtitan"] = 1
-            MyUnderpants.FBCDchoice.TOCtitan = 1
-            MyUnderpants.FBCDchoice.ZUGtitan = 1
-            MyUnderpants.FBCDchoice.NAXXtitan = 1
-            MyUnderpants.FBCDchoice.OStitan = 0
-            MyUnderpants.FBCDchoice.EOEtitan = 0
-            MyUnderpants.FBCDchoice.SSCtitan = 0
-            MyUnderpants.FBCDchoice.TKtitan = 0
-            MyUnderpants.FBCDchoice.Doomwalker = 0
-            MyUnderpants.FBCDchoice.DoomLordKazzak = 0
-            MyUnderpants.FBCDchoice["MCtitan"] = 1
-            MyUnderpants.FBCDchoice["VOAtitan"] = 1
-            MyUnderpants.FBCDchoice["gamma"] = 1
-            MyUnderpants.FBCDchoice["heroe"] = 1
-            MyUnderpants.FBCDchoice["week1"] = 1
-            MyUnderpants.FBCDchoice["week2"] = 1
-            MyUnderpants.FBCDchoice["dungeonMoney"] = 1
-            MyUnderpants.FBCDchoice["holiday"] = 1
-            MyUnderpants.FBCDchoice["professionCD"] = 1
-            MyUnderpants.FBCDchoice["faction" .. "270"] = 1
-            MyUnderpants.FBCDchoice["faction" .. "749"] = 1
+            BGLite_equip.FBCDchoice["ULDtitan"] = 1
+            BGLite_equip.FBCDchoice["SWtitan"] = 1
+            BGLite_equip.FBCDchoice["ZAtitan"] = 1
+            BGLite_equip.FBCDchoice.TOCtitan = 1
+            BGLite_equip.FBCDchoice.ZUGtitan = 1
+            BGLite_equip.FBCDchoice.NAXXtitan = 1
+            BGLite_equip.FBCDchoice.OStitan = 0
+            BGLite_equip.FBCDchoice.EOEtitan = 0
+            BGLite_equip.FBCDchoice.SSCtitan = 0
+            BGLite_equip.FBCDchoice.TKtitan = 0
+            BGLite_equip.FBCDchoice.Doomwalker = 0
+            BGLite_equip.FBCDchoice.DoomLordKazzak = 0
+            BGLite_equip.FBCDchoice["MCtitan"] = 1
+            BGLite_equip.FBCDchoice["VOAtitan"] = 1
+            BGLite_equip.FBCDchoice["gamma"] = 1
+            BGLite_equip.FBCDchoice["heroe"] = 1
+            BGLite_equip.FBCDchoice["week1"] = 1
+            BGLite_equip.FBCDchoice["week2"] = 1
+            BGLite_equip.FBCDchoice["dungeonMoney"] = 1
+            BGLite_equip.FBCDchoice["holiday"] = 1
+            BGLite_equip.FBCDchoice["professionCD"] = 1
+            BGLite_equip.FBCDchoice["faction" .. "270"] = 1
+            BGLite_equip.FBCDchoice["faction" .. "749"] = 1
         elseif BG.IsCTM then
-            MyUnderpants.FBCDchoice["DS"] = 1
-            MyUnderpants.FBCDchoice["FL"] = 1
-            MyUnderpants.FBCDchoice["BOT"] = 1
-            MyUnderpants.FBCDchoice["BWD"] = 1
-            MyUnderpants.FBCDchoice["TOF"] = 1
-            MyUnderpants.FBCDchoice["25BH"] = 1
-            MyUnderpants.FBCDchoice["10BH"] = 1
-            MyUnderpants.FBCDchoice["faction1204"] = 1
-            MyUnderpants.FBCDchoice["faction1171"] = 1
+            BGLite_equip.FBCDchoice["DS"] = 1
+            BGLite_equip.FBCDchoice["FL"] = 1
+            BGLite_equip.FBCDchoice["BOT"] = 1
+            BGLite_equip.FBCDchoice["BWD"] = 1
+            BGLite_equip.FBCDchoice["TOF"] = 1
+            BGLite_equip.FBCDchoice["25BH"] = 1
+            BGLite_equip.FBCDchoice["10BH"] = 1
+            BGLite_equip.FBCDchoice["faction1204"] = 1
+            BGLite_equip.FBCDchoice["faction1171"] = 1
         elseif BG.IsMOP then
-            MyUnderpants.FBCDchoice["SOO"] = 1
-            MyUnderpants.FBCDchoice["TOT"] = 0
-            MyUnderpants.FBCDchoice["worldBoss6"] = 1
-            MyUnderpants.FBCDchoice["worldBoss5"] = 1
-            MyUnderpants.FBCDchoice["worldBoss4"] = 0
-            MyUnderpants.FBCDchoice["worldBoss3"] = 0
-            MyUnderpants.FBCDchoice["worldBoss2"] = 0
-            MyUnderpants.FBCDchoice["worldBoss1"] = 0
-            MyUnderpants.FBCDchoice["chengpi"] = 1
-            MyUnderpants.FBCDchoice["holiday"] = 1
-            MyUnderpants.FBCDchoice["professionCD"] = 1
-            MyUnderpants.FBCDchoice["faction" .. "1359"] = 1
-            MyUnderpants.FBCDchoice["faction" .. "1435"] = 1
-            MyUnderpants.FBCDchoice["faction" .. "1387"] = 1
-            MyUnderpants.FBCDchoice["faction" .. "1388"] = 1
+            BGLite_equip.FBCDchoice["SOO"] = 1
+            BGLite_equip.FBCDchoice["TOT"] = 0
+            BGLite_equip.FBCDchoice["worldBoss6"] = 1
+            BGLite_equip.FBCDchoice["worldBoss5"] = 1
+            BGLite_equip.FBCDchoice["worldBoss4"] = 0
+            BGLite_equip.FBCDchoice["worldBoss3"] = 0
+            BGLite_equip.FBCDchoice["worldBoss2"] = 0
+            BGLite_equip.FBCDchoice["worldBoss1"] = 0
+            BGLite_equip.FBCDchoice["chengpi"] = 1
+            BGLite_equip.FBCDchoice["holiday"] = 1
+            BGLite_equip.FBCDchoice["professionCD"] = 1
+            BGLite_equip.FBCDchoice["faction" .. "1359"] = 1
+            BGLite_equip.FBCDchoice["faction" .. "1435"] = 1
+            BGLite_equip.FBCDchoice["faction" .. "1387"] = 1
+            BGLite_equip.FBCDchoice["faction" .. "1388"] = 1
         elseif BG.IsRetail then
         end
     end
-    if not MyUnderpants.MONEYchoice then
-        MyUnderpants.MONEYchoice = {}
+    if not BGLite_equip.MONEYchoice then
+        BGLite_equip.MONEYchoice = {}
         if BG.IsVanilla then
-            MyUnderpants.MONEYchoice = {
+            BGLite_equip.MONEYchoice = {
                 [22726] = 1,
                 [226404] = 1,
                 [221262] = 1,
@@ -158,12 +158,12 @@ function BG.RoleOverviewUI()
                 ["money"] = 1,
             }
         elseif BG.IsTBC then
-            MyUnderpants.MONEYchoice[29434] = 1
-            MyUnderpants.MONEYchoice[1900] = 1
-            MyUnderpants.MONEYchoice[1901] = 1
-            MyUnderpants.MONEYchoice["money"] = 1
+            BGLite_equip.MONEYchoice[29434] = 1
+            BGLite_equip.MONEYchoice[1900] = 1
+            BGLite_equip.MONEYchoice[1901] = 1
+            BGLite_equip.MONEYchoice["money"] = 1
         elseif BG.IsWLK_80 then
-            MyUnderpants.MONEYchoice = {
+            BGLite_equip.MONEYchoice = {
                 -- [396] = 1,
                 -- [395] = 1,
                 [50274] = 1, -- 橙片
@@ -177,15 +177,15 @@ function BG.RoleOverviewUI()
                 ["money"] = 1,
             }
         elseif BG.IsTitan then
-            MyUnderpants.MONEYchoice[3403] = 1
-            MyUnderpants.MONEYchoice[3406] = 1
-            MyUnderpants.MONEYchoice[161] = 1
-            MyUnderpants.MONEYchoice[1901] = 1
-            MyUnderpants.MONEYchoice["items"] = 1
-            MyUnderpants.MONEYchoice["items_updateItem"] = 1
-            MyUnderpants.MONEYchoice["money"] = 1
+            BGLite_equip.MONEYchoice[3403] = 1
+            BGLite_equip.MONEYchoice[3406] = 1
+            BGLite_equip.MONEYchoice[161] = 1
+            BGLite_equip.MONEYchoice[1901] = 1
+            BGLite_equip.MONEYchoice["items"] = 1
+            BGLite_equip.MONEYchoice["items_updateItem"] = 1
+            BGLite_equip.MONEYchoice["money"] = 1
         elseif BG.IsCTM then
-            MyUnderpants.MONEYchoice = {
+            BGLite_equip.MONEYchoice = {
                 [77952] = 1, -- 橙片
                 [396] = 1,
                 [395] = 1,
@@ -195,135 +195,135 @@ function BG.RoleOverviewUI()
                 ["money"] = 1,
             }
         elseif BG.IsMOP then
-            MyUnderpants.MONEYchoice[396] = 1
-            MyUnderpants.MONEYchoice[395] = 1
-            MyUnderpants.MONEYchoice[3416] = 1
-            MyUnderpants.MONEYchoice[776] = 1
-            MyUnderpants.MONEYchoice[738] = 1
-            MyUnderpants.MONEYchoice["money"] = 1
+            BGLite_equip.MONEYchoice[396] = 1
+            BGLite_equip.MONEYchoice[395] = 1
+            BGLite_equip.MONEYchoice[3416] = 1
+            BGLite_equip.MONEYchoice[776] = 1
+            BGLite_equip.MONEYchoice[738] = 1
+            BGLite_equip.MONEYchoice["money"] = 1
         elseif BG.IsRetail then
-            MyUnderpants.MONEYchoice[3383] = 1
-            MyUnderpants.MONEYchoice[3341] = 1
-            MyUnderpants.MONEYchoice[3343] = 1
-            MyUnderpants.MONEYchoice[3345] = 1
-            MyUnderpants.MONEYchoice[3347] = 1
-            MyUnderpants.MONEYchoice["money"] = 1
+            BGLite_equip.MONEYchoice[3383] = 1
+            BGLite_equip.MONEYchoice[3341] = 1
+            BGLite_equip.MONEYchoice[3343] = 1
+            BGLite_equip.MONEYchoice[3345] = 1
+            BGLite_equip.MONEYchoice[3347] = 1
+            BGLite_equip.MONEYchoice["money"] = 1
         end
     end
-    if not MyUnderpants.SKILLchoice then
-        MyUnderpants.SKILLchoice = {}
-        MyUnderpants.SKILLchoice[0] = true
+    if not BGLite_equip.SKILLchoice then
+        BGLite_equip.SKILLchoice = {}
+        BGLite_equip.SKILLchoice[0] = true
     end
 
     -- 更新
     do
         if BG.IsVanilla then
             BGE.Once("ro", 250602, function()
-                MyUnderpants.MONEYchoice[22726] = 1
+                BGLite_equip.MONEYchoice[22726] = 1
             end)
             BGE.Once("FBCDchoice", 260623, function()
-                MyUnderpants.FBCDchoice["professionCD"] = 1
+                BGLite_equip.FBCDchoice["professionCD"] = 1
             end)
         elseif BG.IsTBC then
             BGE.Once("FBCDchoice", 260518, function()
-                MyUnderpants.FBCDchoice["TK"] = 1
-                MyUnderpants.FBCDchoice["SSC"] = 1
+                BGLite_equip.FBCDchoice["TK"] = 1
+                BGLite_equip.FBCDchoice["SSC"] = 1
             end)
             BGE.Once("MONEYchoice", 260508, function()
-                MyUnderpants.MONEYchoice[29434] = 1
-                MyUnderpants.MONEYchoice[1900] = 1
-                MyUnderpants.MONEYchoice[1901] = 1
+                BGLite_equip.MONEYchoice[29434] = 1
+                BGLite_equip.MONEYchoice[1900] = 1
+                BGLite_equip.MONEYchoice[1901] = 1
             end)
         elseif BG.IsWLK_80 then
             BGE.Once("FBCDchoice", 250717, function()
-                MyUnderpants.FBCDchoice["25RS"] = 1
-                MyUnderpants.FBCDchoice["10RS"] = 1
-                MyUnderpants.FBCDchoice["25TOC"] = nil
-                MyUnderpants.FBCDchoice["10TOC"] = nil
+                BGLite_equip.FBCDchoice["25RS"] = 1
+                BGLite_equip.FBCDchoice["10RS"] = 1
+                BGLite_equip.FBCDchoice["25TOC"] = nil
+                BGLite_equip.FBCDchoice["10TOC"] = nil
             end)
             BGE.Once("FBCDchoice", 250626, function()
-                if MyUnderpants.MONEYchoice[45039] == 1 then
-                    MyUnderpants.MONEYchoice[45038] = 1
+                if BGLite_equip.MONEYchoice[45039] == 1 then
+                    BGLite_equip.MONEYchoice[45038] = 1
                 end
             end)
             BGE.Once("FBCDchoice", 250610, function()
-                MyUnderpants.FBCDchoice["faction1156"] = 1
+                BGLite_equip.FBCDchoice["faction1156"] = 1
             end)
             BGE.Once("FBCDchoice", 250512, function()
-                MyUnderpants.FBCDchoice["25ICC"] = 1
-                MyUnderpants.FBCDchoice["10ICC"] = 1
-                MyUnderpants.FBCDchoice["25OL"] = nil
-                MyUnderpants.FBCDchoice["10OL"] = nil
-                MyUnderpants.FBCDchoice["25ULD"] = nil
-                MyUnderpants.FBCDchoice["10ULD"] = nil
-                MyUnderpants.FBCDchoice["25NAXX"] = nil
-                MyUnderpants.FBCDchoice["10NAXX"] = nil
-                MyUnderpants.FBCDchoice["25EOE"] = nil
-                MyUnderpants.FBCDchoice["10EOE"] = nil
-                MyUnderpants.FBCDchoice["25OS"] = nil
-                MyUnderpants.FBCDchoice["10OS"] = nil
+                BGLite_equip.FBCDchoice["25ICC"] = 1
+                BGLite_equip.FBCDchoice["10ICC"] = 1
+                BGLite_equip.FBCDchoice["25OL"] = nil
+                BGLite_equip.FBCDchoice["10OL"] = nil
+                BGLite_equip.FBCDchoice["25ULD"] = nil
+                BGLite_equip.FBCDchoice["10ULD"] = nil
+                BGLite_equip.FBCDchoice["25NAXX"] = nil
+                BGLite_equip.FBCDchoice["10NAXX"] = nil
+                BGLite_equip.FBCDchoice["25EOE"] = nil
+                BGLite_equip.FBCDchoice["10EOE"] = nil
+                BGLite_equip.FBCDchoice["25OS"] = nil
+                BGLite_equip.FBCDchoice["10OS"] = nil
 
-                MyUnderpants.MONEYchoice[341] = 1
-                MyUnderpants.MONEYchoice[301] = 1
-                MyUnderpants.MONEYchoice[2711] = 1
-                MyUnderpants.MONEYchoice[2589] = 1
+                BGLite_equip.MONEYchoice[341] = 1
+                BGLite_equip.MONEYchoice[301] = 1
+                BGLite_equip.MONEYchoice[2711] = 1
+                BGLite_equip.MONEYchoice[2589] = 1
             end)
             BGE.Once("ro", 250602, function()
-                MyUnderpants.MONEYchoice[50274] = 1
+                BGLite_equip.MONEYchoice[50274] = 1
             end)
         elseif BG.IsTitan then
             BGE.Once("FBCDchoice", 260611, function()
-                MyUnderpants.FBCDchoice.week2 = 1
+                BGLite_equip.FBCDchoice.week2 = 1
             end)
             BGE.Once("FBCDchoice", 260623, function()
-                MyUnderpants.FBCDchoice["professionCD"] = 1
+                BGLite_equip.FBCDchoice["professionCD"] = 1
             end)
             BGE.Once("FBCDchoice", 260801, function()
-                MyUnderpants.FBCDchoice["SWtitan"] = 1
-                MyUnderpants.FBCDchoice["ZAtitan"] = 1
+                BGLite_equip.FBCDchoice["SWtitan"] = 1
+                BGLite_equip.FBCDchoice["ZAtitan"] = 1
             end)
             BGE.Once("FBCDchoice", 261007, function()
-                MyUnderpants.FBCDchoice["ULDtitan"] = 1
+                BGLite_equip.FBCDchoice["ULDtitan"] = 1
             end)
             BGE.Once("FBCDchoice", 261015, function()
-                MyUnderpants.FBCDchoice.algalonKey = 1
+                BGLite_equip.FBCDchoice.algalonKey = 1
             end)
         elseif BG.IsCTM then
         elseif BG.IsMOP then
             BGE.Once("FBCDchoice", 260802, function()
-                MyUnderpants.FBCDchoice["SOO"] = 1
-                MyUnderpants.FBCDchoice["worldBoss6"] = 1
-                MyUnderpants.FBCDchoice["worldBoss5"] = 1
-                MyUnderpants.FBCDchoice["worldBoss4"] = 0
-                MyUnderpants.FBCDchoice["worldBoss3"] = 0
-                MyUnderpants.FBCDchoice["TES"] = 0
-                MyUnderpants.FBCDchoice["HOF"] = 0
-                MyUnderpants.FBCDchoice["MSV"] = 0
+                BGLite_equip.FBCDchoice["SOO"] = 1
+                BGLite_equip.FBCDchoice["worldBoss6"] = 1
+                BGLite_equip.FBCDchoice["worldBoss5"] = 1
+                BGLite_equip.FBCDchoice["worldBoss4"] = 0
+                BGLite_equip.FBCDchoice["worldBoss3"] = 0
+                BGLite_equip.FBCDchoice["TES"] = 0
+                BGLite_equip.FBCDchoice["HOF"] = 0
+                BGLite_equip.FBCDchoice["MSV"] = 0
             end)
             BGE.Once("MONEYchoice", 260807, function()
-                MyUnderpants.MONEYchoice[3416] = 1
-                MyUnderpants.MONEYchoice[777] = 1
-                MyUnderpants.MONEYchoice[776] = 1
+                BGLite_equip.MONEYchoice[3416] = 1
+                BGLite_equip.MONEYchoice[777] = 1
+                BGLite_equip.MONEYchoice[776] = 1
             end)
         elseif BG.IsRetail then
             BGE.Once("FBCDchoice", 260813, function()
-                MyUnderpants.FBCDchoice.VA_M = 1
-                MyUnderpants.FBCDchoice.VA_H = 1
-                MyUnderpants.FBCDchoice.TG_M = 1
-                MyUnderpants.FBCDchoice.TG_H = 1
-                MyUnderpants.FBCDchoice.VS_M = 0
-                MyUnderpants.FBCDchoice.DR_M = 0
-                MyUnderpants.FBCDchoice.MQD_M = 0
-                MyUnderpants.FBCDchoice.VS_H = 0
-                MyUnderpants.FBCDchoice.DR_H = 0
-                MyUnderpants.FBCDchoice.MQD_H = 0
+                BGLite_equip.FBCDchoice.VA_M = 1
+                BGLite_equip.FBCDchoice.VA_H = 1
+                BGLite_equip.FBCDchoice.TG_M = 1
+                BGLite_equip.FBCDchoice.TG_H = 1
+                BGLite_equip.FBCDchoice.VS_M = 0
+                BGLite_equip.FBCDchoice.DR_M = 0
+                BGLite_equip.FBCDchoice.MQD_M = 0
+                BGLite_equip.FBCDchoice.VS_H = 0
+                BGLite_equip.FBCDchoice.DR_H = 0
+                BGLite_equip.FBCDchoice.MQD_H = 0
             end)
         end
         BGE.Once("MONEYchoice", 260731, function()
-            MyUnderpants.MONEYchoice.trinkets = 1
+            BGLite_equip.MONEYchoice.trinkets = 1
         end)
         BGE.Once("MONEYchoice", 260818, function()
-            MyUnderpants.MONEYchoice.weapons = 1
+            BGLite_equip.MONEYchoice.weapons = 1
         end)
     end
 
@@ -879,8 +879,8 @@ function BG.RoleOverviewUI()
                 end
             end
             local name = "showCurrencyTop"
-            MyUnderpants.options[name] = MyUnderpants.options[name] or 1
-            BG.showCurrencyTop = MyUnderpants.options[name] == 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or 1
+            BG.showCurrencyTop = BGLite_equip.options[name] == 1
 
             BG.MONEYall_table = {
                 { name = L["双倍经验"], color = "99ff99", type = "xp", id = "xp", tex = 1080931, width = 70 }, -- 双倍经验
@@ -1087,9 +1087,9 @@ function BG.RoleOverviewUI()
                 end
             end
             if next(cd) then
-                MyUnderpants[FBCD][realmID][player] = cd
+                BGLite_equip[FBCD][realmID][player] = cd
             else
-                MyUnderpants[FBCD][realmID][player] = {
+                BGLite_equip[FBCD][realmID][player] = {
                     {
                         player = player,
                         colorplayer = colorplayer,
@@ -1098,7 +1098,7 @@ function BG.RoleOverviewUI()
             end
 
             -- 检查其他角色cd是否到期
-            for _, db in pairs({ "MyUnderpants", "BiaoGeAccounts" }) do
+            for _, db in pairs({ "BGLite_equip", "MyUnderpants", "EquipAccounts" }) do
                 if _G[db] and _G[db][FBCD] then
                     for realmID in pairs(_G[db][FBCD]) do
                         if type(realmID) == "number" and type(_G[db][FBCD][realmID]) == "table" then
@@ -1175,10 +1175,10 @@ function BG.RoleOverviewUI()
             BG.After(1, BG.UpdateFBCD)
         end)
 
-        for realmID, players in pairs(MyUnderpants[MONEY]) do
+        for realmID, players in pairs(BGLite_equip[MONEY]) do
             for player, v in pairs(players) do
-                if not MyUnderpants[FBCD][realmID][player] then
-                    MyUnderpants[FBCD][realmID][player] = {
+                if not BGLite_equip[FBCD][realmID][player] then
+                    BGLite_equip[FBCD][realmID][player] = {
                         {
                             player = player,
                             colorplayer = v.colorplayer,
@@ -1190,9 +1190,9 @@ function BG.RoleOverviewUI()
     end
 
     -- 世界BOSS（MOP）
-    MyUnderpants.worldBossCD = MyUnderpants.worldBossCD or {}
-    MyUnderpants.worldBossCD[realmID] = MyUnderpants.worldBossCD[realmID] or {}
-    MyUnderpants.worldBossCD[realmID][player] = MyUnderpants.worldBossCD[realmID][player] or {}
+    BGLite_equip.worldBossCD = BGLite_equip.worldBossCD or {}
+    BGLite_equip.worldBossCD[realmID] = BGLite_equip.worldBossCD[realmID] or {}
+    BGLite_equip.worldBossCD[realmID][player] = BGLite_equip.worldBossCD[realmID][player] or {}
     if BG.IsMOP then
         local function SaveWorldBoss(bossIndex)
             local resetDay = 2
@@ -1230,7 +1230,7 @@ function BG.RoleOverviewUI()
             local timestamp = currentTimestamp + secondsToNextThursday             -- 到下周四的实际时间戳
 
             local colorplayer = SetClassCFF(player, "player")
-            MyUnderpants.worldBossCD[realmID][player]["worldBoss" .. bossIndex] = {
+            BGLite_equip.worldBossCD[realmID][player]["worldBoss" .. bossIndex] = {
                 name = "worldBoss" .. bossIndex,
                 player = player,
                 colorplayer = colorplayer,
@@ -1243,18 +1243,18 @@ function BG.RoleOverviewUI()
             if InCombatLockdown() then return end
             for bossIndex, questID in ipairs(BG.worldBossID) do
                 if C_QuestLog.IsQuestFlaggedCompleted(questID) then
-                    if not MyUnderpants.worldBossCD[realmID][player]["worldBoss" .. bossIndex] then
+                    if not BGLite_equip.worldBossCD[realmID][player]["worldBoss" .. bossIndex] then
                         SaveWorldBoss(bossIndex)
                     end
                 else
-                    MyUnderpants.worldBossCD[realmID][player]["worldBoss" .. bossIndex] = nil
+                    BGLite_equip.worldBossCD[realmID][player]["worldBoss" .. bossIndex] = nil
                 end
             end
         end
 
         local function UpdateWorldBossEndTime()
             local time = GetServerTime()
-            for _, db in pairs({ "MyUnderpants", "BiaoGeAccounts" }) do
+            for _, db in pairs({ "BGLite_equip", "MyUnderpants", "EquipAccounts" }) do
                 if _G[db] and _G[db].worldBossCD then
                     for realmID in pairs(_G[db].worldBossCD) do
                         if type(realmID) == "number" and type(_G[db].worldBossCD[realmID]) == "table" then
@@ -1303,12 +1303,12 @@ function BG.RoleOverviewUI()
     -- 日常任务
     local holidayDungeonIDs = { 286, 285, 287, 288 } -- 火焰节、万圣节、美酒节、情人节
     do
-        MyUnderpants.QuestCD = MyUnderpants.QuestCD or {}
-        MyUnderpants.QuestCD[realmID] = MyUnderpants.QuestCD[realmID] or {}
-        MyUnderpants.QuestCD[realmID][player] = MyUnderpants.QuestCD[realmID][player] or {}
+        BGLite_equip.QuestCD = BGLite_equip.QuestCD or {}
+        BGLite_equip.QuestCD[realmID] = BGLite_equip.QuestCD[realmID] or {}
+        BGLite_equip.QuestCD[realmID][player] = BGLite_equip.QuestCD[realmID][player] or {}
 
         local function IsLearnSkill(skillID)
-            return MyUnderpants[MONEY][realmID][player].skill[skillID]
+            return BGLite_equip[MONEY][realmID][player].skill[skillID]
         end
 
         local function GetQuestSkillID(questName)
@@ -1368,7 +1368,7 @@ function BG.RoleOverviewUI()
             local timestamp = currentTimestamp + secondsUntilNext7am
 
             local colorplayer = SetClassCFF(player, "player")
-            MyUnderpants.QuestCD[realmID][player][questName] = {
+            BGLite_equip.QuestCD[realmID][player][questName] = {
                 name = questName,
                 player = player,
                 colorplayer = colorplayer,
@@ -1396,7 +1396,7 @@ function BG.RoleOverviewUI()
             if count > 0 then
                 SaveDayQuest('dayQuestCount', nil, count)
             else
-                MyUnderpants.QuestCD[realmID][player].dayQuestCount = nil
+                BGLite_equip.QuestCD[realmID][player].dayQuestCount = nil
             end
         end
 
@@ -1420,7 +1420,7 @@ function BG.RoleOverviewUI()
             local timestamp = currentTimestamp + secondsToNextThursday -- 到下周四的实际时间戳
 
             local colorplayer = SetClassCFF(player, "player")
-            MyUnderpants.QuestCD[realmID][player][questName] = {
+            BGLite_equip.QuestCD[realmID][player][questName] = {
                 name = questName,
                 player = player,
                 colorplayer = colorplayer,
@@ -1451,7 +1451,7 @@ function BG.RoleOverviewUI()
             local questName = BG.permanentQuests and BG.permanentQuests[questID]
             if not questName then return end
             local colorplayer = SetClassCFF(player, "player")
-            MyUnderpants.QuestCD[realmID][player][questName] = {
+            BGLite_equip.QuestCD[realmID][player][questName] = {
                 name = questName,
                 player = player,
                 colorplayer = colorplayer,
@@ -1499,7 +1499,7 @@ function BG.RoleOverviewUI()
         -- 检查全部角色的任务重置cd是否到期（日常是第二天凌晨7点）
         local function UpdateQuestEndTime()
             local time = GetServerTime()
-            for _, db in pairs({ "MyUnderpants", "BiaoGeAccounts" }) do
+            for _, db in pairs({ "BGLite_equip", "MyUnderpants", "EquipAccounts" }) do
                 if _G[db] and _G[db].QuestCD then
                     for realmID in pairs(_G[db].QuestCD) do
                         if type(realmID) == "number" and type(_G[db].QuestCD[realmID]) == "table" then
@@ -1540,10 +1540,10 @@ function BG.RoleOverviewUI()
         local function CheckQuestsCompleted()
             if BG.dayQuests then
                 for questName, v in pairs(BG.dayQuests) do
-                    if not MyUnderpants.QuestCD[realmID][player][questName] then
+                    if not BGLite_equip.QuestCD[realmID][player][questName] then
                         local skillID = v.skillID
                         if skillID and IsLearnSkill(skillID) then
-                            MyUnderpants.QuestCD[realmID][player][questName] = {
+                            BGLite_equip.QuestCD[realmID][player][questName] = {
                                 notFinish = true,
                             }
                         end
@@ -1589,9 +1589,9 @@ function BG.RoleOverviewUI()
 
     -- 橙披
     if BG.IsMOP then
-        MyUnderpants.legendaryCloak = MyUnderpants.legendaryCloak or {}
-        MyUnderpants.legendaryCloak[realmID] = MyUnderpants.legendaryCloak[realmID] or {}
-        local db = MyUnderpants.legendaryCloak[realmID]
+        BGLite_equip.legendaryCloak = BGLite_equip.legendaryCloak or {}
+        BGLite_equip.legendaryCloak[realmID] = BGLite_equip.legendaryCloak[realmID] or {}
+        local db = BGLite_equip.legendaryCloak[realmID]
         local ids = {
             { id = 31488, name = L['正在第1章'] },
             { id = 31454, name = L['正在第1章'] },
@@ -1622,16 +1622,16 @@ function BG.RoleOverviewUI()
     end
 
     -- 时光服随机本金币惩罚
-    MyUnderpants.buffCD = MyUnderpants.buffCD or {}
-    MyUnderpants.buffCD[realmID] = MyUnderpants.buffCD[realmID] or {}
-    MyUnderpants.buffCD[realmID][player] = MyUnderpants.buffCD[realmID][player] or {}
+    BGLite_equip.buffCD = BGLite_equip.buffCD or {}
+    BGLite_equip.buffCD[realmID] = BGLite_equip.buffCD[realmID] or {}
+    BGLite_equip.buffCD[realmID][player] = BGLite_equip.buffCD[realmID][player] or {}
     if BG.IsTitan then
         local buffIDs = { { id = 1284288, type = "HARMFUL" } }
 
         local function UpdateBuffRecord()
             for i, v in ipairs(buffIDs) do
                 local buffID = v.id
-                MyUnderpants.buffCD[realmID][player][buffID] = nil
+                BGLite_equip.buffCD[realmID][player][buffID] = nil
                 for i = 1, 60 do
                     local name, icon, count, dispelType, duration, expirationTime, source,
                     isStealable, nameplateShowPersonal, spellID = UnitAura("player", i, v.type)
@@ -1641,7 +1641,7 @@ function BG.RoleOverviewUI()
                         local currentTimestamp = GetServerTime()
                         local secondsUntilNext7am = BG.GetNextDayTime()
                         local nextDayEndTime = currentTimestamp + secondsUntilNext7am
-                        MyUnderpants.buffCD[realmID][player][buffID] = {
+                        BGLite_equip.buffCD[realmID][player][buffID] = {
                             resettime = cooldown,
                             endtime = cooldown + currentTimestamp,
                             nextDayEndTime = nextDayEndTime,
@@ -1655,14 +1655,14 @@ function BG.RoleOverviewUI()
         function BG.UpdateBuffCD()
             local time = GetServerTime()
             local buffIDs = {}
-            for buffID in pairs(MyUnderpants.buffCD[realmID][player]) do
+            for buffID in pairs(BGLite_equip.buffCD[realmID][player]) do
                 tinsert(buffIDs, buffID)
             end
             for _, buffID in pairs(buffIDs) do
-                local v = MyUnderpants.buffCD[realmID][player][buffID]
+                local v = BGLite_equip.buffCD[realmID][player][buffID]
                 if v and v.endtime then
                     if time >= v.endtime then
-                        MyUnderpants.buffCD[realmID][player][buffID] = nil
+                        BGLite_equip.buffCD[realmID][player][buffID] = nil
                     elseif time < v.endtime then
                         v.resettime = v.endtime - time
                     end
@@ -1672,7 +1672,7 @@ function BG.RoleOverviewUI()
 
         local function UpdateBuffEndTime()
             local time = GetServerTime()
-            for _, db in pairs({ "MyUnderpants", "BiaoGeAccounts" }) do
+            for _, db in pairs({ "BGLite_equip", "MyUnderpants", "EquipAccounts" }) do
                 if _G[db] and _G[db].buffCD then
                     for realmID in pairs(_G[db].buffCD) do
                         if type(realmID) == "number" and type(_G[db].buffCD[realmID]) == "table" then
@@ -1713,9 +1713,9 @@ function BG.RoleOverviewUI()
 
     -- 专业技能CD
     if not BG.IsRetail then
-        MyUnderpants.tradeSkillCooldown = MyUnderpants.tradeSkillCooldown or {}
-        MyUnderpants.tradeSkillCooldown[realmID] = MyUnderpants.tradeSkillCooldown[realmID] or {}
-        MyUnderpants.tradeSkillCooldown[realmID][player] = MyUnderpants.tradeSkillCooldown[realmID][player] or {}
+        BGLite_equip.tradeSkillCooldown = BGLite_equip.tradeSkillCooldown or {}
+        BGLite_equip.tradeSkillCooldown[realmID] = BGLite_equip.tradeSkillCooldown[realmID] or {}
+        BGLite_equip.tradeSkillCooldown[realmID][player] = BGLite_equip.tradeSkillCooldown[realmID][player] or {}
 
         local tbl = {}
         if BG.IsVanilla then
@@ -1799,7 +1799,7 @@ function BG.RoleOverviewUI()
                     icon = 133666,
                 },
             }
-            if MyUnderpants.FBCDchoice["ignore_jewelcrafting_yanjiu"] == 1 then
+            if BGLite_equip.FBCDchoice["ignore_jewelcrafting_yanjiu"] == 1 then
                 tbl.jewelcrafting_yanjiu = nil
             end
         elseif BG.IsMOP then
@@ -1862,7 +1862,7 @@ function BG.RoleOverviewUI()
         end
         local names = {}
         for name in pairs(tbl) do
-            if MyUnderpants.FBCDchoice["ignore_" .. name] == 1 then
+            if BGLite_equip.FBCDchoice["ignore_" .. name] == 1 then
                 names[name] = true
             end
         end
@@ -1894,7 +1894,7 @@ function BG.RoleOverviewUI()
                     if BG.IsMOP then
                         cooldown = BG.GetNextDayTime()
                     end
-                    MyUnderpants.tradeSkillCooldown[realmID][player][profession] = {
+                    BGLite_equip.tradeSkillCooldown[realmID][player][profession] = {
                         class = select(2, UnitClass("player")),
                         resettime = cooldown,
                         endtime = cooldown + time,
@@ -1917,7 +1917,7 @@ function BG.RoleOverviewUI()
         local delay = 3
         local function UpdateProfessionCD()
             local time = GetServerTime()
-            for _, db in pairs({ "MyUnderpants", "BiaoGeAccounts" }) do
+            for _, db in pairs({ "BGLite_equip", "MyUnderpants", "EquipAccounts" }) do
                 if _G[db] and _G[db].tradeSkillCooldown then
                     for realmID in pairs(_G[db].tradeSkillCooldown) do
                         if type(realmID) == "number" and type(_G[db].tradeSkillCooldown[realmID]) == "table" then
@@ -1929,7 +1929,7 @@ function BG.RoleOverviewUI()
                                             v.endtime = nil
                                             v.ready = true
                                             -- 限定只提醒当前账号是因为没办法删掉其他子账号的endtime，其他子账号会重复提醒
-                                            if db == "MyUnderpants" and MyUnderpants.FBCDchoice[profession] and MyUnderpants.FBCDchoice[profession] == 1 then
+                                            if db == "BGLite_equip" and BGLite_equip.FBCDchoice[profession] and BGLite_equip.FBCDchoice[profession] == 1 then
                                                 local color
                                                 if v.class then
                                                     color = select(4, GetClassColor(v.class))
@@ -1939,10 +1939,10 @@ function BG.RoleOverviewUI()
                                                 local msg = BG.STC_g1(format(L["%s：%s已就绪！"], colorName, tbl[profession].name))
                                                 BG.After(delay, function()
                                                     BG.SendSystemMessage(msg)
-                                                    if BG["sound_" .. profession .. "Ready" .. MyUnderpants.options.Sound] then
+                                                    if BG["sound_" .. profession .. "Ready" .. BGLite_equip.options.Sound] then
                                                         BG.PlaySound(profession .. "Ready")
                                                     else
-                                                        PlaySoundFile("Interface\\AddOns\\MyUnderpants\\Media\\sound\\other\\done.mp3", "Master")
+                                                        PlaySoundFile("Interface\\AddOns\\BGLite_equip\\Media\\sound\\other\\done.mp3", "Master")
                                                     end
                                                 end)
                                                 delay = delay + 3
@@ -1971,7 +1971,7 @@ function BG.RoleOverviewUI()
                         end
                     end
                     if not isLearned then
-                        MyUnderpants.tradeSkillCooldown[realmID][player][profession] = nil
+                        BGLite_equip.tradeSkillCooldown[realmID][player][profession] = nil
                     end
                 end
             end
@@ -2030,7 +2030,7 @@ function BG.RoleOverviewUI()
                     }
                 end
             end
-            MyUnderpants[MONEY][realmID][player].skill = tbl
+            BGLite_equip[MONEY][realmID][player].skill = tbl
         end
 
         BGE.Init2(function()
@@ -2048,7 +2048,7 @@ function BG.RoleOverviewUI()
             local player = BG.playerName
             tbl.player = player
             tbl.colorplayer = SetClassCFF(player, "player")
-            tbl.skill = MyUnderpants[MONEY][realmID][player].skill
+            tbl.skill = BGLite_equip[MONEY][realmID][player].skill
             for i, v in ipairs(BG.MONEYall_table) do
                 if v.type == "money" then
                     tbl.money = floor(GetMoney() / 1e4)
@@ -2098,7 +2098,7 @@ function BG.RoleOverviewUI()
                     end
                     tbl[v.id] = { count = count, tex = tex, isItem = true, quest = questsCompleted, }
                 elseif v.type == "xp" then
-                    tbl.xp = MyUnderpants[MONEY][realmID][player].xp
+                    tbl.xp = BGLite_equip[MONEY][realmID][player].xp
                 elseif v.type ~= "equip" and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
                     local info = C_CurrencyInfo.GetCurrencyInfo(v.id)
                     if info then
@@ -2135,12 +2135,12 @@ function BG.RoleOverviewUI()
                     end
                 end
             end
-            MyUnderpants[MONEY][realmID][player] = tbl
+            BGLite_equip[MONEY][realmID][player] = tbl
         end
 
         local function UpdateCD()
             local time = GetServerTime()
-            for _, db in ipairs({ "MyUnderpants", "BiaoGeAccounts" }) do
+            for _, db in ipairs({ "BGLite_equip", "MyUnderpants", "EquipAccounts" }) do
                 if _G[db] and _G[db][MONEY] then
                     for realmID in pairs(_G[db][MONEY]) do
                         if type(realmID) == "number" and type(_G[db][MONEY][realmID]) == "table" then
@@ -2185,7 +2185,7 @@ function BG.RoleOverviewUI()
                 local maxXP = UnitXPMax("player")
                 per = exhaustion / maxXP * 100
             end
-            MyUnderpants[MONEY][realmID][player].xp = {
+            BGLite_equip[MONEY][realmID][player].xp = {
                 per = format("%.1f", per),
                 perNow = format("%d", per),
                 time = GetServerTime(),
@@ -2218,8 +2218,8 @@ function BG.RoleOverviewUI()
                     end
                 end
             end
-            Update(MyUnderpants)
-            Update(BiaoGeAccounts)
+            Update(BGLite_equip)
+            Update(EquipAccounts)
         end
     end
 
@@ -2234,7 +2234,7 @@ function BG.RoleOverviewUI()
             text2 = LOOT_ITEM_PUSHED_SELF:gsub("%%s", "(.+)")
         end
         local function func(self, event, msg, player, l, cs, t, flag, channelId, ...)
-            if MyUnderpants.options["showCurrencyCount"] ~= 1 then return end
+            if BGLite_equip.options["showCurrencyCount"] ~= 1 then return end
             local link = strmatch(msg, text1)
             if not link then
                 link = strmatch(msg, text2)
@@ -2290,9 +2290,9 @@ function BG.RoleOverviewUI()
 
     -- 角色装备和装等
     do
-        MyUnderpants.equip = MyUnderpants.equip or {}
-        MyUnderpants.equip[realmID] = MyUnderpants.equip[realmID] or {}
-        MyUnderpants.equip[realmID][player] = MyUnderpants.equip[realmID][player] or {}
+        BGLite_equip.equip = BGLite_equip.equip or {}
+        BGLite_equip.equip[realmID] = BGLite_equip.equip[realmID] or {}
+        BGLite_equip.equip[realmID][player] = BGLite_equip.equip[realmID][player] or {}
 
         local ItemLevelPattern = gsub(ITEM_LEVEL, "%%d", "(%%d+)")
         local function GetItemLevelByTooltip(slot, link)
@@ -2313,7 +2313,7 @@ function BG.RoleOverviewUI()
         end
 
         function BG.GetPlayerEquip()
-            local tbl = MyUnderpants.equip[realmID][player]
+            local tbl = BGLite_equip.equip[realmID][player]
             wipe(tbl)
             for slot = 1, 19 do
                 local link = GetInventoryItemLink("player", slot)
@@ -2339,7 +2339,7 @@ function BG.RoleOverviewUI()
 
         local function GetPlayerAverageItemLevel()
             local _, avgLevel = GetAverageItemLevel()
-            MyUnderpants.playerInfo[realmID][player].iLevel = avgLevel or 0
+            BGLite_equip.playerInfo[realmID][player].iLevel = avgLevel or 0
             local avgLevel0 = Round(avgLevel, 0)
             -- 更新集结号密语装等
             if BG.isFullLevel and BG.MeetingHorn and BG.MeetingHorn.iLevelCheckButton then
@@ -2383,32 +2383,32 @@ function BG.RoleOverviewUI()
 
     -- 清理错误角色
     do
-        for realmID, v in pairs(MyUnderpants.playerInfo) do
+        for realmID, v in pairs(BGLite_equip.playerInfo) do
             if type(realmID) == "number" and type(v) == "table" then
-                if MyUnderpants[MONEY][realmID] then
-                    for player in pairs(MyUnderpants.playerInfo[realmID]) do
-                        if not MyUnderpants[MONEY][realmID][player] then
+                if BGLite_equip[MONEY][realmID] then
+                    for player in pairs(BGLite_equip.playerInfo[realmID]) do
+                        if not BGLite_equip[MONEY][realmID][player] then
                             BGE.DeletePlayerData(realmID, player)
                         end
                     end
                 else
-                    MyUnderpants.playerInfo[realmID] = nil
-                    MyUnderpants.equip[realmID] = nil
+                    BGLite_equip.playerInfo[realmID] = nil
+                    BGLite_equip.equip[realmID] = nil
                 end
             end
         end
         -- 删除角色总览旧角色
         local function DeleteOldData(db)
-            for realmID, v in pairs(MyUnderpants[db]) do
+            for realmID, v in pairs(BGLite_equip[db]) do
                 if type(realmID) == "number" and type(v) == "table" then
-                    if MyUnderpants.playerInfo[realmID] then
-                        for player in pairs(MyUnderpants[db][realmID]) do
-                            if not MyUnderpants.playerInfo[realmID][player] then
-                                MyUnderpants[db][realmID][player] = nil
+                    if BGLite_equip.playerInfo[realmID] then
+                        for player in pairs(BGLite_equip[db][realmID]) do
+                            if not BGLite_equip.playerInfo[realmID][player] then
+                                BGLite_equip[db][realmID][player] = nil
                             end
                         end
                     else
-                        MyUnderpants[db][realmID] = nil
+                        BGLite_equip[db][realmID] = nil
                     end
                 end
             end
@@ -2418,16 +2418,16 @@ function BG.RoleOverviewUI()
     end
 
     -- 删除重复角色装备数据
-    for realmID, v in pairs(MyUnderpants.equip) do
+    for realmID, v in pairs(BGLite_equip.equip) do
         if type(realmID) == "number" and type(v) == "table" then
-            if MyUnderpants.playerInfo[realmID] then
-                for player in pairs(MyUnderpants.equip[realmID]) do
-                    if not MyUnderpants.playerInfo[realmID][player] then
-                        MyUnderpants.equip[realmID][player] = nil
+            if BGLite_equip.playerInfo[realmID] then
+                for player in pairs(BGLite_equip.equip[realmID]) do
+                    if not BGLite_equip.playerInfo[realmID][player] then
+                        BGLite_equip.equip[realmID][player] = nil
                     end
                 end
             else
-                MyUnderpants.equip[realmID] = nil
+                BGLite_equip.equip[realmID] = nil
             end
         end
     end

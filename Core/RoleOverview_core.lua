@@ -31,7 +31,7 @@ local fontsize2 = 14
 local fontsize3 = 15
 local fontsize0 = 12
 local r, g, b = GetClassRGB(nil, "player")
-local dbNames = { "MyUnderpants", "BiaoGeAccounts" }
+local dbNames = { "BGLite_equip", "MyUnderpants", "EquipAccounts" }
 
 local height = 20
 local leftOffset = 15
@@ -45,8 +45,8 @@ local roleOverviewAccountFilter
 
 local function GetRoleOverviewAccountNames()
     local tbl = {}
-    if BiaoGeAccounts and type(BiaoGeAccounts.accountName) == "table" then
-        for accountName, accountDB in pairs(BiaoGeAccounts.accountName) do
+    if EquipAccounts and type(EquipAccounts.accountName) == "table" then
+        for accountName, accountDB in pairs(EquipAccounts.accountName) do
             if type(accountName) == "string" and type(accountDB) == "table" then
                 tinsert(tbl, accountName)
             end
@@ -58,10 +58,10 @@ end
 
 local function IsRoleOverviewAccountPlayer(accountName, realmID, player)
     return not accountName
-        or (BiaoGeAccounts and BiaoGeAccounts.accountName
-            and BiaoGeAccounts.accountName[accountName]
-            and BiaoGeAccounts.accountName[accountName][realmID]
-            and BiaoGeAccounts.accountName[accountName][realmID][player])
+        or (EquipAccounts and EquipAccounts.accountName
+            and EquipAccounts.accountName[accountName]
+            and EquipAccounts.accountName[accountName][realmID]
+            and EquipAccounts.accountName[accountName][realmID][player])
 end
 
 local function IsCurrentRoleOverviewAccount(accountName)
@@ -69,7 +69,7 @@ local function IsCurrentRoleOverviewAccount(accountName)
 end
 
 local function GetFactionColor(faction, isNewUI, r, g, b)
-    if MyUnderpants.options.roleOverviewShowFaction == 1 then
+    if BGLite_equip.options.roleOverviewShowFaction == 1 then
         if faction == "Alliance" then
             return "|cffADD8E6"
         elseif faction == "Horde" then
@@ -125,13 +125,13 @@ end
 
 -- 检查子账号名称
 local function CheckSameName(bt, realmID, player, mainFrame, showAccountName)
-    if BiaoGeAccounts and BiaoGeAccounts.accountName then
+    if EquipAccounts and EquipAccounts.accountName then
         BG.After(0, function()
             local tbl = {}
-            for accountName in pairs(BiaoGeAccounts.accountName) do
-                for _realmID in pairs(BiaoGeAccounts.accountName[accountName]) do
+            for accountName in pairs(EquipAccounts.accountName) do
+                for _realmID in pairs(EquipAccounts.accountName[accountName]) do
                     if realmID == _realmID then
-                        for _player in pairs(BiaoGeAccounts.accountName[accountName][realmID]) do
+                        for _player in pairs(EquipAccounts.accountName[accountName][realmID]) do
                             if player == _player then
                                 tinsert(tbl, accountName)
                             end
@@ -140,7 +140,7 @@ local function CheckSameName(bt, realmID, player, mainFrame, showAccountName)
                 end
             end
             if showAccountName or #tbl > 1 then
-                local isNewUI = MyUnderpants.options.roleOverviewLayout == "new"
+                local isNewUI = BGLite_equip.options.roleOverviewLayout == "new"
                 local str = ""
                 for i, accountName in ipairs(tbl) do
                     str = str .. accountName .. (i ~= #tbl and (isNewUI and "\n" or L["，"]) or "")
@@ -153,7 +153,7 @@ local function CheckSameName(bt, realmID, player, mainFrame, showAccountName)
                     t:SetTextColor(1, 1, 1)
                 end
                 t:SetText(str)
-                if MyUnderpants.options.roleOverviewLayout == "new" then
+                if BGLite_equip.options.roleOverviewLayout == "new" then
                     t:SetPoint("BOTTOM", bt, "TOP", 0, 0)
                 else
                     t:SetPoint("RIGHT", bt, "LEFT", -15, 0)
@@ -181,14 +181,14 @@ local function CheckSameName(bt, realmID, player, mainFrame, showAccountName)
         end)
     end
 end
-local function CheckBiaoGeAccounts(frame)
-    local type = select(5, C_AddOns.GetAddOnInfo("BiaoGeAccounts"))
-    if type ~= "MISSING" and not C_AddOns.IsAddOnLoaded("BiaoGeAccounts") then
+local function CheckEquipAccounts(frame)
+    local type = select(5, C_AddOns.GetAddOnInfo("EquipAccounts"))
+    if type ~= "MISSING" and not C_AddOns.IsAddOnLoaded("EquipAccounts") then
         local t = frame:CreateFontString()
         t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
         t:SetPoint("BOTTOM", frame, "TOP", -0, 0)
         t:SetTextColor(1, 0, 0)
-        t:SetText(L["BiaoGeAccounts插件被你禁用了，导致无法显示全战网角色"])
+        t:SetText(L["EquipAccounts插件被你禁用了，导致无法显示全战网角色"])
     end
 end
 
@@ -358,16 +358,16 @@ end
 
 function BG.RoleOverviewShowAllServer()
     local isShiftKeyDown = IsShiftKeyDown()
-    if MyUnderpants.options.roleOverviewDefaultShow == "one" and isShiftKeyDown then
+    if BGLite_equip.options.roleOverviewDefaultShow == "one" and isShiftKeyDown then
         return true
     end
-    if MyUnderpants.options.roleOverviewDefaultShow == "all" and not isShiftKeyDown then
+    if BGLite_equip.options.roleOverviewDefaultShow == "all" and not isShiftKeyDown then
         return true
     end
 end
 
 function BG.SortRoleOverview(newTbl)
-    local isCustom = MyUnderpants.options["roleOverviewSort1"] == "custom"
+    local isCustom = BGLite_equip.options["roleOverviewSort1"] == "custom"
     local showAllServer = BG.RoleOverviewShowAllServer()
     sort(newTbl, function(a, b)
         if showAllServer then
@@ -384,7 +384,7 @@ function BG.SortRoleOverview(newTbl)
         end
 
         if not isCustom then
-            local s = MyUnderpants.options["roleOverviewSort1"]
+            local s = BGLite_equip.options["roleOverviewSort1"]
             local tbl = { strsplit("-", s) }
             for _, key in ipairs(tbl) do
                 if a[key] and b[key] then
@@ -398,7 +398,7 @@ function BG.SortRoleOverview(newTbl)
     end)
     if isCustom then
         local tbl = {}
-        local sortDB = MyUnderpants.MyUnderpantsSort and MyUnderpants.MyUnderpantsSort[realmID] or {}
+        local sortDB = BGLite_equip.MyUnderpantsSort and BGLite_equip.MyUnderpantsSort[realmID] or {}
         for _, vv in ipairs(sortDB) do
             for i, v in ipairs(newTbl) do
                 if v.realmID == realmID and v.player == vv.player then
@@ -445,7 +445,7 @@ local function GetCount(db, id, _type)
     if _type == "skill" then -- 专业点数
         local v = db[_type]  -- 这个才是skill数据库
         if v then
-            local isNewUI = MyUnderpants.options.roleOverviewLayout == "new"
+            local isNewUI = BGLite_equip.options.roleOverviewLayout == "new"
             if id == 0 then -- 如果是主专业
                 local text = ""
                 local tbl = {}
@@ -493,18 +493,19 @@ end
 -- 获取团本CD数据
 local GetRaidCDdb
 do
-    local function _AddDB(newTbl, db, realmID, isAccounts, accountName, includeLocal)
+    local function _AddDB(newTbl, db, realmID, isAccounts, accountName, includeLocal, skipDb)
         if db[FBCD][realmID] then
             for player, v in pairs(db[FBCD][realmID]) do
                 if (not isAccounts or IsRoleOverviewAccountPlayer(accountName, realmID, player))
-                    and (not isAccounts or not includeLocal or not (MyUnderpants[FBCD][realmID] and MyUnderpants[FBCD][realmID][player])) then
+                    and not (skipDb and skipDb[FBCD] and skipDb[FBCD][realmID] and skipDb[FBCD][realmID][player])
+                    and (not isAccounts or not includeLocal or not (BGLite_equip[FBCD][realmID] and BGLite_equip[FBCD][realmID][player])) then
                     local level = db.playerInfo[realmID] and db.playerInfo[realmID][player] and db.playerInfo[realmID][player].level
-                    if level and level >= MyUnderpants.options["roleOverviewNotShowLevel"]
-                        and (MyUnderpants.options.roleOverviewLayout == 'left_right' or level >= BG.fullLevel_RoleOverview) then
+                    if level and level >= BGLite_equip.options["roleOverviewNotShowLevel"]
+                        and (BGLite_equip.options.roleOverviewLayout == 'left_right' or level >= BG.fullLevel_RoleOverview) then
                         local class = db.playerInfo[realmID][player].class
                         local iLevel = db.playerInfo[realmID][player].iLevel or (db.PlayerItemsLevel and db.PlayerItemsLevel[realmID] and db.PlayerItemsLevel[realmID][player])
                         local talent = db.playerInfo[realmID][player].talent
-                        if class and iLevel and iLevel >= MyUnderpants.options["roleOverviewNotShowiLevel"] then
+                        if class and iLevel and iLevel >= BGLite_equip.options["roleOverviewNotShowiLevel"] then
                             local faction = db.playerInfo[realmID][player].faction
                             local colorplayer = "|c" .. select(4, GetClassColor(class)) .. player .. (isAccounts and "*" or "") .. "|r"
                             tinsert(newTbl, {
@@ -516,7 +517,7 @@ do
                                 talent = talent,
                                 faction = faction,
                                 realmID = realmID,
-                                realmName = (db.realmName and db.realmName[realmID]) or MyUnderpants.realmName[realmID] or realmID,
+                                realmName = (db.realmName and db.realmName[realmID]) or BGLite_equip.realmName[realmID] or realmID,
                                 isAccounts = isAccounts,
                                 tbl = BG.Copy(v)
                             })
@@ -526,16 +527,16 @@ do
             end
         end
     end
-    local function AddDB(db, newTbl, showAllServer, isAccounts, accountName, includeLocal)
+    local function AddDB(db, newTbl, showAllServer, isAccounts, accountName, includeLocal, skipDb)
         if db and db[FBCD] then
             if showAllServer then
                 for realmID, v in pairs(db[FBCD]) do
                     if type(realmID) == "number" and type(v) == "table" then
-                        _AddDB(newTbl, db, realmID, isAccounts, accountName, includeLocal)
+                        _AddDB(newTbl, db, realmID, isAccounts, accountName, includeLocal, skipDb)
                     end
                 end
             else
-                _AddDB(newTbl, db, realmID, isAccounts, accountName, includeLocal)
+                _AddDB(newTbl, db, realmID, isAccounts, accountName, includeLocal, skipDb)
             end
         end
     end
@@ -545,10 +546,12 @@ do
         local selectedLocal = IsCurrentRoleOverviewAccount(accountName)
         local includeLocal = onlyLocal or not accountName or selectedLocal
         if includeLocal then
-            AddDB(MyUnderpants, newTbl, showAllServer)
+            AddDB(BGLite_equip, newTbl, showAllServer)
+            -- 过渡期回退：本表尚无该角色数据时，只读旧共享表补显（已有数据不重复）
+            AddDB(MyUnderpants, newTbl, showAllServer, false, nil, false, BGLite_equip)
         end
         if not onlyLocal and not selectedLocal then
-            AddDB(BiaoGeAccounts, newTbl, showAllServer, true, accountName, includeLocal)
+            AddDB(EquipAccounts, newTbl, showAllServer, true, accountName, includeLocal)
         end
         return newTbl
     end
@@ -557,11 +560,12 @@ end
 -- 获取货币数据
 local GetMoneydb
 do
-    local function _DefaultDB(db, realmID, copyTbl, MONEYchoice_table, accountName)
+    local function _DefaultDB(db, realmID, copyTbl, MONEYchoice_table, accountName, skipDb)
         if db[MONEY][realmID] then
             copyTbl[realmID] = copyTbl[realmID] or {}
             for player, vv in pairs(db[MONEY][realmID]) do
-                if IsRoleOverviewAccountPlayer(accountName, realmID, player) then
+                if IsRoleOverviewAccountPlayer(accountName, realmID, player)
+                    and not (skipDb and skipDb[MONEY] and skipDb[MONEY][realmID] and skipDb[MONEY][realmID][player]) then
                     copyTbl[realmID][player] = BG.Copy(vv)
                     for i, v in ipairs(MONEYchoice_table) do
                         if (not v.type or v.type == "currency") and not copyTbl[realmID][player][v.id] then -- 牌子，给空值设为0，主要是为了填补一些旧角色缺少某些新数据
@@ -596,16 +600,16 @@ do
             end
         end
     end
-    local function DefaultDB(db, copyTbl, showAllServer, MONEYchoice_table, accountName)
+    local function DefaultDB(db, copyTbl, showAllServer, MONEYchoice_table, accountName, skipDb)
         if db and db[MONEY] then
             if showAllServer then
                 for realmID, v in pairs(db[MONEY]) do
                     if type(realmID) == "number" and type(v) == "table" then
-                        _DefaultDB(db, realmID, copyTbl, MONEYchoice_table, accountName)
+                        _DefaultDB(db, realmID, copyTbl, MONEYchoice_table, accountName, skipDb)
                     end
                 end
             else
-                _DefaultDB(db, realmID, copyTbl, MONEYchoice_table, accountName)
+                _DefaultDB(db, realmID, copyTbl, MONEYchoice_table, accountName, skipDb)
             end
         end
     end
@@ -613,13 +617,13 @@ do
     local function AddDB(db, newTbl, copyTbl, isAccounts, includeLocal)
         for realmID in pairs(copyTbl) do
             for player, v in pairs(copyTbl[realmID]) do
-                if not isAccounts or not includeLocal or not (MyUnderpants[MONEY][realmID] and MyUnderpants[MONEY][realmID][player]) then
+                if not isAccounts or not includeLocal or not (BGLite_equip[MONEY][realmID] and BGLite_equip[MONEY][realmID][player]) then
                     local level = db.playerInfo[realmID] and db.playerInfo[realmID][player] and db.playerInfo[realmID][player].level
-                    if (level and level >= MyUnderpants.options["roleOverviewNotShowLevel"]) then
+                    if (level and level >= BGLite_equip.options["roleOverviewNotShowLevel"]) then
                         local class = db.playerInfo[realmID][player].class
                         local talent = db.playerInfo[realmID][player].talent
                         local iLevel = db.playerInfo[realmID][player].iLevel or (db.PlayerItemsLevel and db.PlayerItemsLevel[realmID] and db.PlayerItemsLevel[realmID][player])
-                        if class and iLevel and iLevel >= MyUnderpants.options["roleOverviewNotShowiLevel"] then
+                        if class and iLevel and iLevel >= BGLite_equip.options["roleOverviewNotShowiLevel"] then
                             local faction = db.playerInfo[realmID][player].faction
                             local colorplayer = "|c" .. select(4, GetClassColor(class)) .. player .. (isAccounts and "*" or "")
                             tinsert(newTbl, {
@@ -631,7 +635,7 @@ do
                                 talent = talent,
                                 faction = faction,
                                 realmID = realmID,
-                                realmName = (db.realmName and db.realmName[realmID]) or MyUnderpants.realmName[realmID] or realmID,
+                                realmName = (db.realmName and db.realmName[realmID]) or BGLite_equip.realmName[realmID] or realmID,
                                 isAccounts = isAccounts,
                                 tbl = v,
                                 equip = db.equip and db.equip[realmID] and db.equip[realmID][player],
@@ -649,16 +653,18 @@ do
         local selectedLocal = IsCurrentRoleOverviewAccount(accountName)
         local includeLocal = onlyLocal or not accountName or selectedLocal
         if includeLocal then
-            DefaultDB(MyUnderpants, copyTbl, showAllServer, MONEYchoice_table)
+            DefaultDB(BGLite_equip, copyTbl, showAllServer, MONEYchoice_table)
+            -- 过渡期回退：本表尚无该角色数据时，只读旧共享表补显（已有数据不覆盖）
+            DefaultDB(MyUnderpants, copyTbl, showAllServer, MONEYchoice_table, nil, BGLite_equip)
         end
         if not onlyLocal and not selectedLocal then
-            DefaultDB(BiaoGeAccounts, copyTbl, showAllServer, MONEYchoice_table, accountName)
+            DefaultDB(EquipAccounts, copyTbl, showAllServer, MONEYchoice_table, accountName)
         end
         if includeLocal then
-            AddDB(MyUnderpants, newTbl, copyTbl)
+            AddDB(BGLite_equip, newTbl, copyTbl)
         end
         if not onlyLocal and not selectedLocal then
-            AddDB(BiaoGeAccounts, newTbl, copyTbl, true, includeLocal)
+            AddDB(EquipAccounts, newTbl, copyTbl, true, includeLocal)
         end
 
         -- 计算合计
@@ -705,14 +711,14 @@ end
 
 local function AddBarOrLine(mainFrame, realmID, player, n, DB, playerIndex, v, isNewUI, isMoney)
     if BG.IsMe(realmID, player) then
-        if MyUnderpants.options.roleOverviewblackWhite == 1 then
+        if BGLite_equip.options.roleOverviewblackWhite == 1 then
             AddBar(mainFrame, n, { r, g, b, .4 })
         else
             AddBar(mainFrame, n, { r, g, b, .3 }, 1)
         end
     else
-        if MyUnderpants.options.roleOverviewblackWhite == 1 and
-            not (MyUnderpants.options.roleOverviewLayout == "left_right" and isMoney) then
+        if BGLite_equip.options.roleOverviewblackWhite == 1 and
+            not (BGLite_equip.options.roleOverviewLayout == "left_right" and isMoney) then
             mainFrame.titleIndex = (mainFrame.titleIndex or 0) + 1
             if mainFrame.titleIndex % 2 == 0 then
                 AddBar(mainFrame, n)
@@ -721,7 +727,7 @@ local function AddBarOrLine(mainFrame, realmID, player, n, DB, playerIndex, v, i
     end
 
     n = n + 1
-    if MyUnderpants.options.roleOverviewblackWhite ~= 1 then
+    if BGLite_equip.options.roleOverviewblackWhite ~= 1 then
         local _r, _g, _b, h
         if DB[playerIndex + 1] and DB[playerIndex + 1].realmID ~= v.realmID then
             _r, _g, _b, h = 1, 1, 1, 1.5
@@ -786,7 +792,7 @@ local function CreateMoneyTitle(mainFrame, MONEYchoice_table, n, isNewUI, FBCDwi
         local t = f:CreateFontString()
         t:SetFont(BIAOGE_TEXT_FONT, fontsize, "OUTLINE")
         t:SetPoint("LEFT")
-        if not isNewUI and i == 1 and MyUnderpants.options.roleOverviewLayout == "left_right" then
+        if not isNewUI and i == 1 and BGLite_equip.options.roleOverviewLayout == "left_right" then
             t:SetText("")
         else
             t:SetText((isNewUI and v.tex ~= "" and AddTexture(v.tex) or "") .. (v.name2 or v.name))
@@ -798,13 +804,13 @@ local function CreateMoneyTitle(mainFrame, MONEYchoice_table, n, isNewUI, FBCDwi
             f:SetSize(isNewUI_TitleWidth, height)
             t:SetJustifyH("LEFT")
         else
-            if i == 1 and MyUnderpants.options.roleOverviewLayout == "left_right" then
+            if i == 1 and BGLite_equip.options.roleOverviewLayout == "left_right" then
                 f:SetSize(1, height)
             else
                 f:SetSize(MONEYchoice_table[i].width - 10, height)
             end
             if i == 1 then
-                if MyUnderpants.options.roleOverviewLayout == "left_right" then
+                if BGLite_equip.options.roleOverviewLayout == "left_right" then
                     f:SetPoint("TOPLEFT", FBCDwidth, -7 - height * n)
                 else
                     f:SetPoint("TOPLEFT", leftOffset, -7 - height * n)
@@ -835,18 +841,32 @@ local function CreateMoneyTitle(mainFrame, MONEYchoice_table, n, isNewUI, FBCDwi
     return n
 end
 
+-- 标题带插件名与版本号（参考 ZongLan：<BGLite_equip> 角色总览 v1.0.44）
+local GetAddOnMeta = GetAddOnMetadata or (C_AddOns and C_AddOns.GetAddOnMetadata)
+local function AddTitleName(text)
+    local ver = GetAddOnMeta and GetAddOnMeta(AddonName, "Version") or ""
+    local name = text:gsub("[<>]", ""):gsub("^%s+", ""):gsub("%s+$", "")
+    return format("|cffffffff<%s>|r %s |cffffffffv%s|r", AddonName, BG.STC_g1(name), ver)
+end
+
 local function AddUseTips(t)
+    local mainFrame = t:GetParent()
+    if mainFrame.__useTipsAdded then return end
+    mainFrame.__useTipsAdded = true
     local accountsText = ""
-    if BiaoGeAccounts then
+    if EquipAccounts then
         accountsText = L["，长按ALT仅显示本账号角色"]
     end
     local tipsText
-    if MyUnderpants.options.roleOverviewDefaultShow == "one" then
-        tipsText = L["|cff808080（鼠标中键固定显示，长按SHIFT显示全服务器角色%s）|r"]
+    if BGLite_equip.options.roleOverviewDefaultShow == "one" then
+        tipsText = L["|cff808080长按SHIFT显示全服务器角色%s|r"]
     else
-        tipsText = L["|cff808080（鼠标中键固定显示，长按SHIFT显示当前服务器角色%s）|r"]
+        tipsText = L["|cff808080长按SHIFT显示当前服务器角色%s|r"]
     end
-    t:SetText(t:GetText() .. format(tipsText, accountsText))
+    local f = mainFrame:CreateFontString()
+    f:SetPoint("TOP", mainFrame, "BOTTOM", 0, 0)
+    f:SetFont(BIAOGE_TEXT_FONT, 13, "OUTLINE")
+    f:SetText(tipsText:format(accountsText))
 end
 
 local function IsFrameOutsideScreen(frame)
@@ -898,9 +918,9 @@ function BG.AddRoleOverviewNote(realmID, realmName, player, colorplayer, note)
     end
     StaticPopupDialogs[popupName].OnAccept = function(self)
         local edit = self.EditBox or self.editBox
-        MyUnderpants.roleOverviewNote = MyUnderpants.roleOverviewNote or {}
-        MyUnderpants.roleOverviewNote[realmID] = MyUnderpants.roleOverviewNote[realmID] or {}
-        MyUnderpants.roleOverviewNote[realmID][player] = edit:GetText()
+        BGLite_equip.roleOverviewNote = BGLite_equip.roleOverviewNote or {}
+        BGLite_equip.roleOverviewNote[realmID] = BGLite_equip.roleOverviewNote[realmID] or {}
+        BGLite_equip.roleOverviewNote[realmID][player] = edit:GetText()
         BGE.SetFBCD(nil, nil, true, true)
     end
     StaticPopup_Show(popupName, realmName .. colorplayer, nil, note)
@@ -932,11 +952,11 @@ function BGE.SetFBCD(self, position, click, refresh)
     local showNote
     local showAllServer = BG.RoleOverviewShowAllServer()
     local showAccountName = (not click or refresh) and IsControlKeyDown()
-    local isNewUI = MyUnderpants.options.roleOverviewLayout == "new"
+    local isNewUI = BGLite_equip.options.roleOverviewLayout == "new"
     local chengpiIndex, professionCDIndex
     local accountNames
     local accountFilter
-    if click and C_AddOns.IsAddOnLoaded("BiaoGeAccounts") then
+    if click and C_AddOns.IsAddOnLoaded("EquipAccounts") then
         accountNames = GetRoleOverviewAccountNames()
         if roleOverviewAccountFilter then
             local hasAccount
@@ -958,7 +978,7 @@ function BGE.SetFBCD(self, position, click, refresh)
     local MONEYchoice_table = {}
     -- 根据你选择的副本，生成table
     for i, v in ipairs(BG.FBCDall_table) do
-        for choicefbname, yes in pairs(MyUnderpants.FBCDchoice) do
+        for choicefbname, yes in pairs(BGLite_equip.FBCDchoice) do
             if v.name == choicefbname then
                 if not (v.name == "holiday" and not BG.hasHoliday) and not v.name:find('^ignore') then
                     v.width = nil
@@ -974,13 +994,13 @@ function BGE.SetFBCD(self, position, click, refresh)
         width = (showAllServer and 200 or 140) + (yes and 20 or 0),
     })
 
-    if MyUnderpants.options.roleOverviewShowNote == 1 then
+    if BGLite_equip.options.roleOverviewShowNote == 1 then
         showNote = true
         tinsert(FBCDchoice_table, 2, {
             name = L["备注"],
             type = "title",
             color = "FFFFFF",
-            width = MyUnderpants.options.roleOverviewShowNote_width,
+            width = BGLite_equip.options.roleOverviewShowNote_width,
         })
     end
     if BG.IsMOP then
@@ -999,7 +1019,7 @@ function BGE.SetFBCD(self, position, click, refresh)
     -- 根据你选择的专业技能，生成table
     if BG.SKILLall_table then
         for i, v in ipairs(BG.SKILLall_table) do
-            for id, yes in pairs(MyUnderpants.SKILLchoice) do
+            for id, yes in pairs(BGLite_equip.SKILLchoice) do
                 if v.id == id then
                     tinsert(MONEYchoice_table, v)
                 end
@@ -1009,7 +1029,7 @@ function BGE.SetFBCD(self, position, click, refresh)
 
     -- 根据你选择的货币，生成table
     for i, v in ipairs(BG.MONEYall_table) do
-        for id, yes in pairs(MyUnderpants.MONEYchoice) do
+        for id, yes in pairs(BGLite_equip.MONEYchoice) do
             if v.id == id then
                 tinsert(MONEYchoice_table, v)
             end
@@ -1020,7 +1040,7 @@ function BGE.SetFBCD(self, position, click, refresh)
             name = L["角色"] .. " " .. BG.STC_dis("(" .. LEVEL .. ")"),
             type = "title",
             color = "FFFFFF",
-            width = MyUnderpants.options.roleOverviewLayout == "left_right" and 0
+            width = BGLite_equip.options.roleOverviewLayout == "left_right" and 0
                 or (showAllServer and 165 or 105) + (yes and 20 or 0),
         })
     end
@@ -1039,7 +1059,7 @@ function BGE.SetFBCD(self, position, click, refresh)
             edgeSize = 16,
             insets = { left = 3, right = 3, top = 3, bottom = 3 }
         })
-        mainFrame:SetBackdropColor(0, 0, 0, MyUnderpants.options.roleOverviewAlpha or 0.9)
+        mainFrame:SetBackdropColor(0, 0, 0, BGLite_equip.options.roleOverviewAlpha or 0.9)
         mainFrame:SetBackdropBorderColor(r, g, b)
         mainFrame:SetFrameLevel(100)
         mainFrame:SetSize(300, 100)
@@ -1063,15 +1083,15 @@ function BGE.SetFBCD(self, position, click, refresh)
             mainFrame:SetClampedToScreen(false)
             mainFrame:EnableMouse(true)
             mainFrame:SetMovable(true)
-            if MyUnderpants.point.roleOverview then
-                mainFrame:SetPoint(unpack(MyUnderpants.point.roleOverview))
+            if BGLite_equip.point.roleOverview then
+                mainFrame:SetPoint(unpack(BGLite_equip.point.roleOverview))
             else
                 mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
             end
             mainFrame:SetScript("OnMouseUp", function(self)
                 self:StopMovingOrSizing()
-                MyUnderpants.point.roleOverview = { self:GetPoint(1) }
-                MyUnderpants.point.roleOverview[2] = nil
+                BGLite_equip.point.roleOverview = { self:GetPoint(1) }
+                BGLite_equip.point.roleOverview[2] = nil
             end)
             mainFrame:SetScript("OnMouseDown", function(self)
                 self:StartMoving()
@@ -1162,7 +1182,7 @@ function BGE.SetFBCD(self, position, click, refresh)
             end
         end
     end
-    CheckBiaoGeAccounts(mainFrame)
+    CheckEquipAccounts(mainFrame)
 
     local DB = GetRaidCDdb(showAllServer, accountFilter)
     DB = BG.SortRoleOverview(DB)
@@ -1208,7 +1228,7 @@ function BGE.SetFBCD(self, position, click, refresh)
         local t = mainFrame:CreateFontString()
         t:SetFont(BIAOGE_TEXT_FONT, fontsize2, "OUTLINE")
         t:SetPoint("TOPLEFT", 15, -10 - (n - 1) * height)
-        t:SetText(BG.STC_g1(isNewUI and L["< 角色总览 >"] or L["< 角色团本完成总览 >"]))
+        t:SetText(AddTitleName(isNewUI and L["< 角色总览 >"] or L["< 角色团本完成总览 >"]))
         t:SetJustifyH("LEFT")
         t:SetWordWrap(false)
         FBCDTitle = t
@@ -1232,8 +1252,8 @@ function BGE.SetFBCD(self, position, click, refresh)
                 end
             end
         end
-        for p, v in pairs(MyUnderpants[FBCD][realmID]) do
-            for i, cd in pairs(MyUnderpants[FBCD][realmID][p]) do
+        for p, v in pairs(BGLite_equip[FBCD][realmID]) do
+            for i, cd in pairs(BGLite_equip[FBCD][realmID][p]) do
                 if cd.resettime then
                     if IsSmallRaid(cd.fbId) then
                         text3 = format(L["小团本%s"], SecondsToTime(cd.resettime, true, nil, 2))
@@ -1269,7 +1289,7 @@ function BGE.SetFBCD(self, position, click, refresh)
             end
             AddLine(mainFrame, -6 - height * n)
         end
-        if MyUnderpants.options.roleOverviewLayout == "left_right" then
+        if BGLite_equip.options.roleOverviewLayout == "left_right" then
             FBCDTitle:SetWidth(FBCDwidth - 20)  -- 标题设置宽度
         else
             FBCDTitle:SetWidth(totalwidth - 20) -- 标题设置宽度
@@ -1288,7 +1308,7 @@ function BGE.SetFBCD(self, position, click, refresh)
             -- 玩家名字
             local realmName = showAllServer and format("|c%s%s-|r", color, FormatTitanRealmName(v.realmName)) or ""
             if not isNewUI then
-                local talentText = MyUnderpants.options.roleOverviewShowTalent == 1 and BG.GetTalentIcon(v.class, v.talent, 15) or ""
+                local talentText = BGLite_equip.options.roleOverviewShowTalent == 1 and BG.GetTalentIcon(v.class, v.talent, 15) or ""
                 local bt = CreateFrame("Button", nil, BG.FBCDFrame)
                 bt:SetPoint("TOPLEFT", FBCDchoice_table[1].width, -7 - height * n)
                 local t = bt:CreateFontString()
@@ -1318,10 +1338,10 @@ function BGE.SetFBCD(self, position, click, refresh)
                 local t = f:CreateFontString()
                 t:SetFont(BIAOGE_TEXT_FONT, fontsize, "OUTLINE")
                 t:SetAllPoints()
-                local note = (MyUnderpants.roleOverviewNote[realmID] and MyUnderpants.roleOverviewNote[realmID][player])
-                    or (BiaoGeAccounts and BiaoGeAccounts.roleOverviewNote and BiaoGeAccounts.roleOverviewNote[realmID]
-                        and BiaoGeAccounts.roleOverviewNote[realmID][player])
-                if MyUnderpants.options.roleOverviewShowNote_useClassColor == 1 then
+                local note = (BGLite_equip.roleOverviewNote[realmID] and BGLite_equip.roleOverviewNote[realmID][player])
+                    or (EquipAccounts and EquipAccounts.roleOverviewNote and EquipAccounts.roleOverviewNote[realmID]
+                        and EquipAccounts.roleOverviewNote[realmID][player])
+                if BGLite_equip.options.roleOverviewShowNote_useClassColor == 1 then
                     t:SetTextColor(r, g, b)
                 else
                     t:SetTextColor(1, 1, 1)
@@ -1333,7 +1353,7 @@ function BGE.SetFBCD(self, position, click, refresh)
                     f:SetPoint("TOPLEFT", x, -6 - height * 4)
                     t:SetJustifyH("CENTER")
                 else
-                    f:SetSize(MyUnderpants.options.roleOverviewShowNote_width, height)
+                    f:SetSize(BGLite_equip.options.roleOverviewShowNote_width, height)
                     f:SetPoint("TOPLEFT", FBCDchoice_table[2].width, -7 - height * n)
                     t:SetJustifyH("LEFT")
                 end
@@ -1386,7 +1406,7 @@ function BGE.SetFBCD(self, position, click, refresh)
                             f:SetSize(text_table[ii]:GetWidth(), height)
                             f:SetPoint("TOPLEFT", FBCDchoice_table[ii].width, -7 - height * n)
                         end
-                        if MyUnderpants.options.showRaidCDKillNum == 1 and cd.killNum and cd.bossSum and cd.killNum < cd.bossSum and cd.killInfo then
+                        if BGLite_equip.options.showRaidCDKillNum == 1 and cd.killNum and cd.bossSum and cd.killNum < cd.bossSum and cd.killInfo then
                             local t = f:CreateFontString()
                             t:SetFont(BIAOGE_TEXT_FONT, fontsize0, "OUTLINE")
                             t:SetPoint("CENTER")
@@ -1566,13 +1586,13 @@ function BGE.SetFBCD(self, position, click, refresh)
         end
     end
 
-    if MyUnderpants.options.roleOverviewLayout == "left_right" then
+    if BGLite_equip.options.roleOverviewLayout == "left_right" then
         FBCDwidth = FBCDwidth - 15
     end
     --------- 角色货币总览 ---------
     local allWidth = totalwidth
     if not isNewUI then
-        if MyUnderpants.options.roleOverviewLayout == "left_right" then
+        if BGLite_equip.options.roleOverviewLayout == "left_right" then
             n = hasAccountDropDown and 0 or -1
             allWidth = FBCDwidth + Moneywidth - 15
         end
@@ -1583,7 +1603,7 @@ function BGE.SetFBCD(self, position, click, refresh)
         t:SetText(BG.STC_g1(L["< 角色货币总览 >"]))
         t:SetJustifyH("LEFT")
         t:SetWordWrap(false)
-        if MyUnderpants.options.roleOverviewLayout == "left_right" then
+        if BGLite_equip.options.roleOverviewLayout == "left_right" then
             t:SetPoint("TOPLEFT", FBCDwidth, -10 - (hasAccountDropDown and height or 0))
             t:SetWidth(Moneywidth - 20) -- 标题设置宽度
         else
@@ -1621,7 +1641,7 @@ function BGE.SetFBCD(self, position, click, refresh)
             else
                 realmName = ""
             end
-            local talentText = MyUnderpants.options.roleOverviewShowTalent == 1 and BG.GetTalentIcon(v.class, v.talent, 15) or ""
+            local talentText = BGLite_equip.options.roleOverviewShowTalent == 1 and BG.GetTalentIcon(v.class, v.talent, 15) or ""
 
             local bt = CreateFrame("Button", nil, BG.FBCDFrame)
             local t = bt:CreateFontString()
@@ -1635,24 +1655,24 @@ function BGE.SetFBCD(self, position, click, refresh)
                 bt.width = isNewUI_PlayerNameWidth
                 bt.isFBCD = true
             else
-                if MyUnderpants.options.roleOverviewLayout == "left_right" then
+                if BGLite_equip.options.roleOverviewLayout == "left_right" then
                     bt:SetPoint("TOPLEFT", FBCDwidth, -7 - height * n)
                 else
                     bt:SetPoint("TOPLEFT", FBCDchoice_table[1].width, -7 - height * n)
                 end
                 t:SetPoint("LEFT")
-                if MyUnderpants.options.roleOverviewLayout == "left_right" then
+                if BGLite_equip.options.roleOverviewLayout == "left_right" then
                     t:SetText("")
                 else
                     t:SetText(talentText .. realmName .. colorplayer .. " " .. GetFactionColor(v.faction, isNewUI) .. "(" .. level .. ")|r")
                 end
-                bt.width = MyUnderpants.options.roleOverviewLayout == "left_right" and 1 or t:GetWidth()
+                bt.width = BGLite_equip.options.roleOverviewLayout == "left_right" and 1 or t:GetWidth()
                 bt.isMoney = true
             end
             bt:SetFontString(t)
             bt:SetSize(bt.width, 20)
             right = bt
-            if MyUnderpants.options.roleOverviewLayout ~= "left_right" then
+            if BGLite_equip.options.roleOverviewLayout ~= "left_right" then
                 SetEquipFrameFuc(bt, v.isAccounts, realmID, player, colorplayer, v.level, v.class, v.iLevel, showAllServer)
                 CheckSameName(bt, realmID, player, BG.FBCDFrame, showAccountName)
             end
@@ -1805,12 +1825,12 @@ function BGE.SetFBCD(self, position, click, refresh)
             else
                 local t_name = mainFrame:CreateFontString()
                 t_name:SetFont(BIAOGE_TEXT_FONT, fontsize, "OUTLINE")
-                if MyUnderpants.options.roleOverviewLayout == "left_right" then
+                if BGLite_equip.options.roleOverviewLayout == "left_right" then
                     t_name:SetPoint("TOPLEFT", FBCDwidth, -10 - height * n)
                 else
                     t_name:SetPoint("TOPLEFT", leftOffset, -10 - height * n)
                 end
-                if MyUnderpants.options.roleOverviewLayout == "left_right" then
+                if BGLite_equip.options.roleOverviewLayout == "left_right" then
                     t_name:SetText("")
                 else
                     t_name:SetText(L["合计"])
@@ -1863,13 +1883,13 @@ function BGE.SetFBCD(self, position, click, refresh)
     if click and IsFrameOutsideScreen(mainFrame) then
         mainFrame:ClearAllPoints()
         mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-        MyUnderpants.point.roleOverview = { "CENTER" }
+        BGLite_equip.point.roleOverview = { "CENTER" }
     end
 end
 
 function BG.UpdateFBCDFrameScale()
     if BG.FBCDFrame then
-        BG.FBCDFrame:SetScale(MyUnderpants.options.roleOverviewScale or 1)
+        BG.FBCDFrame:SetScale(BGLite_equip.options.roleOverviewScale or 1)
     end
 end
 

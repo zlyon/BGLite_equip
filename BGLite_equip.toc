@@ -5,8 +5,8 @@
 ## Author: zlyon
 ## Dependencies: BGLite
 ## LoadOnDemand: 0
-## SavedVariables: MyUnderpants
-## Version: 1.0.44
+## SavedVariables: BGLite_equip
+## Version: 1.0.46
 
 Libs\LibBase64\LibBase64.lua
 Init.lua
@@ -42,6 +42,7 @@ Core\LFDFastQueue.lua
 Core\History.lua
 Core\HistorySummary.lua
 Core\RoleOverviewDB.lua
+Core\RoleOverviewMigration.lua
 Core\BagSync.lua
 Core\EquipViewer.lua
 Core\RoleOverview_core.lua

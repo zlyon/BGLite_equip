@@ -876,7 +876,7 @@ do
         local allEnd = false
         local biaogeEnd = false
         local hasAccounts = false
-        if BiaoGeAccounts and BiaoGeAccounts.HistoryList and BiaoGeAccounts.HistoryList[FB] then
+        if EquipAccounts and EquipAccounts.HistoryList and EquipAccounts.HistoryList[FB] then
             hasAccounts = true
         end
 
@@ -924,7 +924,7 @@ do
                     if not db.HistoryList[FB][ii] then
                         if hasAccounts then
                             biaogeEnd = true
-                            db = BiaoGeAccounts
+                            db = EquipAccounts
                         else
                             allEnd = true
                         end

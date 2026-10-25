@@ -4,7 +4,7 @@ local L = ns.L
 local pt = print
 
 BGE.Init3(function()
-    if not MyUnderpants or not MyUnderpants.options then return end
+    if not BGLite_equip or not BGLite_equip.options then return end
 
     local defaults = {
         roleOverviewScale                 = 1,
@@ -19,8 +19,8 @@ BGE.Init3(function()
         roleOverviewShowNote_useClassColor = 1,
     }
     for name, value in pairs(defaults) do
-        if MyUnderpants.options[name] == nil then
-            MyUnderpants.options[name] = value
+        if BGLite_equip.options[name] == nil then
+            BGLite_equip.options[name] = value
         end
     end
 end)

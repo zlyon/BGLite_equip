@@ -28,14 +28,14 @@ BGE.Init3(function()
                 text = max(minValue, text)
                 slider:SetValue(text)
                 self:SetText(text)
-                MyUnderpants.options[slider.name] = text
+                BGLite_equip.options[slider.name] = text
                 self:ClearFocus()
                 BG.PlaySound(1)
             end
             local function OnValueChanged(self, value)
                 self.edit:ClearFocus()
                 value = tonumber(value)
-                MyUnderpants.options[self.name] = value
+                BGLite_equip.options[self.name] = value
                 self.edit:SetText(value)
             end
             local function OnClick(self, enter)
@@ -43,7 +43,7 @@ BGE.Init3(function()
                 if enter == "RightButton" then
                     if BG.options[slider.name .. "reset"] then
                         local value = BG.options[slider.name .. "reset"]
-                        MyUnderpants.options[slider.name] = value
+                        BGLite_equip.options[slider.name] = value
                         slider:SetValue(value)
                         slider.edit:SetText(value)
                         BG.PlaySound(1)
@@ -73,10 +73,10 @@ BGE.Init3(function()
                 GameTooltip:Hide()
             end
             function O.CreateSlider(name, text, parent, minValue, maxValue, step, x, y, ontext, width)
-                local savedValue = tonumber(MyUnderpants.options[name]) or minValue
+                local savedValue = tonumber(BGLite_equip.options[name]) or minValue
                 local value = min(maxValue, savedValue)
                 value = max(minValue, value)
-                MyUnderpants.options[name] = value
+                BGLite_equip.options[name] = value
 
                 local template
                 if BG.IsWLK_80 then
@@ -92,7 +92,7 @@ BGE.Init3(function()
                 slider:SetValueStep(step)
                 slider:SetObeyStepOnDrag(true)
                 slider:SetHitRectInsets(0, 0, 0, 0)
-                slider:SetValue(MyUnderpants.options[name])
+                slider:SetValue(BGLite_equip.options[name])
                 slider.name = name
                 slider.ontext = ontext
                 slider:SetScript("OnValueChanged", OnValueChanged)
@@ -129,7 +129,7 @@ BGE.Init3(function()
                 slider.edit:SetPoint("TOP", slider, "BOTTOM")
                 slider.edit:SetJustifyH("CENTER")
                 slider.edit:SetAutoFocus(false)
-                slider.edit:SetText(MyUnderpants.options[name])
+                slider.edit:SetText(BGLite_equip.options[name])
                 slider.edit:SetCursorPosition(0)
                 slider.edit.__owner = slider
                 slider.edit:SetScript("OnEnterPressed", updateSliderEditBox)
@@ -150,9 +150,9 @@ BGE.Init3(function()
         do
             local function OnClick(self)
                 if self:GetChecked() then
-                    MyUnderpants.options[self.name] = 1
+                    BGLite_equip.options[self.name] = 1
                 else
-                    MyUnderpants.options[self.name] = 0
+                    BGLite_equip.options[self.name] = 0
                 end
                 if self.child then
                     for _, f in pairs(self.child) do
@@ -185,7 +185,7 @@ BGE.Init3(function()
                 GameTooltip:Hide()
             end
             local function OnShow(self)
-                self:SetChecked(MyUnderpants.options[self.name] == 1)
+                self:SetChecked(BGLite_equip.options[self.name] == 1)
             end
             function O.CreateCheckButton(name, text, parent, x, y, ontext, long, callback)
                 local bt = CreateFrame("CheckButton", nil, parent, "ChatConfigCheckButtonTemplate")
@@ -200,7 +200,7 @@ BGE.Init3(function()
                 bt.ontext = ontext
                 bt.callback = callback
                 BG.options["button" .. name] = bt
-                bt:SetChecked(MyUnderpants.options[name] == 1)
+                bt:SetChecked(BGLite_equip.options[name] == 1)
                 bt:SetScript("OnClick", OnClick)
                 bt:SetScript("OnEnter", OnEnter)
                 bt:SetScript("OnLeave", OnLeave)
@@ -268,7 +268,7 @@ BGE.Init3(function()
     end
 
     local function SetParent(self, key)
-        if MyUnderpants.options[key] ~= 1 then
+        if BGLite_equip.options[key] ~= 1 then
             self:Hide()
         end
         local parent = BG.options["button" .. key]
@@ -297,9 +297,9 @@ BGE.Init3(function()
         do
             local name = "roleOverviewScale"
             BG.options[name .. "reset"] = 1
-            MyUnderpants.options[name] = MyUnderpants.options[name] or BG.options[name .. "reset"]
-            if not tonumber(MyUnderpants.options[name]) then
-                MyUnderpants.options[name] = BG.options[name .. "reset"]
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            if not tonumber(BGLite_equip.options[name]) then
+                BGLite_equip.options[name] = BG.options[name .. "reset"]
             end
             local ontext = {
                 L["角色总览UI缩放"] .. L["|cff808080（右键还原设置）|r"],
@@ -311,7 +311,7 @@ BGE.Init3(function()
             f:SetScript("OnValueChanged", function(self, value)
                 f.edit:ClearFocus()
                 value = tonumber(string.format("%.2f", value))
-                MyUnderpants.options[name] = value
+                BGLite_equip.options[name] = value
                 f.edit:SetText(value)
                 BG.UpdateFBCDFrameScale()
             end)
@@ -319,7 +319,7 @@ BGE.Init3(function()
                 if enter == "RightButton" then
                     if BG.options[name .. "reset"] then
                         local value = BG.options[name .. "reset"]
-                        MyUnderpants.options[name] = value
+                        BGLite_equip.options[name] = value
                         f:SetValue(value)
                         f.edit:SetText(value)
                         BG.UpdateFBCDFrameScale()
@@ -333,9 +333,9 @@ BGE.Init3(function()
         do
             local name = "roleOverviewAlpha"
             BG.options[name .. "reset"] = 0.9
-            MyUnderpants.options[name] = MyUnderpants.options[name] or BG.options[name .. "reset"]
-            if not tonumber(MyUnderpants.options[name]) then
-                MyUnderpants.options[name] = BG.options[name .. "reset"]
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            if not tonumber(BGLite_equip.options[name]) then
+                BGLite_equip.options[name] = BG.options[name .. "reset"]
             end
             local ontext = {
                 L["角色总览背景透明度"] .. L["|cff808080（右键还原设置）|r"],
@@ -347,7 +347,7 @@ BGE.Init3(function()
             f:SetScript("OnValueChanged", function(self, value)
                 f.edit:ClearFocus()
                 value = tonumber(string.format("%.2f", value))
-                MyUnderpants.options[name] = value
+                BGLite_equip.options[name] = value
                 f.edit:SetText(value)
                 if BG.FBCDFrame then
                     BG.FBCDFrame:SetBackdropColor(0, 0, 0, value)
@@ -357,7 +357,7 @@ BGE.Init3(function()
                 if enter == "RightButton" then
                     if BG.options[name .. "reset"] then
                         local value = BG.options[name .. "reset"]
-                        MyUnderpants.options[name] = value
+                        BGLite_equip.options[name] = value
                         f:SetValue(value)
                         f.edit:SetText(value)
                         if BG.FBCDFrame then
@@ -391,7 +391,7 @@ BGE.Init3(function()
         do
             local function HasRoleOverviewData(realmID, player)
                 if type(realmID) ~= "number" or type(player) ~= "string" or player == "" then return false end
-                local db = MyUnderpants
+                local db = BGLite_equip
                 if type(db) ~= "table" then return false end
                 for _, key in ipairs(BGE.DeletePlayerDataKeys) do
                     local t = db[key]
@@ -500,18 +500,18 @@ BGE.Init3(function()
                     bt.Text:SetText("|cff" .. color .. diff .. (name2 or name):gsub("sod", "") .. RR)
                     bt.Text:SetWidth(buttonWidth - buttonHeight)
                     bt.Text:SetWordWrap(false)
-                    if not MyUnderpants[dbName][name] or MyUnderpants[dbName][name] == 0 then
-                        MyUnderpants[dbName][name] = nil
+                    if not BGLite_equip[dbName][name] or BGLite_equip[dbName][name] == 0 then
+                        BGLite_equip[dbName][name] = nil
                         bt:SetChecked(false)
                     else
-                        MyUnderpants[dbName][name] = 1
+                        BGLite_equip[dbName][name] = 1
                         bt:SetChecked(true)
                     end
                     bt:SetScript("OnClick", function(self)
                         if self:GetChecked() then
-                            MyUnderpants[dbName][name] = 1
+                            BGLite_equip[dbName][name] = 1
                         else
-                            MyUnderpants[dbName][name] = nil
+                            BGLite_equip[dbName][name] = nil
                         end
                         BG.RefreshFBCDFrame()
                         BG.PlaySound(1)
@@ -567,18 +567,18 @@ BGE.Init3(function()
                     right = bt
                     bt.Text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
                     bt.Text:SetText(AddTexture(tex))
-                    if not MyUnderpants.MONEYchoice[id] or MyUnderpants.MONEYchoice[id] == 0 then
-                        MyUnderpants.MONEYchoice[id] = nil
+                    if not BGLite_equip.MONEYchoice[id] or BGLite_equip.MONEYchoice[id] == 0 then
+                        BGLite_equip.MONEYchoice[id] = nil
                         bt:SetChecked(false)
                     else
-                        MyUnderpants.MONEYchoice[id] = 1
+                        BGLite_equip.MONEYchoice[id] = 1
                         bt:SetChecked(true)
                     end
                     bt:SetScript("OnClick", function(self)
                         if self:GetChecked() then
-                            MyUnderpants.MONEYchoice[id] = 1
+                            BGLite_equip.MONEYchoice[id] = 1
                         else
-                            MyUnderpants.MONEYchoice[id] = nil
+                            BGLite_equip.MONEYchoice[id] = nil
                         end
                         BG.RefreshFBCDFrame()
                         BG.PlaySound(1)
@@ -644,13 +644,13 @@ BGE.Init3(function()
                         self.child:SetHeight(1)
                         self.tex:SetTexture(130838)
                         self.open = nil
-                        MyUnderpants.options['roleOverviewTitleCollapse' .. name] = true
+                        BGLite_equip.options['roleOverviewTitleCollapse' .. name] = true
                     else
                         self.child2:Show()
                         self.child:SetHeight(self.height)
                         self.tex:SetTexture(130821)
                         self.open = true
-                        MyUnderpants.options['roleOverviewTitleCollapse' .. name] = nil
+                        BGLite_equip.options['roleOverviewTitleCollapse' .. name] = nil
                     end
                     if button then
                         BG.PlaySound(1)
@@ -813,7 +813,7 @@ BGE.Init3(function()
             CreateMONEYbutton(1, #BG.MONEYall_table)
 
             for i, title in ipairs(titles) do
-                if MyUnderpants.options['roleOverviewTitleCollapse' .. title.name] and title.open then
+                if BGLite_equip.options['roleOverviewTitleCollapse' .. title.name] and title.open then
                     title:GetScript("OnMouseDown")(title)
                 end
             end
@@ -823,15 +823,15 @@ BGE.Init3(function()
         do
             local name = "roleOverviewSort1"
             BG.options[name .. "reset"] = "iLevel-class-player"
-            MyUnderpants.options[name] = MyUnderpants.options[name] or BG.options[name .. "reset"]
-            if MyUnderpants.options[name] == "iLevel-player-class" then
-                MyUnderpants.options[name] = "iLevel-player"
-            elseif MyUnderpants.options[name] == "class-player-iLevel" then
-                MyUnderpants.options[name] = "class-player"
-            elseif MyUnderpants.options[name] == "player-iLevel-class" then
-                MyUnderpants.options[name] = "player"
-            elseif MyUnderpants.options[name] == "player-class-iLevel" then
-                MyUnderpants.options[name] = "player"
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            if BGLite_equip.options[name] == "iLevel-player-class" then
+                BGLite_equip.options[name] = "iLevel-player"
+            elseif BGLite_equip.options[name] == "class-player-iLevel" then
+                BGLite_equip.options[name] = "class-player"
+            elseif BGLite_equip.options[name] == "player-iLevel-class" then
+                BGLite_equip.options[name] = "player"
+            elseif BGLite_equip.options[name] == "player-class-iLevel" then
+                BGLite_equip.options[name] = "player"
             end
             local tbl = {
                 { key = "iLevel-class-player", text = L["装等-职业-名字"] },
@@ -866,7 +866,7 @@ BGE.Init3(function()
                 local dropDown = LibBG:Create_UIDropDownMenu(nil, roleOverview)
                 dropDown:SetPoint("LEFT", BG.options["Text" .. name], "RIGHT", -10, -2)
                 LibBG:UIDropDownMenu_SetWidth(dropDown, 150)
-                LibBG:UIDropDownMenu_SetText(dropDown, SetText(MyUnderpants.options[name]))
+                LibBG:UIDropDownMenu_SetText(dropDown, SetText(BGLite_equip.options[name]))
                 LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
                 BG.dropDownToggle(dropDown)
                 BG.options["button" .. name] = dropDown
@@ -879,17 +879,17 @@ BGE.Init3(function()
                             if v.key == "custom" and BG.InitializeRoleOverviewCustomSort then
                                 BG.InitializeRoleOverviewCustomSort()
                             end
-                            MyUnderpants.options[name] = v.key
-                            LibBG:UIDropDownMenu_SetText(dropDown, SetText(MyUnderpants.options[name]))
-                            if MyUnderpants.options[name] ~= "custom" then
+                            BGLite_equip.options[name] = v.key
+                            LibBG:UIDropDownMenu_SetText(dropDown, SetText(BGLite_equip.options[name]))
+                            if BGLite_equip.options[name] ~= "custom" then
                                 if BG.RoleOverviewSortFrame and BG.RoleOverviewSortFrame:IsVisible() then
                                     BG.RoleOverviewSortFrame:Hide()
                                 end
                             end
-                            dropDown.bt:SetShown(MyUnderpants.options[name] == "custom")
+                            dropDown.bt:SetShown(BGLite_equip.options[name] == "custom")
                             BG.RefreshFBCDFrame()
                         end
-                        if MyUnderpants.options[name] == v.key then
+                        if BGLite_equip.options[name] == v.key then
                             info.checked = true
                         end
                         LibBG:UIDropDownMenu_AddButton(info)
@@ -900,7 +900,7 @@ BGE.Init3(function()
                 dropDown.bt:SetSize(100, 25)
                 dropDown.bt:SetPoint("LEFT", dropDown, "RIGHT", 0, 3)
                 dropDown.bt:SetText(L["修改排序"])
-                dropDown.bt:SetShown(MyUnderpants.options[name] == "custom")
+                dropDown.bt:SetShown(BGLite_equip.options[name] == "custom")
                 dropDown.bt:SetScript("OnClick", function(self)
                     BG.PlaySound(1)
                     if BG.RoleOverviewSortFrame and BG.RoleOverviewSortFrame:IsVisible() then
@@ -916,7 +916,7 @@ BGE.Init3(function()
         do
             local name = "roleOverviewDefaultShow"
             BG.options[name .. "reset"] = "one"
-            MyUnderpants.options[name] = MyUnderpants.options[name] or BG.options[name .. "reset"]
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
 
             local tbl = {
                 { key = "one", text = L["当前服务器角色"] },
@@ -946,7 +946,7 @@ BGE.Init3(function()
                 local dropDown = LibBG:Create_UIDropDownMenu(nil, roleOverview)
                 dropDown:SetPoint("LEFT", BG.options["Text" .. name], "RIGHT", -10, -2)
                 LibBG:UIDropDownMenu_SetWidth(dropDown, 150)
-                LibBG:UIDropDownMenu_SetText(dropDown, SetText(MyUnderpants.options[name]))
+                LibBG:UIDropDownMenu_SetText(dropDown, SetText(BGLite_equip.options[name]))
                 LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
                 BG.dropDownToggle(dropDown)
                 BG.options["button" .. name] = dropDown
@@ -956,11 +956,11 @@ BGE.Init3(function()
                         local info = LibBG:UIDropDownMenu_CreateInfo()
                         info.text = v.text
                         info.func = function()
-                            MyUnderpants.options[name] = v.key
-                            LibBG:UIDropDownMenu_SetText(dropDown, SetText(MyUnderpants.options[name]))
+                            BGLite_equip.options[name] = v.key
+                            LibBG:UIDropDownMenu_SetText(dropDown, SetText(BGLite_equip.options[name]))
                             BG.RefreshFBCDFrame()
                         end
-                        if MyUnderpants.options[name] == v.key then
+                        if BGLite_equip.options[name] == v.key then
                             info.checked = true
                         end
                         LibBG:UIDropDownMenu_AddButton(info)
@@ -977,7 +977,7 @@ BGE.Init3(function()
             else
                 BG.options[name .. "reset"] = "up_down"
             end
-            MyUnderpants.options[name] = MyUnderpants.options[name] or BG.options[name .. "reset"]
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
 
             local tbl = {
                 { key = "up_down", text = L["横向布局1"] },
@@ -1008,7 +1008,7 @@ BGE.Init3(function()
                 local dropDown = LibBG:Create_UIDropDownMenu(nil, roleOverview)
                 dropDown:SetPoint("LEFT", BG.options["Text" .. name], "RIGHT", -10, -2)
                 LibBG:UIDropDownMenu_SetWidth(dropDown, 150)
-                LibBG:UIDropDownMenu_SetText(dropDown, SetText(MyUnderpants.options[name]))
+                LibBG:UIDropDownMenu_SetText(dropDown, SetText(BGLite_equip.options[name]))
                 LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
                 BG.dropDownToggle(dropDown)
                 BG.options["button" .. name] = dropDown
@@ -1018,11 +1018,11 @@ BGE.Init3(function()
                         local info = LibBG:UIDropDownMenu_CreateInfo()
                         info.text = v.text
                         info.func = function()
-                            MyUnderpants.options[name] = v.key
-                            LibBG:UIDropDownMenu_SetText(dropDown, SetText(MyUnderpants.options[name]))
+                            BGLite_equip.options[name] = v.key
+                            LibBG:UIDropDownMenu_SetText(dropDown, SetText(BGLite_equip.options[name]))
                             BG.RefreshFBCDFrame()
                         end
-                        if MyUnderpants.options[name] == v.key then
+                        if BGLite_equip.options[name] == v.key then
                             info.checked = true
                         end
                         LibBG:UIDropDownMenu_AddButton(info)
@@ -1035,7 +1035,7 @@ BGE.Init3(function()
         do
             local name = "roleOverviewNotShowLevel"
             BG.options[name .. "reset"] = 0
-            MyUnderpants.options[name] = MyUnderpants.options[name] or BG.options[name .. "reset"]
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
 
             local frame = CreateFrame("Frame", nil, roleOverview, "BackdropTemplate")
             frame:SetPoint("TOPLEFT", lastFrame, "BOTTOMLEFT", 0, -10)
@@ -1050,12 +1050,12 @@ BGE.Init3(function()
             local edit = CreateFrame("EditBox", nil, roleOverview, BG.editTemplate)
             edit:SetSize(50, 20)
             edit:SetPoint("LEFT", t, "RIGHT", 10, 0)
-            edit:SetText(MyUnderpants.options[name] or 0)
+            edit:SetText(BGLite_equip.options[name] or 0)
             edit:SetAutoFocus(false)
             edit:SetNumeric(true)
             BG.SetEditBaseClass(edit)
             edit:SetScript("OnTextChanged", function(self)
-                MyUnderpants.options[name] = tonumber(self:GetText()) or 0
+                BGLite_equip.options[name] = tonumber(self:GetText()) or 0
             end)
         end
 
@@ -1063,7 +1063,7 @@ BGE.Init3(function()
         do
             local name = "roleOverviewNotShowiLevel"
             BG.options[name .. "reset"] = 0
-            MyUnderpants.options[name] = MyUnderpants.options[name] or BG.options[name .. "reset"]
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
 
             local frame = CreateFrame("Frame", nil, roleOverview, "BackdropTemplate")
             frame:SetPoint("TOPLEFT", lastFrame, "BOTTOMLEFT", 0, -10)
@@ -1078,12 +1078,12 @@ BGE.Init3(function()
             local edit = CreateFrame("EditBox", nil, roleOverview, BG.editTemplate)
             edit:SetSize(50, 20)
             edit:SetPoint("LEFT", t, "RIGHT", 10, 0)
-            edit:SetText(MyUnderpants.options[name] or 0)
+            edit:SetText(BGLite_equip.options[name] or 0)
             edit:SetAutoFocus(false)
             edit:SetNumeric(true)
             BG.SetEditBaseClass(edit)
             edit:SetScript("OnTextChanged", function(self)
-                MyUnderpants.options[name] = tonumber(self:GetText()) or 0
+                BGLite_equip.options[name] = tonumber(self:GetText()) or 0
             end)
         end
 
@@ -1091,7 +1091,7 @@ BGE.Init3(function()
         do
             local name = "showRaidCDKillNum"
             BG.options[name .. "reset"] = BG.IsRetail and 1 or 0
-            MyUnderpants.options[name] = MyUnderpants.options[name] or BG.options[name .. "reset"]
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
             local ontext = {
                 L["团本CD显示为BOSS击杀数量"],
                 L["没全通的副本，现在会显示击杀的BOSS数量，而不是显示一个绿色钩子。"],
@@ -1120,7 +1120,7 @@ BGE.Init3(function()
         -- 备注
         do
             local name = "roleOverviewShowNote"
-            MyUnderpants.options[name] = MyUnderpants.options[name] or 0
+            BGLite_equip.options[name] = BGLite_equip.options[name] or 0
             local ontext = {
                 L["显示角色备注"],
                 L["在角色名字后面，增加显示一段自定义文本。"],
@@ -1142,17 +1142,17 @@ BGE.Init3(function()
 
             local miniWidth = 60
             local name2 = "roleOverviewShowNote_width"
-            MyUnderpants.options[name2] = MyUnderpants.options[name2] or 100
+            BGLite_equip.options[name2] = BGLite_equip.options[name2] or 100
             local edit = CreateFrame("EditBox", nil, f, BG.editTemplate)
             edit:SetSize(100, 20)
             edit:SetPoint("LEFT", t, "RIGHT", 5, 0)
-            edit:SetText(MyUnderpants.options[name2])
+            edit:SetText(BGLite_equip.options[name2])
             edit:SetAutoFocus(false)
             edit:SetNumeric(true)
             BG.SetEditBaseClass(edit)
             SetParent(edit, "roleOverviewShowNote")
             edit:SetScript("OnTextChanged", function(self)
-                MyUnderpants.options[name2] = max(miniWidth, tonumber(self:GetText()) or 0)
+                BGLite_equip.options[name2] = max(miniWidth, tonumber(self:GetText()) or 0)
             end)
 
             local t = f:CreateFontString()
@@ -1163,7 +1163,7 @@ BGE.Init3(function()
             SetParent(t, "roleOverviewShowNote")
 
             local name3 = "roleOverviewShowNote_useClassColor"
-            MyUnderpants.options[name3] = MyUnderpants.options[name3] or 1
+            BGLite_equip.options[name3] = BGLite_equip.options[name3] or 1
             local buttons = {}
             local numOptions = {
                 { name = L["是"], key = 1, },
@@ -1181,7 +1181,7 @@ BGE.Init3(function()
                 bt.Text:SetText(numOptions[i].name)
                 bt.Text:SetTextColor(1, .82, 0)
                 bt:SetHitRectInsets(0, -bt.Text:GetWidth(), -5, -5)
-                if numOptions[i].key == MyUnderpants.options[name3] then
+                if numOptions[i].key == BGLite_equip.options[name3] then
                     bt:SetChecked(true)
                     bt.Text:SetTextColor(0, 1, 0)
                 end
@@ -1195,7 +1195,7 @@ BGE.Init3(function()
                     end
                     self:SetChecked(true)
                     self.Text:SetTextColor(0, 1, 0)
-                    MyUnderpants.options.roleOverviewShowNote_useClassColor = numOptions[i].key
+                    BGLite_equip.options.roleOverviewShowNote_useClassColor = numOptions[i].key
                 end)
             end
         end
@@ -1203,7 +1203,7 @@ BGE.Init3(function()
         -- 显示专精图标
         do
             local name = "roleOverviewShowTalent"
-            MyUnderpants.options[name] = MyUnderpants.options[name] or 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or 1
             local ontext = {
                 L["显示角色专精"],
                 L["在角色名字前面增加显示专精图标。"],
@@ -1218,7 +1218,7 @@ BGE.Init3(function()
         -- 显示阵营
         do
             local name = "roleOverviewShowFaction"
-            MyUnderpants.options[name] = MyUnderpants.options[name] or 0
+            BGLite_equip.options[name] = BGLite_equip.options[name] or 0
             local ontext = {
                 L["显示角色阵营"],
                 L["角色装等和等级会根据阵营染色为浅蓝色（联盟）或浅红色（部落），用来区分该角色是哪个阵营。"],
@@ -1233,7 +1233,7 @@ BGE.Init3(function()
         -- 使用黑白着色
         do
             local name = "roleOverviewblackWhite"
-            MyUnderpants.options[name] = MyUnderpants.options[name] or 0
+            BGLite_equip.options[name] = BGLite_equip.options[name] or 0
             local ontext = {
                 L["使用黑白着色"],
                 L["勾选后每行使用黑白着色。否则使用下横线作分割。该选项仅对横向布局有效。"],

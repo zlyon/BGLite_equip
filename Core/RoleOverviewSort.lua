@@ -39,9 +39,9 @@ local function DefaultSort(a, b)
 end
 
 local function GetSortDB()
-    MyUnderpants.MyUnderpantsSort = MyUnderpants.MyUnderpantsSort or {}
-    MyUnderpants.MyUnderpantsSort[realmID] = MyUnderpants.MyUnderpantsSort[realmID] or {}
-    return MyUnderpants.MyUnderpantsSort[realmID]
+    BGLite_equip.MyUnderpantsSort = BGLite_equip.MyUnderpantsSort or {}
+    BGLite_equip.MyUnderpantsSort[realmID] = BGLite_equip.MyUnderpantsSort[realmID] or {}
+    return BGLite_equip.MyUnderpantsSort[realmID]
 end
 
 local function SetButtonPoint(f, i)
@@ -192,11 +192,12 @@ local function CreateButton(i)
 end
 
 local function GetDB()
-    local function AddDB(db, isAccounts)
+    local function AddDB(db, isAccounts, skipDb)
         if not (db and db[MONEY] and db[MONEY][realmID]) then return end
         for playerName in pairs(db[MONEY][realmID]) do
-            local localMoneyDB = MyUnderpants[MONEY] and MyUnderpants[MONEY][realmID]
-            if not isAccounts or not (localMoneyDB and localMoneyDB[playerName]) then
+            local localMoneyDB = BGLite_equip[MONEY] and BGLite_equip[MONEY][realmID]
+            if not (skipDb and skipDb[MONEY] and skipDb[MONEY][realmID] and skipDb[MONEY][realmID][playerName])
+                and (not isAccounts or not (localMoneyDB and localMoneyDB[playerName])) then
                 local playerInfo = db.playerInfo and db.playerInfo[realmID] and db.playerInfo[realmID][playerName]
                 local level = playerInfo and playerInfo.level
                 if level then
@@ -217,8 +218,10 @@ local function GetDB()
             end
         end
     end
-    AddDB(MyUnderpants)
-    AddDB(BiaoGeAccounts, true)
+    AddDB(BGLite_equip)
+    -- 过渡期回退：本表尚无该角色数据时，只读旧共享表补显
+    AddDB(MyUnderpants, false, BGLite_equip)
+    AddDB(EquipAccounts, true)
 end
 
 local function AddCurrentPlayer(tbl, saveClass)
@@ -228,9 +231,9 @@ local function AddCurrentPlayer(tbl, saveClass)
         end
     end
     local classColor = class and select(4, GetClassColor(class))
-    local playerInfo = MyUnderpants.playerInfo and MyUnderpants.playerInfo[realmID] and MyUnderpants.playerInfo[realmID][player]
+    local playerInfo = BGLite_equip.playerInfo and BGLite_equip.playerInfo[realmID] and BGLite_equip.playerInfo[realmID][player]
     local iLevel = playerInfo and playerInfo.iLevel or
-        (MyUnderpants.PlayerItemsLevel and MyUnderpants.PlayerItemsLevel[realmID] and MyUnderpants.PlayerItemsLevel[realmID][player])
+        (BGLite_equip.PlayerItemsLevel and BGLite_equip.PlayerItemsLevel[realmID] and BGLite_equip.PlayerItemsLevel[realmID][player])
     if classColor and iLevel then
         tinsert(tbl, {
             player = player,
@@ -253,7 +256,7 @@ function BG.InitializeRoleOverviewCustomSort()
     GetDB()
     AddCurrentPlayer(info, true)
     sort(info, DefaultSort)
-    MyUnderpants.MyUnderpantsSort[realmID] = BG.Copy(info)
+    BGLite_equip.MyUnderpantsSort[realmID] = BG.Copy(info)
 end
 
 function BG.CreateRoleOverviewSortFrame(bt, update)
@@ -296,7 +299,7 @@ function BG.CreateRoleOverviewSortFrame(bt, update)
         f.deleteBT = BG.CreateButton(f)
         f.deleteBT:SetSize(80, 20)
         f.deleteBT:SetPoint("BOTTOM", 0, 10)
-        f.deleteBT:SetShown(IsAddOnLoaded('BiaoGeAccounts'))
+        f.deleteBT:SetShown(IsAddOnLoaded('EquipAccounts'))
         f.deleteBT:SetScript("OnClick", function()
             BG.PlaySound(1)
             mainFrame.delete = not mainFrame.delete
@@ -356,8 +359,8 @@ function BG.CreateRoleOverviewSortFrame(bt, update)
             tinsert(sortDB, newInfo)
         end
     else
-        MyUnderpants.MyUnderpantsSort[realmID] = BG.Copy(info)
-        sortDB = MyUnderpants.MyUnderpantsSort[realmID]
+        BGLite_equip.MyUnderpantsSort[realmID] = BG.Copy(info)
+        sortDB = BGLite_equip.MyUnderpantsSort[realmID]
     end
     if isFirstCustomSort then
         sort(sortDB, DefaultSort)

@@ -201,7 +201,7 @@ BGE.Init(function()
                 local tex = f:CreateTexture()
                 tex:SetPoint("TOPLEFT", 8, -6)
                 tex:SetSize(16, 16)
-                tex:SetTexture("Interface\\AddOns\\MyUnderpants\\Media\\icon\\icon.tga")
+                tex:SetTexture("Interface\\AddOns\\BGLite_equip\\Media\\icon\\icon.tga")
                 tex:SetTexCoord(.1, .9, .1, .9)
 
                 local l = leftFrame:CreateLine()
@@ -563,7 +563,7 @@ BGE.Init(function()
             icon:AddMaskTexture(mask)
             local broder = f:CreateTexture(nil, "OVERLAY")
             broder:SetAllPoints()
-            broder:SetTexture([[Interface\AddOns\MyUnderpants\Media\icon\SocketBroder.blp]])
+            broder:SetTexture([[Interface\AddOns\BGLite_equip\Media\icon\SocketBroder.blp]])
             local alpha = .8
             if type == "chant" then
                 if iconTex then
@@ -709,13 +709,13 @@ BGE.Init(function()
         local db
         if not BiaoGeAIdb then
             if isAccounts then
-                db = BiaoGeAccounts
+                db = EquipAccounts
             else
-                db = MyUnderpants
+                db = BGLite_equip
             end
             if not (db.equip and db.equip[realmID] and db.equip[realmID][player]) then
                 GameTooltip:SetOwner(bt, "ANCHOR_NONE", 0, 0)
-                if bt.isFBCD or MyUnderpants.options.roleOverviewLayout == "left_right" then
+                if bt.isFBCD or BGLite_equip.options.roleOverviewLayout == "left_right" then
                     GameTooltip:SetPoint("TOPRIGHT", bt, "TOPLEFT", -12, 0)
                 else
                     GameTooltip:SetPoint("BOTTOMRIGHT", bt, "BOTTOMLEFT", -12, 0)
@@ -778,7 +778,7 @@ BGE.Init(function()
             mainFrame:SetPoint(unpack(points))
         elseif BiaoGeAIdb then
             mainFrame:SetPoint("TOPLEFT", bt, "TOPRIGHT", 1, 0)
-        elseif bt.isFBCD or MyUnderpants.options.roleOverviewLayout == "left_right" then
+        elseif bt.isFBCD or BGLite_equip.options.roleOverviewLayout == "left_right" then
             mainFrame:SetPoint("TOPRIGHT", bt, "TOPLEFT", -10, 0)
         else
             mainFrame:SetPoint("BOTTOMRIGHT", bt, "BOTTOMLEFT", -10, 0)
@@ -805,7 +805,7 @@ BGE.Init(function()
         local realmName = ""
         if showRealmName then
             local name = (db and db.realmName and db.realmName[realmID])
-                or (MyUnderpants.realmName and MyUnderpants.realmName[realmID]) or realmID
+                or (BGLite_equip.realmName and BGLite_equip.realmName[realmID]) or realmID
             realmName = format("|c%s%s-|r", color, name)
         end
         leftFrame.NameText:SetText(talentText .. realmName .. colorplayer)
@@ -817,12 +817,12 @@ BGE.Init(function()
         leftFrame.iLevelText:SetText(L["装等："] .. (iLevel and ns.Round(iLevel, 1) or UNKNOWN))
 
         -- 子账号
-        if not BiaoGeAIdb and BiaoGeAccounts and BiaoGeAccounts.accountName then
+        if not BiaoGeAIdb and EquipAccounts and EquipAccounts.accountName then
             local tbl = {}
-            for accountName in pairs(BiaoGeAccounts.accountName) do
-                for _realmID in pairs(BiaoGeAccounts.accountName[accountName]) do
+            for accountName in pairs(EquipAccounts.accountName) do
+                for _realmID in pairs(EquipAccounts.accountName[accountName]) do
                     if realmID == _realmID then
-                        for _player in pairs(BiaoGeAccounts.accountName[accountName][realmID]) do
+                        for _player in pairs(EquipAccounts.accountName[accountName][realmID]) do
                             if player == _player then
                                 tinsert(tbl, accountName)
                             end

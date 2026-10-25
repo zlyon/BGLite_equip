@@ -2,39 +2,42 @@ local AddonName, ns = ...
 
 local pt = print
 
-MyUnderpants = MyUnderpants or {}
+-- 存档表 BGLite_equip 由本 toc 的 ## SavedVariables 声明加载，
+-- 此处不做任何全局兜底赋值（文件执行期存档尚未就绪，赋值会在加载时被整体替换）
 
 local realmID   = GetRealmID()
 local player    = BG.playerName
 local realmName = BG.realmName
 
 BGE.Init(function() -- @shared-db-ok
-    if not MyUnderpants.options then
-        MyUnderpants.options = {}
+    -- 存档文件异常（如手工遗留文件未给声明变量赋值）时兜底建表，保证可正常写入并在登出保存
+    if type(BGLite_equip) ~= "table" then BGLite_equip = {} end
+    if not BGLite_equip.options then
+        BGLite_equip.options = {}
     end
-    if not MyUnderpants.options.SearchHistory then
-        MyUnderpants.options.SearchHistory = {}
+    if not BGLite_equip.options.SearchHistory then
+        BGLite_equip.options.SearchHistory = {}
     end
-    if not MyUnderpants.point then
-        MyUnderpants.point = {}
+    if not BGLite_equip.point then
+        BGLite_equip.point = {}
     end
     -- 记录服务器名称
     do
-        MyUnderpants.realmName = MyUnderpants.realmName or {}
-        MyUnderpants.realmName[realmID] = realmName
+        BGLite_equip.realmName = BGLite_equip.realmName or {}
+        BGLite_equip.realmName[realmID] = realmName
     end
     -- 记录每个角色的职业、等级、天赋
     do
-        MyUnderpants.playerInfo = MyUnderpants.playerInfo or {}
-        MyUnderpants.playerInfo[realmID] = MyUnderpants.playerInfo[realmID] or {}
-        MyUnderpants.playerInfo[realmID][player] = MyUnderpants.playerInfo[realmID][player] or {}
-        MyUnderpants.playerInfo[realmID][player].class = select(2, UnitClass("player"))
-        MyUnderpants.playerInfo[realmID][player].raceID = select(3, UnitRace("player"))
-        MyUnderpants.playerInfo[realmID][player].faction = UnitFactionGroup("player")
-        MyUnderpants.playerInfo[realmID][player].iLevel = select(2, GetAverageItemLevel()) or 0
+        BGLite_equip.playerInfo = BGLite_equip.playerInfo or {}
+        BGLite_equip.playerInfo[realmID] = BGLite_equip.playerInfo[realmID] or {}
+        BGLite_equip.playerInfo[realmID][player] = BGLite_equip.playerInfo[realmID][player] or {}
+        BGLite_equip.playerInfo[realmID][player].class = select(2, UnitClass("player"))
+        BGLite_equip.playerInfo[realmID][player].raceID = select(3, UnitRace("player"))
+        BGLite_equip.playerInfo[realmID][player].faction = UnitFactionGroup("player")
+        BGLite_equip.playerInfo[realmID][player].iLevel = select(2, GetAverageItemLevel()) or 0
 
         local function UpdateLevel(level)
-            MyUnderpants.playerInfo[realmID][player].level = level
+            BGLite_equip.playerInfo[realmID][player].level = level
             BG.isFullLevel = level >= BG.fullLevel
         end
         UpdateLevel(UnitLevel("player"))
@@ -65,7 +68,7 @@ BGE.Init(function() -- @shared-db-ok
                     end
                     if maxNum == 0 then specIndex = nil end
                 end
-                MyUnderpants.playerInfo[realmID][player].talent = specIndex
+                BGLite_equip.playerInfo[realmID][player].talent = specIndex
             end
 
             local f = CreateFrame("Frame")
@@ -92,16 +95,16 @@ BGE.Init(function() -- @shared-db-ok
 end)
 
 BGE.Init3(function()
-    MyUnderpants = MyUnderpants or {}
-    MyUnderpants.options = MyUnderpants.options or {}
-    MyUnderpants.options.SearchHistory = MyUnderpants.options.SearchHistory or {}
-    MyUnderpants.point = MyUnderpants.point or {}
-    MyUnderpants.realmName = MyUnderpants.realmName or {}
-    MyUnderpants.realmName[realmID] = realmName
-    MyUnderpants.playerInfo = MyUnderpants.playerInfo or {}
-    MyUnderpants.playerInfo[realmID] = MyUnderpants.playerInfo[realmID] or {}
-    MyUnderpants.playerInfo[realmID][player] = MyUnderpants.playerInfo[realmID][player] or {}
-    local info = MyUnderpants.playerInfo[realmID][player]
+    if type(BGLite_equip) ~= "table" then BGLite_equip = {} end
+    BGLite_equip.options = BGLite_equip.options or {}
+    BGLite_equip.options.SearchHistory = BGLite_equip.options.SearchHistory or {}
+    BGLite_equip.point = BGLite_equip.point or {}
+    BGLite_equip.realmName = BGLite_equip.realmName or {}
+    BGLite_equip.realmName[realmID] = realmName
+    BGLite_equip.playerInfo = BGLite_equip.playerInfo or {}
+    BGLite_equip.playerInfo[realmID] = BGLite_equip.playerInfo[realmID] or {}
+    BGLite_equip.playerInfo[realmID][player] = BGLite_equip.playerInfo[realmID][player] or {}
+    local info = BGLite_equip.playerInfo[realmID][player]
     info.class = select(2, UnitClass("player"))
     info.raceID = select(3, UnitRace("player"))
     info.faction = UnitFactionGroup("player")

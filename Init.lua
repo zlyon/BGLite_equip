@@ -385,10 +385,10 @@ if not BG.CreateDisableButton then
 end
 
 function BGE.Once(name, dt, func)
-    if MyUnderpants and MyUnderpants.options and MyUnderpants.options.SearchHistory then
-        if not MyUnderpants.options.SearchHistory[name .. dt] then
+    if BGLite_equip and BGLite_equip.options and BGLite_equip.options.SearchHistory then
+        if not BGLite_equip.options.SearchHistory[name .. dt] then
             func()
-            MyUnderpants.options.SearchHistory[name .. dt] = true
+            BGLite_equip.options.SearchHistory[name .. dt] = true
         end
     end
 end
@@ -413,20 +413,23 @@ BGE.DeletePlayerDataKeys = {
 }
 function BGE.DeletePlayerData(realmID, player)
     if type(realmID) ~= "number" or player == nil then return end
-    local db = MyUnderpants
-    if type(db) ~= "table" then return end
-    for _, key in ipairs(BGE.DeletePlayerDataKeys) do
-        local t = db[key]
-        if type(t) == "table" and type(t[realmID]) == "table" then
-            t[realmID][player] = nil
-        end
-    end
-    local sortDB = db.MyUnderpantsSort
-    if type(sortDB) == "table" and type(sortDB[realmID]) == "table" then
-        local list = sortDB[realmID]
-        for i = #list, 1, -1 do
-            if type(list[i]) == "table" and list[i].player == player then
-                table.remove(list, i)
+    -- 同时从自己的存档表和旧共享表删除，避免旧表数据经过渡期回退重新显示
+    for _, db in ipairs({ BGLite_equip, MyUnderpants }) do
+        if type(db) == "table" then
+            for _, key in ipairs(BGE.DeletePlayerDataKeys) do
+                local t = db[key]
+                if type(t) == "table" and type(t[realmID]) == "table" then
+                    t[realmID][player] = nil
+                end
+            end
+            local sortDB = db.MyUnderpantsSort
+            if type(sortDB) == "table" and type(sortDB[realmID]) == "table" then
+                local list = sortDB[realmID]
+                for i = #list, 1, -1 do
+                    if type(list[i]) == "table" and list[i].player == player then
+                        table.remove(list, i)
+                    end
+                end
             end
         end
     end

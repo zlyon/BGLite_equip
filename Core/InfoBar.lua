@@ -27,6 +27,67 @@ BGE.Init(function()
     local lastBt
     local hight = 25
     local delayTime=.2
+    -- 跨账号同步
+    do
+        local function ShowCopyURLPopup()
+            if not StaticPopupDialogs["BiaoGe_Copy_Sync_Url"] then
+                StaticPopupDialogs["BiaoGe_Copy_Sync_Url"] = {
+                    text = L["复制工具下载地址，按 Ctrl+C 或 Ctrl+X 复制并关闭"],
+                    button1 = OKAY,
+                    hasEditBox = 1,
+                    editBoxWidth = 260,
+                    timeout = 0,
+                    whileDead = true,
+                    hideOnEscape = true,
+                    OnShow = function(self)
+                        local edit = self.EditBox or self.editBox
+                        edit:SetScript("OnEditFocusLost", function()
+                            self:Hide()
+                        end)
+                        edit:SetScript("OnKeyUp", function(_, key)
+                            if IsControlKeyDown() and (key == "C" or key == "X") then
+                                self:Hide()
+                            end
+                        end)
+                        edit:SetText("https://bglite.zlyon.com")
+                        edit:HighlightText()
+                        edit:SetFocus()
+                    end,
+                    OnHide = function(self)
+                        ChatEdit_FocusActiveWindow()
+                        local edit = self.EditBox or self.editBox
+                        edit:SetText("")
+                    end,
+                    EditBoxOnTextChanged = function(self)
+                        if self:GetText() == "" then
+                            self:GetParent():Hide()
+                        end
+                    end,
+                    EditBoxOnEscapePressed = function(self)
+                        self:GetParent():Hide()
+                    end,
+                }
+            end
+            StaticPopup_Show("BiaoGe_Copy_Sync_Url")
+        end
+        local bt = CreateFrame("Button", nil, BG.MainFrame)
+        bt:SetSize(20, hight)
+        if lastBt then
+            bt:SetPoint("RIGHT", lastBt, "LEFT", -10, 0)
+        else
+            bt:SetPoint("BOTTOMRIGHT", -20, 1)
+        end
+        bt:SetNormalFontObject(BG.FontYellow13)
+        bt:SetHighlightFontObject(BG.FontWhite13)
+        bt:SetText(AddTexture("Interface/Icons/inv_scroll_02") .. L["跨账号同步"])
+        bt:SetWidth(bt:GetFontString():GetStringWidth())
+        bt:SetScript("OnClick", function(self)
+            BG.PlaySound(1)
+            ShowCopyURLPopup()
+        end)
+        lastBt = bt
+    end
+
     -- 角色总览
     do
         local bt = CreateFrame("Button", nil, BG.MainFrame)

@@ -180,9 +180,9 @@ local function RoadHistory()
             local allEnd = false
             local biaogeEnd = false
             local hasAccounts = false
-            if BiaoGeAccounts and BiaoGeAccounts.HistoryList and BiaoGeAccounts.HistoryList[FB] then
+            if EquipAccounts and EquipAccounts.HistoryList and EquipAccounts.HistoryList[FB] then
                 hasAccounts = true
-                count = count + #BiaoGeAccounts.HistoryList[FB]
+                count = count + #EquipAccounts.HistoryList[FB]
             end
 
             if not click then
@@ -320,7 +320,7 @@ local function RoadHistory()
                         if not db.HistoryList[FB][ii] then
                             if hasAccounts then
                                 biaogeEnd = true
-                                db = BiaoGeAccounts
+                                db = EquipAccounts
                             else
                                 allEnd = true
                             end
@@ -474,7 +474,7 @@ local function RoadHistory()
             end
         end
         GetMyNames(BiaoGe)
-        GetMyNames(BiaoGeAccounts)
+        GetMyNames(EquipAccounts)
 
         local function IsMyCharacter(player, realmName)
             if not realmName then

@@ -23,9 +23,9 @@ local realmID = GetRealmID()
 local pt = print
 
 local function GetPlayerBagDB()
-    MyUnderpants = MyUnderpants or {}
-    local db = MyUnderpants.bag
-    if not db then db = {}; MyUnderpants.bag = db end
+    BGLite_equip = BGLite_equip or {}
+    local db = BGLite_equip.bag
+    if not db then db = {}; BGLite_equip.bag = db end
     local r = db[realmID]
     if not r then r = {}; db[realmID] = r end
     local p = r[player]
