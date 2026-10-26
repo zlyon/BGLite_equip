@@ -59,6 +59,16 @@ function BG.RoleOverviewUI()
             BGLite_equip.MONEYchoice = nil
         end)
     end
+    -- MOP随机本每日首胜三列：存量玩家一次性默认勾选（之后玩家可自行取消）
+    if BG.IsMOP then
+        BGE.Once("lfdDailyDefault", 261026, function()
+            if BGLite_equip.FBCDchoice then
+                BGLite_equip.FBCDchoice["lfdHeroic"] = 1
+                BGLite_equip.FBCDchoice["lfdCelestial"] = 1
+                BGLite_equip.FBCDchoice["lfdNormal"] = 1
+            end
+        end)
+    end
     if not BGLite_equip.FBCDchoice then
         BGLite_equip.FBCDchoice = {}
         if BG.IsVanilla then
@@ -139,6 +149,9 @@ function BG.RoleOverviewUI()
             BGLite_equip.FBCDchoice["worldBoss1"] = 0
             BGLite_equip.FBCDchoice["chengpi"] = 1
             BGLite_equip.FBCDchoice["holiday"] = 1
+            BGLite_equip.FBCDchoice["lfdHeroic"] = 1
+            BGLite_equip.FBCDchoice["lfdCelestial"] = 1
+            BGLite_equip.FBCDchoice["lfdNormal"] = 1
             BGLite_equip.FBCDchoice["professionCD"] = 1
             BGLite_equip.FBCDchoice["faction" .. "1359"] = 1
             BGLite_equip.FBCDchoice["faction" .. "1435"] = 1
@@ -837,6 +850,9 @@ function BG.RoleOverviewUI()
                 { name = "shoucai", name2 = L["收菜"], color = "FF8C00", type = "quest" },
                 { name = "cooking", name2 = L["烹饪"], color = "FF8C00", type = "quest" },
                 { name = "holiday", name2 = L["节日本"], color = "FF8C00", type = "quest" },
+                { name = "lfdHeroic", name2 = L["英雄首胜"], color = "FF8C00", type = "quest" },
+                { name = "lfdCelestial", name2 = L["天神首胜"], color = "FF8C00", type = "quest" },
+                { name = "lfdNormal", name2 = L["普通首胜"], color = "FF8C00", type = "quest" },
                 -- 专业
                 { name = "professionCD", name2 = L["专业技能CD"], color = "ADFF2F", type = "profession" },
                 { name = "ignore_alchemy_huohuagang", name2 = L["忽略炼金转化（需重载）"], color = "ADFF2F", type = "profession" },
@@ -850,7 +866,7 @@ function BG.RoleOverviewUI()
                 { name = "ignore_engineering_jiade", name2 = L["忽略贾德的特制能量源（需重载）"], color = "ADFF2F", type = "profession" },
             }
             BG.FBCount = 11
-            BG.dayQuestCount = 4
+            BG.dayQuestCount = 7
             BG.skillCount = 10
             -- 声望
             do
@@ -1484,6 +1500,54 @@ function BG.RoleOverviewUI()
                     SaveDayQuest("holiday")
                 end
             end)
+        end
+
+        -- MOP随机本每日首胜（英雄462/天神3034/普通463）
+        if BG.IsMOP then
+            BG.lfdDailyDungeons = {
+                lfdHeroic = 462,    -- 随机熊猫人之谜英雄地下城
+                lfdCelestial = 3034, -- 随机熊猫人之谜天神地下城
+                lfdNormal = 463,    -- 随机熊猫人之谜地下城
+            }
+            local function SaveLFDDaily(questName, dungeonID)
+                local currentTimestamp = GetServerTime()
+                local secondsUntilNext7am = BG.GetNextDayTime()
+                BGLite_equip.QuestCD[realmID][player][questName] = {
+                    name = questName,
+                    player = player,
+                    colorplayer = SetClassCFF(player, "player"),
+                    questID = dungeonID,
+                    resettime = secondsUntilNext7am,
+                    endtime = currentTimestamp + secondsUntilNext7am,
+                }
+            end
+            local function UpdateLFDDaily()
+                for questName, dungeonID in pairs(BG.lfdDailyDungeons) do
+                    local ok, doneToday = pcall(GetLFGDungeonRewards, dungeonID)
+                    if ok and type(doneToday) == "boolean" then
+                        local v = BGLite_equip.QuestCD[realmID][player][questName]
+                        local valid = v and v.endtime and GetServerTime() < v.endtime
+                        if doneToday and not valid then
+                            SaveLFDDaily(questName, dungeonID)      -- 已领首胜 → ✓
+                        elseif not doneToday and valid and v.notFinish then
+                            -- 未领首胜 → 留空：清掉旧的未完成记录
+                            BGLite_equip.QuestCD[realmID][player][questName] = nil
+                        end
+                    end
+                end
+            end
+            -- 打完随机本发奖时立即记录
+            BG.RegisterEvent("LFG_COMPLETION_REWARD", function()
+                local dungeonID = select(10, GetInstanceInfo())
+                if dungeonID and BG.ValueInTable(BG.lfdDailyDungeons, dungeonID) then
+                    BG.After(2, UpdateLFDDaily)
+                end
+            end)
+            -- 登录与定期兜底：反推 doneToday（处理当天已打完再上线、每日过期重挂）
+            BG.RegisterEvent("PLAYER_ENTERING_WORLD", function()
+                BG.After(5, UpdateLFDDaily)
+            end)
+            C_Timer.NewTicker(30, UpdateLFDDaily)
         end
 
         -- 交任务时触发
