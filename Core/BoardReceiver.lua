@@ -3,7 +3,9 @@ local AddonName, ns = ...
 local L = ns.L
 local SetClassCFF = ns.SetClassCFF
 
-local BOARD_PREFIX = "TuanJianBoard"
+-- 减伤链接收两条来源：TuanJianBoard（原版团减/老团长插件仍在用）与
+-- BGLLeaderBoard（团长助手 BGLite_leader 的专用频道）
+local BOARD_BASE_PREFIXES = { "TuanJianBoard", "BGLLeaderBoard" }
 local BOARD_PREFIX_COUNT = 5
 local BOARD_PREFIXES = {}
 local BAR_WIDTH = 300
@@ -19,10 +21,12 @@ local PREVIEW_FRAME_LEVEL = 140
 local VOICE_SOUND_FILE = "Interface\\AddOns\\BGLite\\Media\\sound\\other\\remind.mp3"
 local VOICE_TEXT_DELAY = .3
 
-for i = 1, BOARD_PREFIX_COUNT do
-    local prefix = BOARD_PREFIX .. i
-    BOARD_PREFIXES[prefix] = true
-    C_ChatInfo.RegisterAddonMessagePrefix(prefix)
+for _, base in ipairs(BOARD_BASE_PREFIXES) do
+    for i = 1, BOARD_PREFIX_COUNT do
+        local prefix = base .. i
+        BOARD_PREFIXES[prefix] = true
+        C_ChatInfo.RegisterAddonMessagePrefix(prefix)
+    end
 end
 
 local Receiver = {

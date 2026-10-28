@@ -6,7 +6,7 @@
 ## Dependencies: BGLite
 ## LoadOnDemand: 0
 ## SavedVariables: BGLite_equip
-## Version: 1.0.46
+## Version: 1.0.47
 
 Libs\LibBase64\LibBase64.lua
 Init.lua
@@ -51,6 +51,7 @@ Core\RoleOverviewSort.lua
 Core\RoleOverviewStart.lua
 Core\RoleOverviewOptions.lua
 Core\BoardReceiver.lua
+Core\LeaderBridge.lua
 Core\Map.lua
 Core\MapOptions.lua
 Core\Integration.lua

@@ -27,13 +27,20 @@ local function GetMapIconPath(FB, fileName)
     return format("Interface\\AddOns\\%s\\Media\\icon\\%s\\%s", MAP_ICON_FB[FB] or "BGLite", FB, fileName)
 end
 
+-- 站位图接收两条来源：
+--   BiaoGeAIMap  —— 原版 BiaoGe 与本补充包的历史频道
+--   BGLLeaderMap —— 团长助手 BGLite_leader 的专用频道
+local MAP_BASE_CHANNELS = { "BiaoGeAIMap", "BGLLeaderMap" }
+local MAP_BASE_PREFIXES = {}
 local MAP_PREFIXES = {}
-local channel = "BiaoGeAIMap"
-C_ChatInfo.RegisterAddonMessagePrefix(channel)
-for i = 1, BG.addonChannelCount do
-    local channelName = channel .. i
-    MAP_PREFIXES[channelName] = true
-    C_ChatInfo.RegisterAddonMessagePrefix(channelName)
+for _, base in ipairs(MAP_BASE_CHANNELS) do
+    MAP_BASE_PREFIXES[base] = true
+    C_ChatInfo.RegisterAddonMessagePrefix(base)
+    for i = 1, BG.addonChannelCount do
+        local channelName = base .. i
+        MAP_PREFIXES[channelName] = true
+        C_ChatInfo.RegisterAddonMessagePrefix(channelName)
+    end
 end
 
 BGE.Init(function()
@@ -621,7 +628,7 @@ BGE.Init(function()
     BG.RegisterEvent("CHAT_MSG_ADDON", function(self, event, ...)
         local prefix, msg, distType, _, sender = ...
         if distType == "RAID" and (BGDEBUG or UnitIsGroupLeader(sender) or UnitIsGroupAssistant(sender)) then
-            if prefix == channel then
+            if MAP_BASE_PREFIXES[prefix] then
                 if not receiveStart2[sender] then
                     if msg:match("^!AIMAP!") then
                         receiveStart[sender] = true
