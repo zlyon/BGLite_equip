@@ -196,6 +196,7 @@ function BG.RoleOverviewUI()
             BGLite_equip.MONEYchoice[1901] = 1
             BGLite_equip.MONEYchoice["items"] = 1
             BGLite_equip.MONEYchoice["items_updateItem"] = 1
+            BGLite_equip.MONEYchoice["flask"] = 1
             BGLite_equip.MONEYchoice["money"] = 1
         elseif BG.IsCTM then
             BGLite_equip.MONEYchoice = {
@@ -300,6 +301,16 @@ function BG.RoleOverviewUI()
             end)
             BGE.Once("FBCDchoice", 261015, function()
                 BGLite_equip.FBCDchoice.algalonKey = 1
+            end)
+            -- 合剂列上线：存量存档只补一次默认勾选，之后玩家可自行取消
+            BGE.Once("MONEYchoice", 261030, function()
+                BGLite_equip.MONEYchoice["flask"] = 1
+            end)
+            -- 烹饪、药水列**不默认启用**（只有合剂默认开）：把早期默认勾上的两列收回来一次，
+            -- 之后玩家想看到设置里自行勾选
+            BGE.Once("MONEYchoice", 2610302, function()
+                BGLite_equip.MONEYchoice["cook"] = nil
+                BGLite_equip.MONEYchoice["potion"] = nil
             end)
         elseif BG.IsCTM then
         elseif BG.IsMOP then
@@ -697,6 +708,34 @@ function BG.RoleOverviewUI()
                 { color = "FFFFFF", id = 161, width = 70 }, -- 岩石守卫
                 { color = "FFFFFF", id = 1900, width = 70 }, -- JJC
                 { color = "FFFFFF", id = 1901, width = 70 }, -- 荣誉
+                -- 合剂 / 烹饪 / 药水：一列内可放 1~2 种，按「职业 + 当前天赋」自动匹配
+                --   （见 BG.GetFlaskIDsByRole / GetPotionIDsByRole / GetCookIDsByRole）
+                --   两种时左右并排、一种时贴右边界（与其他列一样右对齐）；
+                --   列宽自适应：没有任何一行需要并排两种时收紧到单种宽度
+                {
+                    name = L["合剂"],
+                    color = "00BFFF",
+                    type = "flask",
+                    id = "flask",
+                    tex = select(5, GetItemInfoInstant(46376)) or 134842,
+                    width = 54 -- 兜底单种宽度；实际按「本表是否需要并排两种」自适应（见 RoleOverview_core）
+                },
+                {
+                    name = L["烹饪"],
+                    color = "00BFFF",
+                    type = "cook",
+                    id = "cook",
+                    tex = select(5, GetItemInfoInstant(43015)) or 133962,
+                    width = 54
+                },
+                {
+                    name = L["药水"],
+                    color = "00BFFF",
+                    type = "potion",
+                    id = "potion",
+                    tex = select(5, GetItemInfoInstant(40211)) or 134744,
+                    width = 54
+                },
                 { name = L["金币"], color = "FFD700", type = "money", id = "money", tex = 237618, width = 80 }, -- 金币
             }
         elseif BG.IsCTM then
@@ -2107,6 +2146,171 @@ function BG.RoleOverviewUI()
 
     -- 获取货币信息
     do
+        -- 时光服合剂：按「职业 + 当前天赋」决定看哪个合剂（物品ID）
+        local FLASK_FROST_WYRM = 46376   -- 冰霜巨龙合剂（法系）
+        local FLASK_ENDLESS_RAGE = 46377 -- 无尽怒气合剂（物理 / 坦克的第二格）
+        local FLASK_STONEBLOOD = 46379   -- 石血合剂（坦克）
+
+        -- 返回 { [1] = 第 1 格物品ID, [2] = 第 2 格物品ID 或 nil }
+        -- ⭐ 优先认「专精 ID」（跨客户端稳定，德鲁伊 4 专精也能分清熊/猫），
+        --    取不到专精 ID 时再退回「职业 + 天赋下标」判断。
+        -- ⭐ 天赋下标按各职业面板顺序：战士 武器/狂怒/防护，圣骑 神圣/防护/惩戒，
+        --    死骑 鲜血/冰霜/邪恶，小德 平衡/野性/恢复，萨满 元素/增强/恢复。
+        local TANK_SPECS = {
+            [73] = true,  -- 防护战士
+            [66] = true,  -- 防护圣骑士
+            [250] = true, -- 鲜血死亡骑士
+            [104] = true, -- 守护德鲁伊（熊）
+        }
+        local CASTER_SPECS = {
+            [65] = true,  -- 神圣圣骑士（奶骑）
+            [102] = true, -- 平衡德鲁伊
+            [105] = true, -- 恢复德鲁伊
+            [262] = true, -- 元素萨满
+            [264] = true, -- 恢复萨满
+            [62] = true, [63] = true, [64] = true,      -- 法师
+            [265] = true, [266] = true, [267] = true,   -- 术士
+            [256] = true, [257] = true, [258] = true,   -- 牧师（全天赋）
+        }
+        function BG.GetFlaskIDsByRole(class, talent, specID)
+            -- ⭐ 只认「白名单里真正的专精 ID」；时光服/经典服里 GetSpecialization 返回的是
+            --    天赋组下标（1~3），不是专精 ID，直接采信会把法系误判成物理 DPS。
+            if specID then
+                if TANK_SPECS[specID] then
+                    return { FLASK_STONEBLOOD, FLASK_ENDLESS_RAGE }
+                elseif CASTER_SPECS[specID] then
+                    return { FLASK_FROST_WYRM }
+                end
+            end
+            -- 兜底：按职业 + 天赋下标
+            if (class == "WARRIOR" and talent == 3)
+                or (class == "PALADIN" and talent == 2)
+                or (class == "DEATHKNIGHT" and talent == 1) then
+                return { FLASK_STONEBLOOD, FLASK_ENDLESS_RAGE }
+            end
+            if class == "MAGE" or class == "WARLOCK" or class == "PRIEST"
+                or (class == "PALADIN" and talent == 1)
+                or (class == "SHAMAN" and (talent == 1 or talent == 3))
+                or (class == "DRUID" and (talent == 1 or talent == 3)) then
+                return { FLASK_FROST_WYRM }
+            end
+            return { FLASK_ENDLESS_RAGE }
+        end
+
+        -- 时光服药水：按「职业 + 天赋」决定看哪几种（治疗/法系两种，坦克/物理一种）
+        local POTION_RUNIC_MANA = 33448      -- 符文法力药水（治疗）
+        local POTION_MANA_INJECTOR = 42545   -- 符文法力注射器（治疗，工程版）
+        local POTION_SPEED = 40211           -- 速度药水（物理 / 法系 DPS）
+        local POTION_WILD_MAGIC = 40212      -- 狂野魔法药水（法系 DPS）
+        local POTION_INDESTRUCTIBLE = 40093  -- 不灭药水（坦克）
+        local FOOD_FISH_FEAST = 43015        -- 鱼肉筵席（烹饪）
+        local FOOD_SPICY_MAMMOTH = 43005     -- 香辣猛犸小吃（猎人，Spiced Mammoth Treats）
+
+        local HEALER_POTIONS = { POTION_RUNIC_MANA, POTION_MANA_INJECTOR }
+        local CASTER_POTIONS = { POTION_SPEED, POTION_WILD_MAGIC }
+        local TANK_POTIONS = { POTION_INDESTRUCTIBLE }
+        local MELEE_POTIONS = { POTION_SPEED }
+
+        -- 天赋下标按各职业面板顺序：战士 武器/狂怒/防护，圣骑 神圣/防护/惩戒，
+        -- 死骑 鲜血/冰霜/邪恶，小德 平衡/野性/恢复，萨满 元素/增强/恢复，牧师 戒律/神圣/暗影
+        function BG.GetPotionIDsByRole(class, talent)
+            if class == "PALADIN" then
+                if talent == 1 then return HEALER_POTIONS end -- 神圣（奶骑）
+                if talent == 2 then return TANK_POTIONS end   -- 防护（防骑）
+                return MELEE_POTIONS                          -- 惩戒
+            elseif class == "PRIEST" then
+                if talent == 1 or talent == 2 then return HEALER_POTIONS end -- 戒律 / 神圣
+                return CASTER_POTIONS                                        -- 暗影
+            elseif class == "SHAMAN" then
+                if talent == 3 then return HEALER_POTIONS end -- 恢复
+                if talent == 1 then return CASTER_POTIONS end -- 元素
+                return MELEE_POTIONS                          -- 增强
+            elseif class == "DRUID" then
+                if talent == 3 then return HEALER_POTIONS end -- 恢复
+                if talent == 1 then return CASTER_POTIONS end -- 平衡
+                return MELEE_POTIONS                          -- 野性
+            elseif class == "WARRIOR" then
+                if talent == 3 then return TANK_POTIONS end -- 防护
+                return MELEE_POTIONS
+            elseif class == "DEATHKNIGHT" then
+                if talent == 1 then return TANK_POTIONS end -- 鲜血
+                return MELEE_POTIONS
+            elseif class == "MAGE" or class == "WARLOCK" then
+                return CASTER_POTIONS
+            end
+            return MELEE_POTIONS -- 猎人 / 盗贼 等物理
+        end
+
+        -- 烹饪：默认看鱼肉筵席；猎人额外看香辣猛犸小吃（自己吃宴席、宝宝喂猛犸，两种并排）
+        function BG.GetCookIDsByRole(class, talent)
+            if class == "HUNTER" then
+                return { FOOD_FISH_FEAST, FOOD_SPICY_MAMMOTH }
+            end
+            return { FOOD_FISH_FEAST }
+        end
+
+        -- ⭐ 统一入口：列类型 → 该角色应看的物品 ID 列表
+        --    采集、列宽自适应、渲染三处共用，避免各自维护一套判断
+        function BG.GetColumnItemIDs(kind, class, talent, specID)
+            if kind == "flask" then
+                return BG.GetFlaskIDsByRole(class, talent, specID)
+            elseif kind == "potion" then
+                return BG.GetPotionIDsByRole(class, talent)
+            elseif kind == "cook" then
+                return BG.GetCookIDsByRole(class, talent)
+            end
+            return {}
+        end
+
+        -- 取当前角色的专精 ID（取不到返回 nil，走兜底判断）
+        local function GetPlayerSpecID()
+            if C_SpecializationInfo and C_SpecializationInfo.GetSpecialization then
+                local si = C_SpecializationInfo.GetSpecialization()
+                if si and C_SpecializationInfo.GetSpecializationInfo then
+                    local id = C_SpecializationInfo.GetSpecializationInfo(si) -- 只取第一个返回值
+                    return id
+                end
+            elseif GetSpecialization and GetSpecializationInfo then
+                local si = GetSpecialization()
+                if si then
+                    return (GetSpecializationInfo(si)) -- 括号截断多余返回值
+                end
+            end
+        end
+
+        -- ⭐ 调试用：游戏里执行 /run BG.DebugFlask()
+        function BG.DebugFlask()
+            local player = BG.playerName
+            local pInfo = BGLite_equip.playerInfo and BGLite_equip.playerInfo[realmID]
+                and BGLite_equip.playerInfo[realmID][player]
+            local class = (pInfo and pInfo.class) or select(2, UnitClass("player"))
+            local talent = pInfo and pInfo.talent
+            local specID = GetPlayerSpecID()
+            local ids = BG.GetFlaskIDsByRole(class, talent, specID)
+            print(("[合剂] realm=%s player=%s class=%s talent=%s specID=%s 勾选=%s"):format(
+                tostring(realmID), tostring(player), tostring(class), tostring(talent),
+                tostring(specID), tostring(BGLite_equip.MONEYchoice and BGLite_equip.MONEYchoice.flask)))
+            for _, itemID in ipairs(ids) do
+                print(("   物品 %s = %s，背包+银行 %s 件"):format(tostring(itemID),
+                    tostring(GetItemInfo(itemID)), tostring(GetItemCount(itemID, true))))
+            end
+            local data = BGLite_equip[MONEY] and BGLite_equip[MONEY][realmID]
+                and BGLite_equip[MONEY][realmID][player] and BGLite_equip[MONEY][realmID][player].flask
+            if type(data) == "table" then
+                if data[1] then
+                    print("   存档 flask = 数组，" .. #data .. " 条")
+                    for i, v in ipairs(data) do
+                        print(("     [%d] itemID=%s count=%s"):format(i, tostring(v.itemID), tostring(v.count)))
+                    end
+                else
+                    print(("   存档 flask = 旧格式 itemID=%s count=%s"):format(
+                        tostring(data.itemID), tostring(data.count)))
+                end
+            else
+                print("   存档 flask = 无（该角色还没采集过）")
+            end
+        end
+
         function BG.MONEYupdate()
             local tbl = {}
             local player = BG.playerName
@@ -2116,6 +2320,23 @@ function BG.RoleOverviewUI()
             for i, v in ipairs(BG.MONEYall_table) do
                 if v.type == "money" then
                     tbl.money = floor(GetMoney() / 1e4)
+                elseif v.type == "flask" or v.type == "potion" or v.type == "cook" then
+                    local pInfo = BGLite_equip.playerInfo and BGLite_equip.playerInfo[realmID]
+                        and BGLite_equip.playerInfo[realmID][player]
+                    local ids = BG.GetColumnItemIDs(v.type,
+                        (pInfo and pInfo.class) or select(2, UnitClass("player")),
+                        pInfo and pInfo.talent, GetPlayerSpecID())
+                    -- 一列内可放 1~2 种：治疗/法系 DPS/坦克（合剂）两种，其余一种
+                    local list = {}
+                    for _, itemID in ipairs(ids) do
+                        list[#list + 1] = {
+                            count = GetItemCount(itemID, true) or 0,
+                            tex = select(5, GetItemInfoInstant(itemID)) or v.tex,
+                            isItem = true,
+                            itemID = itemID,
+                        }
+                    end
+                    tbl[v.id] = list
                 elseif v.type == "items" then
                     local itemsTbl = {}
                     for _, v in ipairs(v.ids) do

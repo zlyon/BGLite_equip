@@ -1,2 +1,4 @@
-- Fixed a known issue.
-- 修复一个已知问题。
+- Titan realm role overview: three new columns - Flask, Food and Potion.
+- 泰坦重铸时光服 角色总览 增加 合剂、烹饪、药水 三列。
+- Only the Flask column is on by default; turn Food or Potion on in the column list to show them.
+- 三列默认只启用合剂，烹饪、药水可在显示列里勾选。

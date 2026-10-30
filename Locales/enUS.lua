@@ -1837,6 +1837,8 @@ do
     L["（右键删除角色总览数据）"] = "(Right click to delete Character Overview data)"
     L["（插件右下角右键可删除数据）"] = "(Right click in the bottom right corner of the plugin to delete data)"
     L["< 角色货币总览 >"] = "< Character Currency Overview >"
+    L["合剂"] = "Flask"
+    L["药水"] = "Potion"
     L["金"] = "Gold"
     L["合计"] = "Total"
     L["你关注的装备开始拍卖了：%s（右键取消关注）"] = "The Gear you are following is up for auction : %s (Right click to unfollow)"

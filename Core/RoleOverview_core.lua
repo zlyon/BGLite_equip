@@ -658,7 +658,10 @@ do
             DefaultDB(MyUnderpants, copyTbl, showAllServer, MONEYchoice_table, nil, BGLite_equip)
         end
         if not onlyLocal and not selectedLocal then
-            DefaultDB(EquipAccounts, copyTbl, showAllServer, MONEYchoice_table, accountName)
+            -- ⭐ 时光服：同一角色以本地存档为准。本地 MONEY 表是当前角色刚采集的实时数据，
+            --    EquipAccounts 只是更新器注入的旧快照，直接覆盖会把新值（如合剂数量）改回旧的。
+            DefaultDB(EquipAccounts, copyTbl, showAllServer, MONEYchoice_table, accountName,
+                BG.IsTitan and BGLite_equip or nil)
         end
         if includeLocal then
             AddDB(BGLite_equip, newTbl, copyTbl)
@@ -673,7 +676,9 @@ do
             local pz = newTbl[ii].tbl
             for i = 2, #MONEYchoice_table do
                 local info = MONEYchoice_table[i]
-                if info.type ~= "equip" then
+                -- 合剂/烹饪/药水列各职业看的是不同物品，合计没有意义，跳过
+                if info.type ~= "equip" and info.type ~= "flask"
+                    and info.type ~= "cook" and info.type ~= "potion" then
                     local id = info.id
                     sum[id] = sum[id] or 0
                     sum[id] = sum[id] + (tonumber(GetCount(pz, id, info.type)) or 0)
@@ -926,6 +931,42 @@ function BG.AddRoleOverviewNote(realmID, realmName, player, colorplayer, note)
     StaticPopup_Show(popupName, realmName .. colorplayer, nil, note)
 end
 
+-- 「一列内 1~2 种物品」这类列的两种宽度：单种（一行「数量 + 瓶子」）与并排两种
+-- 适用：合剂 flask / 烹饪 cook / 药水 potion
+local ITEM_COL_WIDTH_ONE = 54
+local ITEM_COL_WIDTH_TWO = 98
+local ITEM_COL_TYPES = {
+    flask = true,
+    cook = true,
+    potion = true,
+}
+
+-- ⭐ 一列多物品（合剂/烹饪/药水）：先按该角色「职业 + 天赋」算出应看哪几种，
+--    再从存档数据里按 itemID 匹配，只保留数量 > 0 的条目（0 / 没数据的连瓶子都不画）。
+--    返回按「应看顺序」排列的数组，长度 0~2。
+--    这样旧版本误判存下的错误物品（法系却存了无尽怒气）不会再显示成 0。
+local function GetItemColumnShown(info, kind, class, talent)
+    local list = {}
+    if not (BG.GetColumnItemIDs and type(info) == "table") then return list end
+    local dataList = {}
+    if info[1] then
+        for i = 1, #info do
+            if info[i] then dataList[#dataList + 1] = info[i] end
+        end
+    elseif info.itemID then
+        dataList[1] = info -- 兼容旧存档里单条的扁平数据
+    end
+    for _, itemID in ipairs(BG.GetColumnItemIDs(kind, class, talent)) do
+        for _, item in ipairs(dataList) do
+            if item.itemID == itemID and (item.count or 0) > 0 then
+                list[#list + 1] = item
+                break
+            end
+        end
+    end
+    return list
+end
+
 -- 角色总览UI
 function BGE.SetFBCD(self, position, click, refresh)
     local frameName
@@ -936,6 +977,9 @@ function BGE.SetFBCD(self, position, click, refresh)
                 return
             end
             BG.FBCDFrame:Hide()
+            -- 旧框架只 Hide 会一直挂在 UIParent 下（每次重开/刷新都残留一整套控件），
+            -- 断开父级交给 GC 回收
+            BG.FBCDFrame:SetParent(nil)
         end
         frameName = ("BGEFBCDFrame" .. GetTime()):gsub("%.", "")
     else
@@ -1207,6 +1251,19 @@ function BGE.SetFBCD(self, position, click, refresh)
                 maxWeaponCount = max(maxWeaponCount, GetEquipCount(playerInfo.equip, slots))
             end
             info.width = maxWeaponCount >= 3 and 75 or 55
+        elseif ITEM_COL_TYPES[info.type] then
+            -- ⭐ 一列多物品的列自适应宽度：只有**确实要并排两种**时才变宽。
+            --    没有任何角色需要两种（没坦克/治疗等，或需要的两种里只有一种有货）
+            --    ⇒ 收紧到单种宽度，不预留第二格的空白。
+            local needTwo = false
+            for _, playerInfo in ipairs(DB2) do
+                if #GetItemColumnShown(playerInfo.tbl[info.id], info.type,
+                    playerInfo.class, playerInfo.talent) >= 2 then
+                    needTwo = true
+                    break
+                end
+            end
+            info.width = needTwo and ITEM_COL_WIDTH_TWO or ITEM_COL_WIDTH_ONE
         end
     end
 
@@ -1700,101 +1757,139 @@ function BGE.SetFBCD(self, position, click, refresh)
                 local vv = MONEYchoice_table[ii]
                 local id = vv.id
                 local info = pzDB[id]
-                local count = tostring(GetCount(pzDB, vv.id, vv.type))
-                local countString, setSmall
-                if vv.type == "skill" and id == 0 then
-                    countString = BG.FormatNumber(count)
-                    if isNewUI and countString ~= L["未学"] and countString ~= UNKNOW then
-                        setSmall = true
-                    end
-                else
-                    countString = BG.FormatNumber(count) .. (isNewUI and "" or " " .. AddTexture(vv.tex))
-                end
-
-                local t_paizi = mainFrame:CreateFontString()
-                if isNewUI then
-                    local x = leftOffset + isNewUI_TitleWidth + isNewUI_PlayerNameWidth * (playerIndex - 1 + 0.5)
-                    local y = -6 - height * (2.5 + n - #MONEYchoice_table + ii)
-                    t_paizi:SetPoint("CENTER", BG.FBCDFrame, "TOPLEFT", x, y)
-                else
-                    t_paizi:SetJustifyH("RIGHT")
-                    local width
-                    if ii == 2 then
-                        width = MONEYchoice_table[ii - 1].width + MONEYchoice_table[ii].width
-                        t_paizi:SetPoint("RIGHT", right, "LEFT", width, 0)
+                if ITEM_COL_TYPES[vv.type] then
+                    -- ⭐ 合剂/烹饪/药水：一列内最多并排两种（左一种、右一种），整体右对齐；
+                    --    只有一种时贴右边界；数量为 0 或没数据时整格不画
+                    local list = GetItemColumnShown(info, vv.type, v.class, v.talent)
+                    local holder = CreateFrame("Frame", nil, mainFrame)
+                    holder:SetSize(vv.width, 20)
+                    if isNewUI then
+                        local x = leftOffset + isNewUI_TitleWidth + isNewUI_PlayerNameWidth * (playerIndex - 1 + 0.5)
+                        local y = -6 - height * (2.5 + n - #MONEYchoice_table + ii)
+                        holder:SetPoint("CENTER", BG.FBCDFrame, "TOPLEFT", x, y)
                     else
-                        width = MONEYchoice_table[ii].width
-                        t_paizi:SetPoint("TOPRIGHT", right, "TOPRIGHT", width, 0)
+                        local width
+                        if ii == 2 then
+                            width = MONEYchoice_table[ii - 1].width + MONEYchoice_table[ii].width
+                            holder:SetPoint("TOPRIGHT", right, "TOPLEFT", width, 0)
+                        else
+                            width = MONEYchoice_table[ii].width
+                            holder:SetPoint("TOPRIGHT", right, "TOPRIGHT", width, 0)
+                        end
                     end
-                end
-
-                if count:match("^%d+") == "0" or count:find(UNKNOWN) or count:find(L["未学"]) then
-                    t_paizi:SetTextColor(0.5, 0.5, 0.5)
-                end
-                if vv.type == "currency" and tonumber(count) then
-                    local isFull
-                    local weekTimestamp = info.weekTimestamp
-                    if info.isFull or (weekTimestamp and weekTimestamp > GetServerTime()) then
-                        t_paizi:SetTextColor(1, 0, 0)
-                        isFull = true
+                    -- 和其他列一样**右对齐**：从右往左堆，第一种在左、第二种紧挨其右侧
+                    local prev
+                    for i = #list, 1, -1 do
+                        local item = list[i]
+                        local fs = holder:CreateFontString()
+                        fs:SetFont(BIAOGE_TEXT_FONT, fontsize, "OUTLINE")
+                        if prev then
+                            fs:SetPoint("RIGHT", prev, "LEFT", -6, 0)
+                        else
+                            fs:SetPoint("RIGHT", 0, 0)
+                        end
+                        fs:SetText(BG.FormatNumber(item.count)
+                            .. (isNewUI and "" or " " .. AddTexture(item.tex or vv.tex)))
+                        prev = fs
+                    end
+                    right = holder
+                else
+                    local count = tostring(GetCount(pzDB, vv.id, vv.type))
+                    local countString, setSmall
+                    if vv.type == "skill" and id == 0 then
+                        countString = BG.FormatNumber(count)
+                        if isNewUI and countString ~= L["未学"] and countString ~= UNKNOW then
+                            setSmall = true
+                        end
+                    else
+                        countString = BG.FormatNumber(count) .. (isNewUI and "" or " " .. AddTexture(vv.tex))
                     end
 
-                    if BG.showCurrencyTop then
-                        local totalCount = info.totalCount
-                        local totalMax = info.totalMax
-                        if totalCount and totalMax then
+                    local t_paizi = mainFrame:CreateFontString()
+                    if isNewUI then
+                        local x = leftOffset + isNewUI_TitleWidth + isNewUI_PlayerNameWidth * (playerIndex - 1 + 0.5)
+                        local y = -6 - height * (2.5 + n - #MONEYchoice_table + ii)
+                        t_paizi:SetPoint("CENTER", BG.FBCDFrame, "TOPLEFT", x, y)
+                    else
+                        t_paizi:SetJustifyH("RIGHT")
+                        local width
+                        if ii == 2 then
+                            width = MONEYchoice_table[ii - 1].width + MONEYchoice_table[ii].width
+                            t_paizi:SetPoint("RIGHT", right, "LEFT", width, 0)
+                        else
+                            width = MONEYchoice_table[ii].width
+                            t_paizi:SetPoint("TOPRIGHT", right, "TOPRIGHT", width, 0)
+                        end
+                    end
+
+                    if count:match("^%d+") == "0" or count:find(UNKNOWN) or count:find(L["未学"]) then
+                        t_paizi:SetTextColor(0.5, 0.5, 0.5)
+                    end
+                    if vv.type == "currency" and tonumber(count) then
+                        local isFull
+                        local weekTimestamp = info.weekTimestamp
+                        if info.isFull or (weekTimestamp and weekTimestamp > GetServerTime()) then
+                            t_paizi:SetTextColor(1, 0, 0)
+                            isFull = true
+                        end
+
+                        if BG.showCurrencyTop then
+                            local totalCount = info.totalCount
+                            local totalMax = info.totalMax
+                            if totalCount and totalMax then
+                                if isNewUI then setSmall = true end
+                                countString = format("|cff%s%s/%s|r %s%s",
+                                    isFull and "ff0000" or "808080",
+                                    BG.FormatNumber(totalCount, 3),
+                                    totalMax == 0 and UNKNOWN or BG.FormatNumber(totalMax, 3),
+                                    count,
+                                    isNewUI and "" or " " .. AddTexture(vv.tex))
+                            end
+                        end
+
+                        local weekCount = info.weekCount
+                        local weekMax = info.weekMax
+                        if weekCount and weekMax then
                             if isNewUI then setSmall = true end
-                            countString = format("|cff%s%s/%s|r %s%s",
-                                isFull and "ff0000" or "808080",
-                                BG.FormatNumber(totalCount, 3),
-                                totalMax == 0 and UNKNOWN or BG.FormatNumber(totalMax, 3),
+                            countString = format("|cff%s%s/%s|r %s%s", isFull and "ff0000" or "808080",
+                                BG.FormatNumber(weekCount, 3),
+                                BG.FormatNumber(weekMax, 3),
                                 count,
                                 isNewUI and "" or " " .. AddTexture(vv.tex))
                         end
                     end
 
-                    local weekCount = info.weekCount
-                    local weekMax = info.weekMax
-                    if weekCount and weekMax then
-                        if isNewUI then setSmall = true end
-                        countString = format("|cff%s%s/%s|r %s%s", isFull and "ff0000" or "808080",
-                            BG.FormatNumber(weekCount, 3),
-                            BG.FormatNumber(weekMax, 3),
-                            count,
-                            isNewUI and "" or " " .. AddTexture(vv.tex))
-                    end
-                end
-
-                t_paizi:SetFont(BIAOGE_TEXT_FONT, setSmall and fontsize0 or fontsize, "OUTLINE")
-                if type(info) == "table" and info.isItem and info.quest then
-                    t_paizi:SetText(L["完成"] .. (isNewUI and "" or " " .. AddTexture(vv.tex)))
-                    t_paizi:SetTextColor(0, 1, 0)
-                elseif vv.type == "equip" then
-                    t_paizi:SetText(" ")
-                    CreateEquips(t_paizi, v.equip, vv.id, v.class, isNewUI)
-                elseif vv.type == "items" then
-                    t_paizi:SetText(" ")
-                    if type(info) == "table" then
-                        if next(info) then
-                            if isNewUI then
-                                t_paizi:SetWidth(itemWidth * #info + (#info - 1))
-                            end
-                            for i, v in ipairs(info) do
-                                CreateItem(t_paizi, i, v, isNewUI)
+                    t_paizi:SetFont(BIAOGE_TEXT_FONT, setSmall and fontsize0 or fontsize, "OUTLINE")
+                    if type(info) == "table" and info.isItem and info.quest then
+                        t_paizi:SetText(L["完成"] .. (isNewUI and "" or " " .. AddTexture(vv.tex)))
+                        t_paizi:SetTextColor(0, 1, 0)
+                    elseif vv.type == "equip" then
+                        t_paizi:SetText(" ")
+                        CreateEquips(t_paizi, v.equip, vv.id, v.class, isNewUI)
+                    elseif vv.type == "items" then
+                        t_paizi:SetText(" ")
+                        if type(info) == "table" then
+                            if next(info) then
+                                if isNewUI then
+                                    t_paizi:SetWidth(itemWidth * #info + (#info - 1))
+                                end
+                                for i, v in ipairs(info) do
+                                    CreateItem(t_paizi, i, v, isNewUI)
+                                end
+                            else
+                                t_paizi:SetText(L["无"])
                             end
                         else
-                            t_paizi:SetText(L["无"])
+                            t_paizi:SetText(UNKNOWN)
                         end
+                    elseif id == "xp" and level and level >= BG.fullLevel then
+                        t_paizi:SetText(L["满级"] .. (isNewUI and "" or " " .. AddTexture(vv.tex)))
+                        t_paizi:SetTextColor(0, 1, 0)
                     else
-                        t_paizi:SetText(UNKNOWN)
+                        t_paizi:SetText(countString)
                     end
-                elseif id == "xp" and level and level >= BG.fullLevel then
-                    t_paizi:SetText(L["满级"] .. (isNewUI and "" or " " .. AddTexture(vv.tex)))
-                    t_paizi:SetTextColor(0, 1, 0)
-                else
-                    t_paizi:SetText(countString)
+                    right = t_paizi
                 end
-                right = t_paizi
             end
 
             if isNewUI and BG.IsMe(realmID, player) then
@@ -1841,7 +1936,6 @@ function BGE.SetFBCD(self, position, click, refresh)
             for ii = 2, #MONEYchoice_table do
                 local vv = MONEYchoice_table[ii]
                 local id = vv.id
-                local count = BG.FormatNumber(GetCount(DB2sum, id, vv.type)) .. " " .. AddTexture(vv.tex) -- 牌子
                 local t_paizi = mainFrame:CreateFontString()
                 t_paizi:SetFont(BIAOGE_TEXT_FONT, fontsize, "OUTLINE")
                 if isNewUI then
@@ -1858,13 +1952,16 @@ function BGE.SetFBCD(self, position, click, refresh)
                         t_paizi:SetPoint("TOPRIGHT", right, "TOPRIGHT", width, 0)
                     end
                 end
-                if id == "xp" or vv.type == "skill" or vv.type == "items" or vv.type == "equip" then
+                if ITEM_COL_TYPES[vv.type] or id == "xp" or vv.type == "skill"
+                    or vv.type == "items" or vv.type == "equip" then
+                    -- 合剂/烹饪/药水各职业看的是不同物品，合计没有意义：整格留空（不画 0 也不画图标）
                     t_paizi:SetText("")
                 else
+                    local count = BG.FormatNumber(GetCount(DB2sum, id, vv.type)) .. " " .. AddTexture(vv.tex) -- 牌子
                     t_paizi:SetText(count)
-                end
-                if count:match("^%d+") == "0" then
-                    t_paizi:SetTextColor(0.5, 0.5, 0.5)
+                    if count:match("^%d+") == "0" then
+                        t_paizi:SetTextColor(0.5, 0.5, 0.5)
+                    end
                 end
                 right = t_paizi
             end
