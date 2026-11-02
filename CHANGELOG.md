@@ -1,4 +1,2 @@
-- Titan realm role overview: three new columns - Flask, Food and Potion.
-- 泰坦重铸时光服 角色总览 增加 合剂、烹饪、药水 三列。
-- Only the Flask column is on by default; turn Food or Potion on in the column list to show them.
-- 三列默认只启用合剂，烹饪、药水可在显示列里勾选。
+- Added expenditure template management: right-click the expenditure row title in the table to apply, save or manage templates.
+- 增加支出模板管理，表格的支出按钮右键可以使用、保存、管理支出模板。

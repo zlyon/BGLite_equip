@@ -6,7 +6,7 @@
 ## Dependencies: BGLite
 ## LoadOnDemand: 0
 ## SavedVariables: BGLite_equip
-## Version: 1.0.48
+## Version: 1.0.49
 
 Libs\LibBase64\LibBase64.lua
 Init.lua
@@ -56,3 +56,4 @@ Core\Map.lua
 Core\MapOptions.lua
 Core\Integration.lua
 Core\FineEnhancement.lua
+Core\ExpenditureTemplate.lua

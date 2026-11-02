@@ -240,6 +240,9 @@ local function AttachFineMenu(FB)
     if f and not f.BGEFineMenu then
         f.BGEFineMenu = true
         SetFineEnhancementBossName(FB, f)
+        if ns.CreateRightClickHint then
+            ns.CreateRightClickHint(f)
+        end
     end
 end
 

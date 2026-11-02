@@ -153,6 +153,56 @@ local function AddTexture(Texture, y, coord, width)
 end
 ns.AddTexture = AddTexture
 
+------------------标题下方的“可右键”小鼠标提示------------------
+-- 支出、罚款这类行只有右键才有功能，光靠悬停提示玩家发现不了。
+-- 在标题文字正下方常驻一个小鼠标图标，提示这里可以右键。
+local function CreateRightClickHint(f, offsetY)
+    if type(f) ~= "table" or f.BGEHintIcon or not f.text then
+        return
+    end
+    f.BGEHintIcon = true
+
+    local holder = CreateFrame("Frame", nil, f)
+    holder:SetSize(26, 24)
+    holder:SetPoint("TOP", f.text, "BOTTOM", 0, offsetY or -7)
+    holder:EnableMouse(true)
+
+    local icon = holder:CreateFontString(nil, "OVERLAY")
+    icon:SetPoint("CENTER", holder, "CENTER", 0, 0)
+    icon:SetJustifyH("CENTER")
+    if BIAOGE_TEXT_FONT then
+        icon:SetFont(BIAOGE_TEXT_FONT, 12, "OUTLINE")
+    end
+    icon:SetText("|A:NPE_RightClick:18:18|a")
+    icon:SetAlpha(0.9)
+
+    -- 图标的鼠标事件转发给标题 frame，右键菜单和 tooltip 行为保持一致
+    local function Relay(script, ...)
+        local handler = f:GetScript(script)
+        if handler then
+            return handler(f, ...)
+        end
+    end
+    holder:SetScript("OnMouseDown", function(_, button)
+        Relay("OnMouseDown", button)
+    end)
+    holder:SetScript("OnMouseUp", function(_, button)
+        Relay("OnMouseUp", button)
+    end)
+    holder:SetScript("OnEnter", function()
+        icon:SetAlpha(1)
+        Relay("OnEnter")
+    end)
+    holder:SetScript("OnLeave", function()
+        icon:SetAlpha(0.9)
+        Relay("OnLeave")
+    end)
+
+    f.BGEHintIconFrame = holder
+    return holder
+end
+ns.CreateRightClickHint = CreateRightClickHint
+
 local function CreateLine(parent, y, width, height, color, alpha)
     local line = parent:CreateLine()
     line:SetColorTexture(RGB(color or "808080", alpha or 1))
