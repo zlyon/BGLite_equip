@@ -1,2 +1,2 @@
-- Added expenditure template management: right-click the expenditure row title in the table to apply, save or manage templates.
-- 增加支出模板管理，表格的支出按钮右键可以使用、保存、管理支出模板。
+- Fixed a bug where unchecking "Show BOSS Model" did not take effect after reloading the UI.
+- 修复 取消勾选「显示BOSS模型」的bug。

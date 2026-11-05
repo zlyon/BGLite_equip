@@ -40,7 +40,11 @@ BGE.Init(function()
                 end
             end
         end
-        if BG.CreateBossModel then
+        -- BGLite 构建主界面时已经调用过 BG.CreateBossModel，这里只在完全缺失时补建。
+        -- 无条件再建一次会生成第二套全新的模型：新建的 PlayerModel 默认是显示的，
+        -- 而选项页里的隐藏只对当时已存在的那套生效，于是重载后“显示BOSS模型”明明没勾，
+        -- 模型照样出现（那是后建的重复模型）。同时两套模型重叠，渲染开销也翻倍。
+        if BG.CreateBossModel and (not BG.bossModels or #BG.bossModels == 0) then
             pcall(BG.CreateBossModel)
         end
         if not BG.IsRetail and BG.HopeDaoChuUI then
@@ -54,6 +58,19 @@ BGE.Init(function()
         end
         if BG.ItemLibUI then
             pcall(BG.ItemLibUI)
+        end
+    end
+
+    -- 兜底：按存档里的“显示BOSS模型”再同步一次。BGLite 的隐藏只发生在选项页构建那一刻，
+    -- 之后任何新建的模型都不会自动遵守这个开关，这里统一收口，避免再出现“没勾却显示”。
+    if BG.bossModels then
+        local show = BiaoGe and BiaoGe.options and BiaoGe.options.model == 1
+        for _, model in ipairs(BG.bossModels) do
+            if show then
+                model:Show()
+            else
+                model:Hide()
+            end
         end
     end
 end)
