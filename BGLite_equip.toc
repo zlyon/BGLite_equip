@@ -6,7 +6,7 @@
 ## Dependencies: BGLite
 ## LoadOnDemand: 0
 ## SavedVariables: BGLite_equip
-## Version: 1.0.50
+## Version: 1.0.51
 
 Libs\LibBase64\LibBase64.lua
 Init.lua

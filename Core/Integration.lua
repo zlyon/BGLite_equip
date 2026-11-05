@@ -61,6 +61,32 @@ BGE.Init(function()
         end
     end
 
+    -- 副本标签切换：BGLite 精简版的 BG.ClickFBbutton 只切了「表格」和「对账」两页，
+    -- 心愿清单那一支被砍掉了（BiaoGeX 原版 Core/BiaoGe.lua 里是
+    -- `elseif BG.HopeMainFrame:IsVisible() then ... HopeFrame:Show()`）。
+    -- 后果：在心愿清单页点副本标签，BG.FB1 变了、心愿数据也刷新了，但显示的还是
+    -- 上一个副本的格子，必须关窗重开（OnShow 里才用新的 BG.FB1 去 Show）才切换。
+    -- BGLite 是纯净版不能改，这里用 hooksecurefunc 把缺的一支补上。
+    if BG.HopeMainFrame and BG.ClickFBbutton and not BG.equipHopeSwitchHooked then
+        BG.equipHopeSwitchHooked = true
+        hooksecurefunc(BG, "ClickFBbutton", function(FB)
+            if type(FB) ~= "string" then return end
+            if not (BG.HopeMainFrame and BG.HopeMainFrame:IsVisible()) then return end
+            local target = BG["HopeFrame" .. FB]
+            if not target then return end
+            for _, _FB in ipairs(BG.FBtable) do
+                local f = BG["HopeFrame" .. _FB]
+                if f and f ~= target then
+                    f:Hide()
+                end
+            end
+            -- 目标页已经是显示状态就别再 Show，免得白白重跑一次 OnShow 里的整理
+            if not target:IsShown() then
+                target:Show()
+            end
+        end)
+    end
+
     -- 兜底：按存档里的“显示BOSS模型”再同步一次。BGLite 的隐藏只发生在选项页构建那一刻，
     -- 之后任何新建的模型都不会自动遵守这个开关，这里统一收口，避免再出现“没勾却显示”。
     if BG.bossModels then

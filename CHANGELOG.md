@@ -1,2 +1,2 @@
-- Fixed a bug where unchecking "Show BOSS Model" did not take effect after reloading the UI.
-- 修复 取消勾选「显示BOSS模型」的bug。
+- Fixed a bug where switching dungeon tabs on the Wish List page did not refresh the content until the window was reopened.
+- 修复 心愿清单页点副本标签后内容不切换、必须关窗重开的bug。
