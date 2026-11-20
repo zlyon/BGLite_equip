@@ -1,0 +1,803 @@
+﻿local AddonName, nsAll = ...
+local ns = nsAll.ZL
+if not ns then
+    ns = {}
+    nsAll.ZL = ns
+    setmetatable(ns, {
+        __index = function(_, k)
+            if k == "Menu" or k == "Maxb" or k == "HopeMaxi" or k == "HopeMaxb" or k == "HopeMaxn" then
+                return nsAll[k]
+            end
+        end,
+    })
+end
+
+local L = ns.L
+local GetClassColor = ns.GetClassColor
+local GetClassName = ns.GetClassName
+local GetItemStats = GetItemStats or C_Item.GetItemStats
+
+ZL.Init(function()
+    -- 多角色装备
+    local mainFrame, leftFrame, rightFrame, slotTbl
+    local iLevelColor
+    local enchantCount = {}
+    local rangedEnchant = {
+        class = "HUNTER",
+        classID = 2,                                           -- 武器
+        subClassIDs = { [2] = true, [3] = true, [18] = true }, -- 弓、枪、弩
+    }
+    local gemInfo = {}
+    enchantCount = {
+    }
+
+    local function SetiLevelColor(level)
+        if iLevelColor then
+            for i = #iLevelColor, 1, -1 do
+                if level >= iLevelColor[i] then
+                    local r, g, b = GetItemQualityColor(i)
+                    return r, g, b
+                end
+            end
+        end
+        return 1, 1, 1
+    end
+    local function GetGemCount(link)
+        local count = 0
+        local stats = GetItemStats(link)
+        if stats then
+            for stat, _count in pairs(stats) do
+                if stat:find("EMPTY_SOCKET_") then
+                    count = count + _count
+                end
+            end
+        end
+        return count
+    end
+    local function ItemNeedEnchant(equipLoc, skill, class, classID, subClassID)
+        local info = enchantCount[equipLoc]
+        local _type = type(info)
+        if _type == 'number' then
+            return info
+        elseif _type == "table" then
+            if info.class and class ~= info.class then return false end
+            if info.classID and classID ~= info.classID then return false end
+            if info.subClassIDs and not info.subClassIDs[subClassID] then return false end
+            if info.id and not (skill and skill[info.id] and skill[info.id].level >= info.level) then
+                return false
+            end
+            return 1
+        end
+        return false
+    end
+    local function ItemNeedGem(equipLoc, link, skill)
+        local gemCount = GetGemCount(link)
+        return gemCount
+    end
+    function ZL.GetEnchantInfo(link, skill, class)
+        if not link then return end
+        local itemID, chant, gem1, gem2, gem3, gem4 = link:match("item:(%d+):(%d-):(%d-):(%d-):(%d-):")
+        if itemID then itemID = tonumber(itemID) end
+        if chant then chant = tonumber(chant) end
+        if gem1 then gem1 = tonumber(gem1) end
+        if gem2 then gem2 = tonumber(gem2) end
+        if gem3 then gem3 = tonumber(gem3) end
+        if gem4 then gem4 = tonumber(gem4) end
+        local equipLoc, _, classID, subClassID = select(4, GetItemInfoInstant(itemID))
+        return chant, ItemNeedEnchant(equipLoc, skill, class, classID, subClassID), { gem1, gem2, gem3, gem4 }, ItemNeedGem(equipLoc, link, skill), equipLoc, itemID
+    end
+
+    local function CreateMainFrame()
+        local r, g, b = GetClassColor(select(2, UnitClass("player")))
+        local f = CreateFrame("Frame", nil, nil)
+        f:SetSize(1, 350)
+        f:SetToplevel(true)
+        f:SetFrameStrata("HIGH")
+        mainFrame = f
+        ZL.equipFrame = f
+        f:SetScript("OnHide", function(self)
+            self.equipLoadID = (self.equipLoadID or 0) + 1
+            self.realmID = nil
+            self.player = nil
+            self.click = nil
+            if ZL.HideBagFrame then
+                ZL.HideBagFrame()
+            end
+            self:Hide()
+        end)
+
+        -- leftFrame
+        do
+            -- 框架
+            do
+                local f = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+                f:SetBackdrop({
+                    bgFile = "Interface/ChatFrame/ChatFrameBackground",
+                    edgeSize = 16,
+                    edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+                    insets = { left = 3, right = 3, top = 3, bottom = 3 }
+                })
+                f:SetBackdropColor(0, 0, 0, 0.8)
+                f:SetBackdropBorderColor(r, g, b, 1)
+                f:SetPoint("TOPLEFT")
+                f:SetSize(280, mainFrame:GetHeight())
+                leftFrame = f
+
+                mainFrame.CloseButton = CreateFrame("Button", nil, mainFrame, "UIPanelCloseButton")
+                mainFrame.CloseButton:SetPoint("TOPRIGHT", f, "TOPRIGHT", ZL.CloseButtonOffset, ZL.CloseButtonOffset)
+
+                local function CreateViewerButton(texture, tooltip, toggleFunc)
+                    local button = CreateFrame("CheckButton", nil, f, "BackdropTemplate")
+                    button:SetSize(20, 20)
+                    button:SetBackdrop({ edgeFile = "Interface/ChatFrame/ChatFrameBackground", edgeSize = 1 })
+                    button:SetBackdropBorderColor(.5, .5, .5, 1)
+                    button:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square")
+                    local checkedTexture = button:CreateTexture(nil, "OVERLAY")
+                    checkedTexture:SetPoint("CENTER")
+                    checkedTexture:SetSize(35, 35)
+                    checkedTexture:SetTexture("Interface/Buttons/UI-ActionButton-Border")
+                    checkedTexture:SetBlendMode("ADD")
+                    checkedTexture:SetVertexColor(1, .82, 0, .8)
+                    button:SetCheckedTexture(checkedTexture)
+                    button.icon = button:CreateTexture(nil, "ARTWORK")
+                    button.icon:SetAllPoints()
+                    button.icon:SetTexture(texture)
+                    button.icon:SetTexCoord(unpack(ZL.iconTexCoord))
+                    button:SetScript("OnEnter", function(self)
+                        GameTooltip:SetOwner(self, "ANCHOR_TOP")
+                        GameTooltip:SetText(tooltip)
+                        GameTooltip:Show()
+                    end)
+                    button:SetScript("OnLeave", GameTooltip_Hide)
+                    button:SetScript("OnClick", function()
+                        ZL.PlaySound(1)
+                        if mainFrame.click and mainFrame.realmID and mainFrame.player and toggleFunc then
+                            toggleFunc(mainFrame, mainFrame.isAccounts, mainFrame.realmID, mainFrame.player,
+                                mainFrame.colorplayer, mainFrame.class)
+                        end
+                    end)
+                    button:Hide()
+                    return button
+                end
+
+                mainFrame.BagButton = CreateViewerButton("Interface\\Icons\\INV_Misc_Bag_08",
+                    BAGSLOT or INVENTORY_TOOLTIP or "Bags", ZL.ToggleBagFrame)
+                mainFrame.BagButton:SetPoint("TOPLEFT", 7, -4)
+                mainFrame.BankButton = CreateViewerButton("Interface\\Icons\\inv_misc_bag_14",
+                    BANK or "Bank", ZL.ToggleBankFrame)
+                mainFrame.BankButton:SetPoint("LEFT", mainFrame.BagButton, "RIGHT", 3, 0)
+
+                local l = leftFrame:CreateLine()
+                l:SetColorTexture(r, g, b, 1)
+                l:SetStartPoint("TOPLEFT", 5, -25)
+                l:SetEndPoint("TOPRIGHT", -5, -25)
+                l:SetThickness(1)
+                leftFrame.line = l
+
+                local t = leftFrame:CreateFontString()
+                t:SetFont(ns.Font, 15, "OUTLINE")
+                t:SetPoint("CENTER", leftFrame, "TOP", 0, -14)
+                t:SetTextColor(1, 1, 1)
+                leftFrame.NameText = t
+
+                local t = leftFrame:CreateFontString()
+                t:SetFont(ns.Font, 14, "OUTLINE")
+                t:SetPoint("TOP", leftFrame, "TOP", 0, -30)
+                t:SetTextColor(1, .82, 0)
+                leftFrame.LevelText = t
+
+                local t = leftFrame:CreateFontString()
+                t:SetFont(ns.Font, 14, "OUTLINE")
+                t:SetPoint("TOP", leftFrame, "TOP", 0, -50)
+                t:SetTextColor(1, .82, 0)
+                leftFrame.iLevelText = t
+
+                leftFrame.setFrame = CreateFrame("Frame", nil, leftFrame)
+                leftFrame.setFrame:SetPoint("BOTTOM", leftFrame, "BOTTOM", 0, 50)
+                leftFrame.setFrame:SetSize(1, 1)
+                leftFrame.sets = {}
+
+                local t = leftFrame:CreateFontString(nil, "OVERLAY")
+                t:SetFont(ns.Font, 14, "OUTLINE")
+                t:SetPoint("BOTTOMLEFT", leftFrame, "TOPLEFT", 5, 0)
+                t:SetTextColor(1, .82, 0)
+                t:SetWidth(leftFrame:GetWidth() - 10)
+                t:SetJustifyH("LEFT")
+                leftFrame.accountText = t
+            end
+
+            -- WLK传家宝附魔
+
+            -- 装备槽位
+            slotTbl = {
+                { slot = "Headslot", point = { "TOPLEFT", leftFrame, "TOPLEFT", 8, -30 } },
+                { slot = "NeckSlot", point = "down" },
+                { slot = "ShoulderSlot", point = "down" },
+                { slot = "BackSlot", point = "down" },
+                { slot = "ChestSlot", point = "down" },
+                { slot = "ShirtSlot", point = "down" },
+                { slot = "TabardSlot", point = "down" }, -- slotID=19
+                { slot = "WristSlot", point = "down" },
+                { slot = "HandsSlot", point = { "TOPRIGHT", leftFrame, "TOPRIGHT", -8, -30 } },
+                { slot = "WaistSlot", point = "down" },
+                { slot = "LegsSlot", point = "down" },
+                { slot = "FeetSlot", point = "down" },
+                { slot = "Finger0Slot", point = "down" },
+                { slot = "Finger1Slot", point = "down" },
+                { slot = "Trinket0Slot", point = "down" },
+                { slot = "Trinket1Slot", point = "down" },
+            }
+            tinsert(slotTbl, { slot = "MainHandSlot", point = { "BOTTOMLEFT", leftFrame, "BOTTOMLEFT", leftFrame:GetWidth() / 2 - 53, 8 } })
+            tinsert(slotTbl, { slot = "SecondaryHandSlot", point = "right" })
+            tinsert(slotTbl, { slot = "RangedSlot", point = "right" })
+            local function GetSlotPoint(slot)
+                for k, v in pairs(slotTbl) do
+                    if v.slot == slot then
+                        return v.point
+                    end
+                end
+            end
+            local lastButton
+            local function CreateSlot(slot)
+                local slotID, textureName = GetInventorySlotInfo(slot)
+                local bt = CreateFrame("Button", nil, leftFrame, "BackdropTemplate")
+                bt:SetBackdrop({
+                    edgeFile = "Interface/ChatFrame/ChatFrameBackground",
+                    edgeSize = 1.5,
+                })
+                bt.borderColorBG = { .3, .3, .3, 1 }
+                bt:SetBackdropBorderColor(unpack(bt.borderColorBG))
+                bt:SetSize(35, 35)
+                local point = GetSlotPoint(slot)
+                if type(point) == "table" then
+                    bt:SetPoint(unpack(point))
+                elseif point == "down" then
+                    bt:SetPoint("TOPLEFT", lastButton, "BOTTOMLEFT", 0, -3)
+                elseif point == "right" then
+                    bt:SetPoint("TOPLEFT", lastButton, "TOPRIGHT", 3, 0)
+                end
+                bt.ID = slotID
+                bt.textureBG = textureName
+                leftFrame["slot" .. slotID] = bt
+                lastButton = bt
+                bt.icon = bt:CreateTexture(nil, "BACKGROUND", nil, 1)
+                bt.icon:SetAllPoints()
+                bt.icon:SetTexture(textureName)
+                bt.icon:SetTexCoord(unpack(ZL.iconTexCoord))
+                bt:SetHighlightTexture([[Interface\Buttons\ButtonHilight-Square]])
+
+                bt.level = bt:CreateFontString()
+                bt.level:SetFont(ns.Font, 12.5, "OUTLINE")
+                bt.level:SetPoint("BOTTOM", 0, 1)
+
+                bt:SetScript("OnEnter", function(self)
+                    if not bt.link then return end
+                    if ZL.ButtonIsInRight(self) then
+                        GameTooltip:SetOwner(self, "ANCHOR_LEFT", 0, 0)
+                    else
+                        GameTooltip:SetOwner(self, "ANCHOR_RIGHT", 0, 0)
+                    end
+                    GameTooltip:ClearLines()
+                    GameTooltip:SetHyperlink(bt.link)
+                end)
+                bt:SetScript("OnLeave", GameTooltip_Hide)
+            end
+            for _, v in ipairs(slotTbl) do
+                CreateSlot(v.slot)
+            end
+        end
+
+        -- rightFrame
+        do
+            -- 框架
+            local f = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+            f:SetBackdrop({
+                bgFile = "Interface/ChatFrame/ChatFrameBackground",
+                edgeSize = 16,
+                edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+                insets = { left = 3, right = 3, top = 3, bottom = 3 }
+            })
+            f:SetBackdropColor(0, 0, 0, 0.8)
+            f:SetBackdropBorderColor(r, g, b, 1)
+            f:SetPoint("TOPLEFT", leftFrame, "TOPRIGHT", -2, 0)
+            f:SetSize(1, mainFrame:GetHeight())
+            f.slotButtons = {}
+            rightFrame = f
+
+            local t = f:CreateFontString()
+            t:SetFont(ns.Font, 15, "OUTLINE")
+            t:SetPoint("BOTTOMRIGHT", f, "TOPRIGHT", -2, 0)
+            t:SetTextColor(1, 0.82, 0)
+            t:SetText(L["点击角色名：固定并显示背包/银行"])
+            mainFrame.tipText = t
+
+            -- 装备列表
+            local lastButton
+            local function CreateButton(slot)
+                local slotID = GetInventorySlotInfo(slot)
+                local frame = CreateFrame("Frame", nil, rightFrame, "BackdropTemplate")
+                frame:SetBackdrop({
+                    bgFile = "Interface/ChatFrame/ChatFrameBackground",
+                })
+                frame:SetBackdropColor(1, 1, 1, 0)
+                frame:SetSize(1, 19.5)
+                if lastButton then
+                    frame:SetPoint("TOPLEFT", lastButton, "BOTTOMLEFT", 0, 0)
+                else
+                    frame:SetPoint("TOPLEFT", rightFrame, "TOPLEFT", 10, -10)
+                end
+                frame:EnableMouse(true)
+                frame.otherButtons = {}
+                lastButton = frame
+                rightFrame["slot" .. slotID] = frame
+                tinsert(rightFrame.slotButtons, frame)
+                frame:SetScript("OnEnter", function(self)
+                    if not frame.link then return end
+                    if ZL.ButtonIsInRight(self.item) then
+                        GameTooltip:SetOwner(self.item, "ANCHOR_LEFT", 0, 0)
+                    else
+                        GameTooltip:SetOwner(self.item, "ANCHOR_RIGHT", 0, 0)
+                    end
+                    GameTooltip:ClearLines()
+                    GameTooltip:SetHyperlink(frame.link)
+                    self:SetBackdropColor(1, 1, 1, .1)
+                end)
+                frame:SetScript("OnLeave", function(self)
+                    GameTooltip:Hide()
+                    self:SetBackdropColor(1, 1, 1, 0)
+                end)
+
+                local f = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+                f:SetBackdrop({
+                    bgFile = "Interface/ChatFrame/ChatFrameBackground",
+                    edgeFile = "Interface/ChatFrame/ChatFrameBackground",
+                    edgeSize = 1,
+                })
+                f.baseDropColor = { .5, .5, .5, .05 }
+                f.baseBorderColor = { .5, .5, .5, .2 }
+                f:SetPoint("LEFT")
+                f:SetSize(30, 17)
+                frame.bg = f
+
+                frame.slot = f:CreateFontString()
+                frame.slot:SetFont(ns.Font, 11, "OUTLINE")
+                frame.slot:SetPoint("CENTER", f, "CENTER", 0, 0)
+                frame.slot:SetText(_G[slot:upper()])
+                frame.slot.baseColor = { .5, .5, .5 }
+
+                frame.level = frame:CreateFontString()
+                frame.level:SetFont(ns.Font, 13, "OUTLINE")
+                frame.level:SetPoint("LEFT", frame.bg, "RIGHT", 5, 0)
+
+                frame.item = frame:CreateFontString()
+                frame.item:SetFont(ns.Font, 13, "OUTLINE")
+                frame.item:SetPoint("LEFT", frame.level, "RIGHT", 2, 0)
+                frame.item:SetJustifyH("CENTER")
+            end
+            for _, v in ipairs(slotTbl) do
+                if v.slot ~= "ShirtSlot" and v.slot ~= "TabardSlot" then
+                    CreateButton(v.slot)
+                end
+            end
+        end
+
+        -- 附魔和宝石
+        rightFrame.enchantButtons = {}
+
+        local function AddEnchant(bt, itemID, spellID, type)
+            local iconTex, _, subTypeID
+            if itemID then
+                iconTex, _, subTypeID = select(5, GetItemInfoInstant(itemID))
+            elseif spellID then
+                iconTex = C_Spell.GetSpellTexture(spellID)
+            end
+            local height = bt:GetHeight()
+            local f = CreateFrame("Frame", nil, bt)
+            f:SetSize(height, height)
+            if next(bt.otherButtons) then
+                f:SetPoint("LEFT", bt.otherButtons[#bt.otherButtons], "RIGHT", 0, 0)
+            else
+                f:SetPoint("LEFT", bt.item, "RIGHT", 2, 0)
+            end
+            tinsert(bt.otherButtons, f)
+            f:SetScript("OnEnter", function(self)
+                GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT", 0, 0)
+                GameTooltip:ClearLines()
+                if itemID then
+                    GameTooltip:SetItemByID(itemID)
+                elseif spellID then
+                    GameTooltip:SetSpellByID(spellID)
+                else
+                    if type == "chant" then
+                        GameTooltip:AddLine(L["缺少附魔！"], 1, 0, 0, true)
+                    else
+                        GameTooltip:AddLine(L["缺少宝石！"], 1, 0, 0, true)
+                    end
+                    GameTooltip:Show()
+                end
+            end)
+            f:SetScript("OnLeave", GameTooltip_Hide)
+
+            local mask = f:CreateMaskTexture()
+            mask:SetPoint("CENTER")
+            mask:SetSize(13, 13)
+            mask:SetTexture([[Interface\CharacterFrame\TempPortraitAlphaMask]], "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+            local icon = f:CreateTexture()
+            icon:SetPoint("CENTER")
+            if iconTex then
+                icon:SetSize(15, 15)
+                icon:SetTexture(iconTex)
+            else
+                icon:SetSize(20, 20)
+            end
+            icon:AddMaskTexture(mask)
+            local broder = f:CreateTexture(nil, "OVERLAY")
+            broder:SetAllPoints()
+            broder:SetTexture(ns.Interface .. [[Media\icon\SocketBroder.blp]])
+            local alpha = .8
+            if type == "chant" then
+                if iconTex then
+                    broder:SetVertexColor(0, 1, 0, alpha)
+                else
+                    broder:SetVertexColor(1, 0, 0, alpha)
+                    icon:SetTexture("Interface/Icons/trade_engraving")
+                    icon:SetAlpha(.6)
+                end
+            else
+                if subTypeID then
+                    broder:SetVertexColor(0, 1, 0, alpha)
+                else
+                    broder:SetVertexColor(1, 0, 0, alpha)
+                    icon:SetTexture("Interface/Icons/inv_misc_gem_01")
+                    icon:SetAlpha(.6)
+                end
+            end
+        end
+
+        function rightFrame.UpdateEnchant(bt, link, skill)
+            for _, otherButton in ipairs(bt.otherButtons) do
+                otherButton:Hide()
+            end
+            wipe(bt.otherButtons)
+            if not link then return end
+            local chant, noChant, gemTbl, gemCount, equipLoc = ZL.GetEnchantInfo(link, skill, mainFrame.class)
+            if chant then
+                if ZL.enchant[chant] then
+                    local itemID = ZL.enchant[chant].itemID
+                    if itemID then
+                        AddEnchant(bt, itemID, nil, "chant")
+                    else
+                        local spellID = ZL.enchant[chant].spellID
+                        if spellID then
+                            AddEnchant(bt, nil, spellID, "chant")
+                        end
+                    end
+                else
+                    if BGDEBUG then
+                        print(L["未知附魔："], chant, link)
+                    end
+                end
+            elseif noChant then
+                AddEnchant(bt, nil, nil, "chant")
+            end
+            for _, gem in ipairs(gemTbl) do
+                if gem then
+                    AddEnchant(bt, gem, nil, "gem")
+                end
+            end
+            for i = 1, gemCount - #gemTbl do
+                AddEnchant(bt, nil, nil, "gem")
+            end
+        end
+    end
+
+    local function GetTooltipSetInfo(link, quality, setName)
+        local tip = ZLTooltip
+        tip:SetOwner(UIParent, "ANCHOR_NONE")
+        tip:ClearLines()
+        tip:SetHyperlink(link)
+        for i = 2, tip:NumLines() do
+            local text = _G[tip:GetName() .. "TextLeft" .. i]:GetText()
+            if text and text ~= "" then
+                local maxCount = text:match("^" .. setName .. ".-%d+/(%d+)")
+                if maxCount then
+                    for _, t in pairs(leftFrame.sets) do
+                        if t.name == setName then
+                            t.count = t.count + 1
+                            t:SetText(setName .. L["："] .. t.count .. "/" .. maxCount)
+                            return
+                        end
+                    end
+                    local r, g, b = GetItemQualityColor(quality)
+                    local t = leftFrame.setFrame:CreateFontString()
+                    t:SetFont(ns.Font, 13, "OUTLINE")
+                    if next(leftFrame.sets) then
+                        t:SetPoint("BOTTOM", leftFrame.sets[#leftFrame.sets], "TOP", 0, 2)
+                    else
+                        t:SetPoint("BOTTOM", 0, 0)
+                    end
+                    t:SetTextColor(r, g, b)
+                    t.name = setName
+                    t.count = 1
+                    t:SetText(setName .. L["："] .. t.count .. "/" .. maxCount)
+                    tinsert(leftFrame.sets, t)
+                    return
+                end
+            end
+        end
+    end
+
+    local function ResetEquipSlot(bt1, bt2)
+        bt1.icon:SetTexture(bt1.textureBG)
+        bt1.level:SetText("")
+        bt1.link = nil
+        bt1:SetBackdropBorderColor(unpack(bt1.borderColorBG))
+
+        bt2.level:SetText("")
+        bt2.level:SetWidth(0)
+        bt2.item:SetText("")
+        bt2.link = nil
+        bt2.bg:SetBackdropColor(unpack(bt2.bg.baseDropColor))
+        bt2.bg:SetBackdropBorderColor(unpack(bt2.bg.baseBorderColor))
+        bt2.slot:SetTextColor(unpack(bt2.slot.baseColor))
+    end
+
+    local function UpdateEquipFrameWidth()
+        local maxLevelWidth, maxWidth
+        for _, bt in ipairs(rightFrame.slotButtons) do
+            local w = bt.level:GetWidth() or 0
+            if not maxLevelWidth then
+                maxLevelWidth = w
+            end
+            maxLevelWidth = max(maxLevelWidth, w)
+        end
+        for _, bt in ipairs(rightFrame.slotButtons) do
+            bt.level:SetWidth(maxLevelWidth)
+            local w1, w2
+            w1 = bt.bg:GetLeft()
+            if bt.otherButtons[#bt.otherButtons] then
+                w2 = bt.otherButtons[#bt.otherButtons]:GetRight()
+            elseif bt.item then
+                w2 = bt.item:GetRight()
+            else
+                w2 = bt.bg:GetRight()
+            end
+            local w = w2 - w1
+            bt:SetWidth(w)
+            if not maxWidth then
+                maxWidth = w
+            end
+            maxWidth = max(maxWidth, w)
+        end
+        rightFrame:SetWidth(maxWidth + 20)
+        mainFrame:SetWidth(leftFrame:GetWidth() + rightFrame:GetWidth())
+    end
+
+    function ZL.ShowEquipFrame(click, bt, isAccounts, realmID, player,
+                               colorplayer, level, class, iLevel, BiaoGeAIdb,
+                               BiaoGeAItalent, points, showRealmName)
+        local db
+        if not BiaoGeAIdb then
+            if isAccounts then
+                db = MultiAccountDB
+            else
+                db = ZLDb
+            end
+            if not (db.equip and db.equip[realmID] and db.equip[realmID][player]) then
+                GameTooltip:SetOwner(bt, "ANCHOR_NONE", 0, 0)
+                if bt.isFBCD or ZLDb.options.roleOverviewLayout == "left_right" then
+                    GameTooltip:SetPoint("TOPRIGHT", bt, "TOPLEFT", -12, 0)
+                else
+                    GameTooltip:SetPoint("BOTTOMRIGHT", bt, "BOTTOMLEFT", -12, 0)
+                end
+                GameTooltip:ClearLines()
+                GameTooltip:AddLine(colorplayer, 1, 1, 1, true)
+                GameTooltip:AddLine(L["没有该角色的装备数据。"], 1, .82, 0, true)
+                if isAccounts then
+                    GameTooltip:AddLine(L["请打开同步软件并登录一次该角色。"], 1, .82, 0, true)
+                else
+                    GameTooltip:AddLine(L["请登录一次该角色。"], 1, .82, 0, true)
+                end
+                GameTooltip:Show()
+                return
+            end
+        end
+        if not mainFrame then
+            CreateMainFrame()
+        end
+        if click then
+            if mainFrame.click and mainFrame.realmID == realmID and mainFrame.player == player then
+                mainFrame:Hide()
+                return
+            end
+            mainFrame.tipText:Hide()
+            mainFrame:EnableMouse(true)
+            mainFrame:SetMovable(true)
+            mainFrame:SetScript("OnMouseUp", function(self)
+                self:StopMovingOrSizing()
+            end)
+            mainFrame:SetScript("OnMouseDown", function(self)
+                self:StartMoving()
+            end)
+        else
+            mainFrame.tipText:SetShown(not BiaoGeAIdb)
+            mainFrame:EnableMouse(false)
+            mainFrame:SetMovable(false)
+            mainFrame:SetScript("OnMouseUp", nil)
+            mainFrame:SetScript("OnMouseDown", nil)
+        end
+        for i, v in ipairs(slotTbl) do
+            i = tostring(i)
+            local bt = leftFrame["slot" .. i]
+            if bt then
+                bt:SetEnabled(click)
+            end
+        end
+        mainFrame.time = GetTime()
+        mainFrame.realmID = realmID
+        mainFrame.player = player
+        mainFrame.isAccounts = isAccounts
+        mainFrame.colorplayer = colorplayer
+        mainFrame.class = class
+        mainFrame.click = click
+        mainFrame.equipLoadID = (mainFrame.equipLoadID or 0) + 1
+        local equipLoadID = mainFrame.equipLoadID
+        mainFrame.CloseButton:SetShown(click)
+        mainFrame.BagButton:SetShown(click and not BiaoGeAIdb)
+        mainFrame.BankButton:SetShown(click and not BiaoGeAIdb)
+        mainFrame:Show()
+        mainFrame:SetParent(bt)
+        mainFrame:SetFrameLevel(bt:GetFrameLevel() + 10)
+        mainFrame:ClearAllPoints()
+        if points then
+            mainFrame:SetPoint(unpack(points))
+        elseif BiaoGeAIdb then
+            mainFrame:SetPoint("TOPLEFT", bt, "TOPRIGHT", 1, 0)
+        elseif bt.isFBCD or ZLDb.options.roleOverviewLayout == "left_right" then
+            mainFrame:SetPoint("TOPRIGHT", bt, "TOPLEFT", -10, 0)
+        else
+            mainFrame:SetPoint("BOTTOMRIGHT", bt, "BOTTOMLEFT", -10, 0)
+        end
+        local r, g, b, color = GetClassColor(class)
+        leftFrame:SetBackdropBorderColor(r, g, b, 1)
+        leftFrame.line:SetColorTexture(r, g, b, 1)
+        rightFrame:SetBackdropBorderColor(r, g, b, 1)
+        for _, t in pairs(leftFrame.sets) do
+            t:Hide()
+        end
+        wipe(leftFrame.sets)
+
+        local talentText = ""
+        if ZL.GetTalentIcon then
+            local talent
+            if BiaoGeAIdb then
+                talent = BiaoGeAItalent
+            else
+                talent = BiaoGeAItalent or db.playerInfo[realmID][player].talent
+            end
+            talentText = ZL.GetTalentIcon(class, talent)
+        end
+        local realmName = ""
+        if showRealmName then
+            local name = BG.FormatRealmName((db and db.realmName and db.realmName[realmID])
+                or (ZLDb.realmName and ZLDb.realmName[realmID]) or realmID)
+            realmName = format("|c%s%s-|r", color, name)
+        end
+        leftFrame.NameText:SetText(talentText .. realmName .. colorplayer)
+        local raceText = ""
+        if not BiaoGeAIdb and (db.playerInfo and db.playerInfo[realmID] and db.playerInfo[realmID][player] and db.playerInfo[realmID][player].raceID) then
+            raceText = C_CreatureInfo.GetRaceInfo(db.playerInfo[realmID][player].raceID).raceName
+        end
+        leftFrame.LevelText:SetText(LEVEL .. (level or UNKNOWN) .. " " .. raceText .. GetClassName(class))
+        leftFrame.iLevelText:SetText(L["装等："] .. (iLevel and ns.Round(iLevel, 1) or UNKNOWN))
+
+        -- 子账号
+        if not BiaoGeAIdb and MultiAccountDB and MultiAccountDB.accountName then
+            local tbl = {}
+            for accountName in pairs(MultiAccountDB.accountName) do
+                for _realmID in pairs(MultiAccountDB.accountName[accountName]) do
+                    if realmID == _realmID then
+                        for _player in pairs(MultiAccountDB.accountName[accountName][realmID]) do
+                            if player == _player then
+                                tinsert(tbl, accountName)
+                            end
+                        end
+                    end
+                end
+            end
+            local sameText = ""
+            if #tbl > 1 then
+                sameText = L["|cffff0000（角色存在重复情况，导致数据错误）|r"]
+            end
+            leftFrame.accountText:SetText(L["子账号："] .. table.concat(tbl, L["，"]) .. sameText)
+        else
+            leftFrame.accountText:SetText("")
+        end
+
+        local equipTbl = BiaoGeAIdb or db.equip[realmID][player]
+        for i in ipairs(slotTbl) do
+            if not BiaoGeAIdb then
+                i = tostring(i)
+            end
+            local v = equipTbl[i]
+            local bt1 = leftFrame["slot" .. i]
+            local bt2 = rightFrame["slot" .. i]
+            if bt1 and bt2 then
+                ResetEquipSlot(bt1, bt2)
+                if v and v.link and v.link:match("item:(%d+)") then
+                    local slot = i
+                    local expectedLink = v.link
+                    Item:CreateFromItemLink(expectedLink):ContinueOnItemLoad(function()
+                        if not mainFrame:IsVisible()
+                            or mainFrame.equipLoadID ~= equipLoadID
+                            or mainFrame.realmID ~= realmID
+                            or mainFrame.player ~= player then
+                            return
+                        end
+                        local current = equipTbl[slot]
+                        if not current or current.link ~= expectedLink then
+                            return
+                        end
+
+                        local info = { GetItemInfo(expectedLink) }
+                        local link = info[2]
+                        local quality = info[3]
+                        local level = info[4]
+                        local icon = info[10]
+                        local setID = info[16]
+                        local r, g, b = GetItemQualityColor(quality)
+                        bt1.icon:SetTexture(icon)
+                        bt1.level:SetText(level)
+                        bt1.link = link
+                        bt1:SetBackdropBorderColor(r, g, b)
+                        bt1.level:SetTextColor(r, g, b)
+
+                        bt2.level:SetText(level)
+                        bt2.level:SetWidth(bt2.level:GetStringWidth())
+                        bt2.level:SetTextColor(SetiLevelColor(level))
+                        bt2.item:SetText(link)
+                        bt2.link = link
+                        bt2.bg:SetBackdropColor(r, g, b, .05)
+                        bt2.bg:SetBackdropBorderColor(r, g, b, .2)
+                        bt2.slot:SetTextColor(r, g, b)
+
+                        if setID then
+                            local setName = GetItemSetInfo(setID)
+                            if setName then
+                                GetTooltipSetInfo(link, quality, setName)
+                            end
+                        end
+                        UpdateEquipFrameWidth()
+                    end)
+                end
+                local skill = db and db["MONEY"] and db["MONEY"][realmID] and db["MONEY"][realmID][player]
+                    and db["MONEY"][realmID][player].skill
+                rightFrame.UpdateEnchant(bt2, v and v.link, skill)
+            end
+        end
+
+        -- 传家宝附魔
+        if leftFrame.enchantButtons then
+            for i, bt in ipairs(leftFrame.enchantButtons) do
+                if BiaoGeAIdb then
+                    bt:Hide()
+                else
+                    local count = 0
+                    local itemID = bt.itemID
+                    if db.bag and db.bag[realmID] and db.bag[realmID][player] and ZL.GetItemBagCount then
+                        count = ZL.GetItemBagCount(db.bag[realmID][player], itemID) or 0
+                    end
+                    bt.count = count
+                    bt:Update()
+                end
+            end
+        end
+
+        UpdateEquipFrameWidth()
+        if click and not BiaoGeAIdb and ZL.RestoreBagViewerFrames then
+            ZL.RestoreBagViewerFrames(mainFrame, isAccounts, realmID, player, colorplayer, class)
+        elseif ZL.HideBagFrame then
+            ZL.HideBagFrame()
+        end
+    end
+end)

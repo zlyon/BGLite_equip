@@ -1,5 +1,6 @@
 <Bindings>
     <Binding name="RoleOverview" Category="BINDING_HEADER_BIAOGE">
         if BGE and BGE.SetFBCD then BGE.SetFBCD(nil, nil, true) end
+        if (not BGE or not BGE.SetFBCD) and ZL and ZL.SetFBCD then ZL.SetFBCD(nil, nil, true) end
     </Binding>
 </Bindings>

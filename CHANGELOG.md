@@ -1,2 +1,2 @@
-- Fixed a bug where switching dungeon tabs on the Wish List page did not refresh the content until the window was reopened.
-- 修复 心愿清单页点副本标签后内容不切换、必须关窗重开的bug。
+- Fixed history ledger errors on Titan (Wrath Classic) and added support for the Forever realm.
+- 修复 泰坦时光服历史账单报错问题；增加 对无限服的支持。

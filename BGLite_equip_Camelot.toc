@@ -1,0 +1,93 @@
+﻿## Interface: 16001
+## Title: 金团表格<BGLite_equip>无限服
+## Notes: 无限服金团表格
+## IconTexture: Interface\AddOns\BGLite_equip\Forever\Media\icon\icon.tga
+## Author: zlyon
+## LoadOnDemand: 0
+## SavedVariables: BGLite_equip
+## Version: 1.0.53
+
+Forever\Locales\zhCN.lua
+Forever\Templates.xml
+Forever\Libs\LibStub\LibStub.lua
+Forever\Libs\CallbackHandler-1.0\CallbackHandler-1.0.lua
+Forever\Libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+Forever\Libs\BGLiteMenu\BGLiteMenu.lua
+Forever\Libs\UTF8\utf8data.lua
+Forever\Libs\UTF8\utf8.lua
+Forever\Libs\LibBase64\LibBase64.lua
+Forever\Libs\LibCustomGlow-1.0\LibCustomGlow-1.0.lua
+Forever\Libs\AceComm-3.0\ChatThrottleLib.lua
+Forever\Libs\AceComm-3.0\AceComm-3.0.lua
+Forever\Libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
+Forever\Core\DB\Init.lua
+Forever\Core\DB\DB.lua
+Forever\Core\DB\DB_FilterClassItem.lua
+Forever\Core\DB\DB_BossName.lua
+Forever\Core\DB\DB_EncounterID.lua
+Forever\Core\DB\Mount.lua
+Forever\Core\DB\Model.lua
+Forever\Core\DB\DB_Loot_Forever.lua
+Forever\Core\DB\DB_Loot_BlackWhiteList.lua
+Forever\Core\DB\DB_Shopping.lua
+Forever\Core\function1.lua
+Forever\Core\function2.lua
+Forever\Core\FBUI\FBUIfunction.lua
+Forever\Core\FBUI\HistoryUIfunction.lua
+Forever\Core\FBUI\ReceiveUIfunction.lua
+Forever\Core\FBUI\DuiZhangUIfunction.lua
+Forever\Core\FBUI\Hope.lua
+Forever\Core\FBUI\CreateFBUI.lua
+Forever\Core\Module\History.lua
+Forever\Core\Module\Receive.lua
+Forever\Core\Module\DuiZhang.lua
+Forever\Core\Module\FilterClassItem.lua
+Forever\Core\Module\Shopping.lua
+Forever\Core\TongBao\ZhangDan.lua
+Forever\Core\TongBao\LiuPai.lua
+Forever\Core\TongBao\XiaoFei.lua
+Forever\Core\TongBao\QianKuan.lua
+Forever\Core\TongBao\Channel.lua
+Forever\Core\BGLite.lua
+Forever\Core\Module\RoleOverview.lua
+Forever\Core\Module\ClearTable.lua
+Forever\Core\Module\ItemLib.lua
+Forever\Core\Module\Loot.lua
+Forever\Core\Module\AuctionMSG.lua
+Forever\Core\Module\Report.lua
+Forever\Core\Module\WhoHistory.lua
+Forever\Core\Module\MeetingHorn.lua
+Forever\Core\Module\InfoBar.lua
+Forever\Core\Module\AuctionWA.lua
+Forever\Core\Module\AuctionWAEvent.lua
+Forever\Core\Module\Auction.lua
+Forever\Core\Module\AuctionPreset.lua
+Forever\Core\Module\AuctionLog.lua
+Forever\Core\Module\BestPrice.lua
+Forever\Core\Module\Trade.lua
+Forever\Core\Module\TradeHistory.lua
+Forever\Core\Module\MailHistory.lua
+Forever\Core\Module\SendMail.lua
+Forever\Core\Module\ChannelHistory.lua
+Forever\Core\Module\ItemOutTime.lua
+Forever\Core\Module\QuickAccounting.lua
+Forever\Core\Module\Map.lua
+Forever\Core\Module\ItemTooltip.lua
+Forever\Core\Module\SimplifyTooltip.lua
+Forever\Core\Module\hooks.lua
+Forever\Modules\RoleOverview\Templates.xml
+Forever\Modules\RoleOverview\Locales\Locales.lua
+Forever\Modules\RoleOverview\Init.lua
+Forever\Modules\RoleOverview\DB.lua
+Forever\Modules\RoleOverview\DB2.lua
+Forever\Modules\RoleOverview\Libs\EnchantData\Enchant.lua
+Forever\Modules\RoleOverview\function1.lua
+Forever\Modules\RoleOverview\EquipViewer.lua
+Forever\Modules\RoleOverview\BagViewer.lua
+Forever\Modules\RoleOverview\Core.lua
+Forever\Modules\RoleOverview\SaveDB.lua
+Forever\Modules\RoleOverview\Sort.lua
+Forever\Modules\RoleOverview\Options.lua
+Forever\Modules\RoleOverview\minimap.lua
+Forever\Core\Module\minimap.lua
+Forever\Core\Options.lua

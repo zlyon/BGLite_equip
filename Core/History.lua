@@ -27,6 +27,24 @@ local player = BG.playerName
 
 BG.History = {}
 
+-- 历史格子容器与底色容器（主插件只初始化 FB/Receive/Hope，历史容器由本插件负责）
+BG.HistoryFrame = {}
+for index, value in ipairs(BG.FBtable) do
+    BG.HistoryFrame[value] = {}
+    for b = 1, 22 do
+        BG.HistoryFrame[value]["boss" .. b] = {}
+    end
+end
+BG.HistoryFrameDs = {}
+for index, value in ipairs(BG.FBtable) do
+    for i = 1, 3, 1 do
+        BG.HistoryFrameDs[value .. i] = {}
+        for b = 1, 22 do
+            BG.HistoryFrameDs[value .. i]["boss" .. b] = {}
+        end
+    end
+end
+
 function BG.UpdateHistoryButton()
     local bt = BG.History.HistoryButton
     bt:SetFormattedText(L["历史表格（%d个）"], #BiaoGe.HistoryList[BG.FB1])
@@ -513,8 +531,21 @@ function BG.HistoryUI()
     ------------------退出历史表格按键------------------
     do
         function BG.EscHistoryFrame()
+            -- 主插件 FBMainFrame 的 OnShow 不处理历史页（对齐 Forever 版 OnShow 逻辑，由本插件自补）
+            BG.HistoryMainFrame:Hide() -- 触发 OnHide：恢复标题/版本号、清 chooseNum
+            BG.History.List:Hide()
             BG.FrameHide(0)
             BG.FBMainFrame:Show()
+            BG.History.List:SetParent(BG.FBMainFrame)
+            BG.History.List:SetFrameLevel(BG.History.List.frameLevel)
+            BG.History.HistoryButton:SetParent(BG.FBMainFrame)
+            BG.History.SaveButton:SetParent(BG.FBMainFrame)
+            BG.History.SendButton:SetParent(BG.FBMainFrame)
+            BG.History.DaoChuButton:SetParent(BG.FBMainFrame)
+            BG.History.HistoryButton:SetEnabled(true)
+            BG.History.SaveButton:SetEnabled(true)
+            BG.History.SendButton:SetEnabled(true)
+            BG.History.DaoChuButton:SetEnabled(true)
             BG.UpdateAuctionLogFrame()
             BG.PlaySound(1)
         end
@@ -722,7 +753,7 @@ do
                 bt:SetScript("OnMouseUp", function(self, button)
                     local FB, i = self.FB, self.index
                     if not FB or not i or not BiaoGe.HistoryList[FB][i] then return end
-                    BG.CreateFBUI(FB, "History")
+                    BG.CreateHistoryFBUI(FB)
                     BG.FrameHide(2)
 
                     if IsAltKeyDown() then

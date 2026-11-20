@@ -1,0 +1,4527 @@
+﻿if BG.IsBlackListPlayer then return end
+local AddonName, ns = ...
+
+local LibBG         = ns.LibBG
+local L             = ns.L
+local GetClassColor = ns.GetClassColor
+
+local RR            = ns.RR
+local NN            = ns.NN
+local RN            = ns.RN
+local Size          = ns.Size
+local RGB           = ns.RGB
+local RGB_16        = ns.RGB_16
+local GetClassRGB   = ns.GetClassRGB
+local SetClassCFF   = ns.SetClassCFF
+local GetText_T     = ns.GetText_T
+local AddTexture    = ns.AddTexture
+local GetItemID     = ns.GetItemID
+local Maxb          = ns.Maxb
+
+local realmID       = GetRealmID()
+
+local pt            = print
+
+local O             = {}
+ns.O                = O
+
+local IsAddOnLoaded = IsAddOnLoaded or C_AddOns.IsAddOnLoaded
+
+function BG.AddOption(frame, addOn, position)
+    local category, layout = Settings.RegisterCanvasLayoutCategory(frame, frame.name, frame.name)
+    BG.optionsID = category:GetID()
+    Settings.RegisterAddOnCategory(category)
+    return category
+end
+
+function BG.OpenOption()
+    if InCombatLockdown() then
+        BG.SendSystemMessage(L['战斗中无法打开设置界面。'])
+    elseif BG.IsForever then
+        Settings.OpenToCategory()
+        local category = SettingsPanel:GetCategoryList():GetCategory(BG.optionsID)
+        if category then
+            category:SetExpanded(true)
+            SettingsPanel:SelectCategory(category)
+        end
+    else
+        Settings.OpenToCategory(BG.optionsID)
+    end
+end
+
+-- 打开插件设置并切换到战术（map）设置页。
+function BG.OpenMapOptions()
+    if BG.ButtonOptions_map then
+        BG.ButtonOptions_map:Click()
+    end
+    BG.OpenOption()
+end
+
+BG.optionsName = L["金团表格"]
+-- 设置页某一段构建失败时，不让整页崩掉：记录错误并继续建后面的标签
+function BG.OptionSectionError(section, err)
+    BGLite_equip.options.__optErrors = BGLite_equip.options.__optErrors or {}
+    tinsert(BGLite_equip.options.__optErrors, section .. ": " .. tostring(err))
+    if BG.SendSystemMessage then
+        pcall(BG.SendSystemMessage, "|cffff0000设置页[" .. section .. "]构建出错：" .. tostring(err))
+    end
+end
+
+BG.Init(function()
+    local main = CreateFrame("Frame", nil, UIParent)
+    do
+        main:Hide()
+        main.name = BG.optionsName
+        BG.AddOption(main)
+        local t = main:CreateFontString()
+        t:SetFont(BIAOGE_TEXT_FONT, 16, "OUTLINE")
+        t:SetText(L["|cff00BFFF<%s>金团表格|r"]:format(AddonName))
+        t:SetPoint("TOPLEFT", main, 15, 0)
+        local top = t
+        local t = main:CreateFontString()
+        t:SetFont(BIAOGE_TEXT_FONT, 13, "OUTLINE")
+        t:SetText(L["|cff808080（带*的设置需要重载才能生效）|r"])
+        t:SetPoint("BOTTOMLEFT", top, "BOTTOMRIGHT", 5, 0)
+        -- 重载
+        local rlButton = BG.CreateButton(main)
+        rlButton:SetSize(80, 20)
+        rlButton:SetPoint("TOPRIGHT", -5, 0)
+        rlButton:SetText(L["重载界面"])
+        rlButton:SetScript("OnClick", function(self)
+            ReloadUI()
+        end)
+        rlButton:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT", 0, 0)
+            GameTooltip:ClearLines()
+            GameTooltip:AddLine(self:GetText(), 1, 1, 1, true)
+            GameTooltip:AddLine(L["不能即时生效的设置在重载后生效。"], 1, .82, 0, true)
+            GameTooltip:Show()
+        end)
+        rlButton:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
+        -- 重置配置
+        local bt = BG.CreateButton(main)
+        bt:SetSize(80, 20)
+        bt:SetPoint("RIGHT", rlButton, "LEFT", -10, 0)
+        bt:SetText(L["重置配置"])
+        bt:SetScript("OnClick", function(self)
+            if not StaticPopupDialogs["BiaoGe_ResetOptions"] then
+                StaticPopupDialogs["BiaoGe_ResetOptions"] = {
+                    text = L["确认重置本插件的所有配置文件？包括心愿清单、历史表格、角色总览、设置选项等等全部都会被重置。"],
+                    button1 = L["是"],
+                    button2 = L["否"],
+                    OnAccept = function()
+                        BGLite_equip = nil
+                        ReloadUI()
+                    end,
+                    OnCancel = function()
+                    end,
+                    timeout = 0,
+                    whileDead = true,
+                    hideOnEscape = true,
+                    showAlert = true,
+                }
+            end
+            StaticPopup_Show("BiaoGe_ResetOptions")
+        end)
+        bt:SetScript("OnEnter", function(self)
+            GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT", 0, 0)
+            GameTooltip:ClearLines()
+            GameTooltip:AddLine(self:GetText(), 1, 1, 1, true)
+            GameTooltip:AddLine(L["重置本插件的所有配置文件，包括心愿清单、历史表格、角色总览、设置选项等等全部都会被重置。"], 1, 0.82, 0, true)
+            GameTooltip:Show()
+        end)
+        bt:SetScript("OnLeave", function(self)
+            GameTooltip:Hide()
+        end)
+    end
+    -- 背景框
+    do
+        local f = CreateFrame("Frame", nil, main, "BackdropTemplate")
+        f:SetBackdrop({
+            bgFile = "Interface/ChatFrame/ChatFrameBackground",
+            edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+            edgeSize = 16,
+            insets = { left = 3, right = 3, top = 3, bottom = 3 }
+        })
+        f:SetBackdropColor(0, 0, 0, 0.4)
+        f:SetPoint("TOPLEFT", SettingsPanel.Container, 5, -60)
+        f:SetPoint("BOTTOMRIGHT", SettingsPanel.Container, -5, 0)
+        BG.optionsBackground = f
+    end
+
+    -- 子选项
+    local Frames = {}
+    local biaoge, autoAuction, roleOverview, boss, map, others, config
+    do
+        local last
+
+        function BG.OptionsCreateTab(name, text) -- "Options_biaoge",L["表格"]
+            local bt = CreateFrame("Button", "BG.Button" .. name, main)
+            bt:SetHeight(25)
+            bt:SetNormalFontObject(BG.FontBlue15)
+            bt:SetDisabledFontObject(BG.FontWhite18)
+            bt:SetHighlightFontObject(BG.FontWhite15)
+            local tex = bt:CreateTexture(nil, "ARTWORK") -- 高亮材质
+            tex:SetTexture("interface/paperdollinfoframe/ui-character-tab-highlight")
+            bt:SetHighlightTexture(tex)
+            if not last then
+                bt:SetPoint("TOPLEFT", 15, -35)
+            else
+                bt:SetPoint("LEFT", last, "RIGHT", 0, 0)
+            end
+            bt:SetText(text)
+            local t = bt:GetFontString()
+            bt:SetWidth(t:GetStringWidth() + 20)
+            BG["Button" .. name] = bt
+            last = bt
+            bt:SetScript("OnClick", function(self)
+                BG.HideTab(Frames, BG["Frame" .. name])
+                BGLite_equip.options.lastFrame = "Frame" .. name
+                BG.PlaySound(1)
+            end)
+
+            local f = CreateFrame("Frame", nil, bt)
+            tinsert(Frames, f)
+            f:Hide()
+            BG["Frame" .. name] = f
+            local frame = CreateFrame("Frame", nil, f)
+            frame:SetSize(1, 1)
+            local scroll = CreateFrame("ScrollFrame", nil, f, BG.scrollTemplate)
+            local frameName = "Frame" .. name
+            scroll:SetPoint("TOPLEFT", SettingsPanel.Container, 15, -70)
+            scroll:SetPoint("BOTTOMRIGHT", SettingsPanel.Container, -35, 10)
+            scroll.ScrollBar.scrollStep = BG.scrollStep
+            BG.CreateSrollBarBackdrop(scroll.ScrollBar)
+            BG.HookScrollBarShowOrHide(scroll)
+            scroll:SetScrollChild(frame)
+            frame.scroll = scroll
+            BGLite_equip.options.optionsScrollPosition = BGLite_equip.options.optionsScrollPosition or {}
+            scroll:HookScript("OnVerticalScroll", function(self, offset)
+                BGLite_equip.options.optionsScrollPosition[frameName] = offset
+            end)
+            f:HookScript("OnShow", function()
+                BG.After(0, function()
+                    if not f:IsShown() then return end
+                    local offset = BGLite_equip.options.optionsScrollPosition[frameName] or 0
+                    local _, maxOffset = scroll.ScrollBar:GetMinMaxValues()
+                    scroll:SetVerticalScroll(min(offset, maxOffset))
+                end)
+            end)
+            scroll:HookScript("OnMouseDown", function(self, enter)
+                local f = GetCurrentKeyBoardFocus()
+                if f then
+                    f:ClearFocus()
+                end
+            end)
+            return frame
+        end
+
+        biaoge = BG.OptionsCreateTab("Options_biaoge", L["表格"])
+        autoAuction = BG.OptionsCreateTab("Options_autoAuction", L["自动拍卖"])
+        if BG.BossMainFram then
+            boss = BG.OptionsCreateTab("Options_boss", L["团本攻略"])
+        end
+        if BG.MapFrame then
+            map = BG.OptionsCreateTab("Options_map", L["战术"])
+        end
+
+        others = BG.OptionsCreateTab("Options_others", L["其他功能"])
+        config = BG.OptionsCreateTab("Options_config", L["角色配置"])
+
+        BG.Init2(function()
+            if BGLite_equip.options.lastFrame and BG[BGLite_equip.options.lastFrame] then
+                BG[BGLite_equip.options.lastFrame]:Show()
+                BG[BGLite_equip.options.lastFrame]:GetParent():SetEnabled(false)
+            else
+                BG.FrameOptions_biaoge:Show()
+                BG.FrameOptions_biaoge:GetParent():SetEnabled(false)
+            end
+        end)
+    end
+
+    -- 模板
+    do
+        -- 滑块
+        do
+            local function updateSliderEditBox(self)
+                local slider = self.__owner
+                local minValue, maxValue = slider:GetMinMaxValues()
+                local text = tonumber(self:GetText())
+                if not text then return end
+                text = min(maxValue, text)
+                text = max(minValue, text)
+                slider:SetValue(text)
+                self:SetText(text)
+                BGLite_equip.options[slider.name] = text
+                self:ClearFocus()
+                BG.PlaySound(1)
+            end
+            local function OnValueChanged(self, value)
+                self.edit:ClearFocus()
+                value = tonumber(value)
+                BGLite_equip.options[self.name] = value
+                self.edit:SetText(value)
+            end
+            local function OnClick(self, enter)
+                local slider = self.__owner
+                if enter == "RightButton" then
+                    if BG.options[slider.name .. "reset"] then
+                        local value = BG.options[slider.name .. "reset"]
+                        BGLite_equip.options[slider.name] = value
+                        slider:SetValue(value)
+                        slider.edit:SetText(value)
+                        BG.PlaySound(1)
+                    end
+                end
+            end
+            local function OnEnter(self)
+                local slider = self.__owner
+                if slider.ontext then
+                    GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT", 0, 5)
+                    GameTooltip:ClearLines()
+                    if type(slider.ontext) == "table" then
+                        for i, text in ipairs(slider.ontext) do
+                            if i == 1 then
+                                GameTooltip:AddLine(text, 1, 1, 1, true)
+                            else
+                                GameTooltip:AddLine(text, 1, 0.82, 0, true)
+                            end
+                            GameTooltip:Show()
+                        end
+                    else
+                        GameTooltip:SetText(slider.ontext)
+                    end
+                end
+            end
+            local function OnLeave(self)
+                GameTooltip:Hide()
+            end
+            function O.CreateSlider(name, text, parent, minValue, maxValue, step, x, y, ontext, width)
+                local value = min(maxValue, BGLite_equip.options[name])
+                value = max(minValue, value)
+                BGLite_equip.options[name] = value
+
+                local template
+                template = "OptionsSliderTemplate"
+
+                local slider = CreateFrame("Slider", nil, parent, template)
+                slider:SetPoint("TOPLEFT", parent, x, y)
+                slider:SetWidth(width or 180)
+                slider:SetMinMaxValues(minValue, maxValue)
+                slider:SetValueStep(step)
+                slider:SetObeyStepOnDrag(true)
+                slider:SetHitRectInsets(0, 0, 0, 0)
+                slider:SetValue(BGLite_equip.options[name])
+                slider.name = name
+                slider.ontext = ontext
+                slider:SetScript("OnValueChanged", OnValueChanged)
+
+                slider.Low:SetFont(BIAOGE_TEXT_FONT, 14, "OUTLINE")
+                slider.Low:SetText(minValue)
+                slider.Low:SetPoint("TOPLEFT", slider, "BOTTOMLEFT", 10, -2)
+                slider.High:SetFont(BIAOGE_TEXT_FONT, 14, "OUTLINE")
+                slider.High:SetText(maxValue)
+                slider.High:SetPoint("TOPRIGHT", slider, "BOTTOMRIGHT", -10, -2)
+                slider.Text:SetFont(BIAOGE_TEXT_FONT, 14, "OUTLINE")
+                slider.Text:ClearAllPoints()
+                slider.Text:SetPoint("CENTER", 0, 25)
+                slider.Text:SetText(text)
+                slider.Text:SetTextColor(1, .8, 0)
+                slider.Text:SetSize(slider:GetWidth(), 40)
+
+                slider.edit = CreateFrame("EditBox", nil, slider, BG.editTemplate)
+                slider.edit:SetSize(50, 20)
+                slider.edit:SetPoint("TOP", slider, "BOTTOM")
+                slider.edit:SetJustifyH("CENTER")
+                slider.edit:SetAutoFocus(false)
+                slider.edit:SetText(BGLite_equip.options[name])
+                slider.edit:SetCursorPosition(0)
+                slider.edit.__owner = slider
+                slider.edit:SetScript("OnEnterPressed", updateSliderEditBox)
+                slider.edit:SetScript("OnEditFocusLost", updateSliderEditBox)
+
+                slider.button = CreateFrame("Button", nil, slider)
+                slider.button:SetAllPoints(slider.Text)
+                slider.button:RegisterForClicks("RightButtonUp")
+                slider.button.__owner = slider
+                slider.button:SetScript("OnClick", OnClick)
+                slider.button:SetScript("OnEnter", OnEnter)
+                slider.button:SetScript("OnLeave", OnLeave)
+
+                return slider
+            end
+
+            -- 第二种样式：左侧标题、微调按钮、滑条和右侧数值。
+            function O.CreateSlider2(name, text, parent, minValue, maxValue, step, x, y, ontext, width, isSmall)
+                local label = CreateFrame("Button", nil, parent)
+                label:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
+                local title = label:CreateFontString()
+                title:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                title:SetPoint("CENTER")
+                title:SetTextColor(1, 1, 1)
+                title:SetText(text)
+                label:SetSize(title:GetStringWidth(), 30)
+
+                local slider = CreateFrame("Slider", nil, label, "MinimalSliderTemplate")
+                slider:SetPoint("LEFT", label, "RIGHT", isSmall and 20 or 30, 0)
+                slider:SetWidth(width or 150)
+                slider:SetMinMaxValues(minValue, maxValue)
+                slider:SetValueStep(step)
+                slider:SetObeyStepOnDrag(true)
+                slider:SetHitRectInsets(0, 0, 0, 0)
+                slider.name = name
+                slider.step = step
+                slider.ontext = ontext
+                slider.button = label
+                label.slider = slider
+                label.__owner = slider
+                label:RegisterForClicks("RightButtonUp")
+                label:SetScript("OnEnter", OnEnter)
+                label:SetScript("OnLeave", OnLeave)
+                label:SetScript("OnClick", function()
+                    local value = BG.options[name .. "reset"]
+                    if value ~= nil then
+                        slider:SetValue(value)
+                        BG.PlaySound(1)
+                    end
+                end)
+
+                local function CreateStepButton(direction, atlas)
+                    local button = CreateFrame("Button", nil, slider)
+                    button:SetSize(13, 19)
+                    button:SetNormalAtlas(atlas)
+                    button:SetScript("OnClick", function()
+                        slider:SetValue(slider:GetValue() + direction * slider.step)
+                        BG.PlaySound(1)
+                    end)
+                    return button
+                end
+                slider.leftButton = CreateStepButton(-1, "Minimal_SliderBar_Button_Left")
+                slider.leftButton:SetPoint("RIGHT", slider, "LEFT", -4, 0)
+                slider.rightButton = CreateStepButton(1, "Minimal_SliderBar_Button_Right")
+                slider.rightButton:SetPoint("LEFT", slider, "RIGHT", 4, 0)
+
+                slider.Text = slider:CreateFontString()
+                slider.Text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                slider.Text:SetPoint("LEFT", slider, "RIGHT", isSmall and 20 or 30, 0)
+                slider.Text:SetTextColor(1, .82, 0)
+
+                local function UpdateValue(self, value)
+                    value = tonumber(string.format("%.2f", value))
+                    BGLite_equip.options[name] = value
+                    self.Text:SetText(value)
+                    self.leftButton:SetEnabled(value > minValue)
+                    self.rightButton:SetEnabled(value < maxValue)
+                end
+                slider:SetScript("OnValueChanged", UpdateValue)
+                slider:SetValue(max(minValue, min(maxValue, tonumber(BGLite_equip.options[name]) or minValue)))
+                UpdateValue(slider, slider:GetValue())
+                BG.options["button" .. name] = slider
+                return slider, label
+            end
+        end
+
+        -- 多选按钮
+        do
+            local function OnClick(self)
+                if self:GetChecked() then
+                    BGLite_equip.options[self.name] = 1
+                else
+                    BGLite_equip.options[self.name] = 0
+                end
+                if self.child then
+                    for _, f in pairs(self.child) do
+                        f:SetShown(self:GetChecked())
+                    end
+                end
+                if self.callback then
+                    local func, arg1, arg2, arg3, arg4, arg5 = unpack(self.callback)
+                    func(arg1, arg2, arg3, arg4, arg5)
+                end
+                BG.PlaySound(1)
+            end
+            local function OnEnter(self)
+                GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT", 0, 0)
+                GameTooltip:ClearLines()
+                if type(self.ontext) == "table" then
+                    for i, text in ipairs(self.ontext) do
+                        if i == 1 then
+                            GameTooltip:AddLine(text, 1, 1, 1, true)
+                        else
+                            GameTooltip:AddLine(text, 1, 0.82, 0, true)
+                        end
+                        GameTooltip:Show()
+                    end
+                else
+                    GameTooltip:SetText(self.ontext)
+                end
+            end
+            local function OnLeave(self)
+                GameTooltip:Hide()
+            end
+            local function OnShow(self)
+                self:SetChecked(BGLite_equip.options[self.name] == 1)
+            end
+            function O.CreateCheckButton(name, text, parent, x, y, ontext, long, callback)
+                local bt = CreateFrame("CheckButton", nil, parent, "ChatConfigCheckButtonTemplate")
+                bt:SetSize(30, 30)
+                bt:SetPoint("TOPLEFT", parent, x, y)
+                bt.Text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                bt.Text:SetText(text)
+                bt.Text:SetWordWrap(false)
+                bt.Text:SetWidth(min(bt.Text:GetStringWidth() + 20, (type(long) == 'number' and long) or (long and 500 or 160)))
+                bt:SetHitRectInsets(0, -bt.Text:GetWidth(), 0, 0)
+                bt.name = name
+                bt.ontext = ontext
+                bt.callback = callback
+                BG.options["button" .. name] = bt
+                bt:SetChecked(BGLite_equip.options[name] == 1)
+                bt:SetScript("OnClick", OnClick)
+                bt:SetScript("OnEnter", OnEnter)
+                bt:SetScript("OnLeave", OnLeave)
+                bt:SetScript("OnShow", OnShow)
+                return bt
+            end
+        end
+        -- 线
+        do
+            function O.CreateLine(parent, y, height)
+                local l = parent:CreateLine()
+                l:SetColorTexture(RGB("808080", 1))
+                l:SetStartPoint("TOPLEFT", 5, y)
+                l:SetEndPoint("TOPLEFT", SettingsPanel.Container:GetWidth() - 20, y)
+                l:SetThickness(height or 1.5)
+                return l
+            end
+        end
+        -- 快捷键
+        do
+            function O.CreateBindKey(parent, x, y, wdith, bindKey, name)
+                local bt = BG.CreateButton(parent)
+                bt:SetSize(wdith or 150, 25)
+                bt:SetPoint("TOPLEFT", x, y)
+                bt.bindKey = bindKey
+                bt:SetScript("OnClick", function(self)
+                    local category
+                    for i, v in pairs(SettingsPanel:GetAllCategories()) do
+                        if v.name == SETTINGS_KEYBINDINGS_LABEL then
+                            category = v
+                            break
+                        end
+                    end
+                    if category then
+                        SettingsPanel:SelectCategory(category)
+                        SettingsPanel.Container.SettingsList.ScrollBox:ScrollToEnd()
+                        for _, f in pairs({ SettingsPanel.Container.SettingsList.ScrollBox.ScrollTarget:GetChildren() }) do
+                            if f.Button and f.Button.Text and f.Button.Text:GetText() == AddonName then
+                                local initializer = f:GetElementData()
+                                local data = initializer.data
+                                data.expanded = nil;
+                                f.Button:Click()
+                            end
+                        end
+                        BG.After(0, function()
+                            SettingsPanel.Container.SettingsList.ScrollBox:ScrollToEnd()
+                        end)
+                    end
+                end)
+                bt:SetScript("OnShow", function(self)
+                    local key1, key2 = GetBindingKey(self.bindKey)
+                    if key1 or key2 then
+                        bt:SetText(key1 or key2)
+                    else
+                        bt:SetText(L["无"])
+                    end
+                end)
+                local t = bt:CreateFontString()
+                t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                t:SetPoint("BOTTOM", bt, "TOP", 0, 5)
+                t:SetText(name)
+            end
+        end
+    end
+
+    local function SetParent(self, key)
+        if BGLite_equip.options[key] ~= 1 then
+            self:Hide()
+        end
+        local parent = BG.options["button" .. key]
+        parent.child = parent.child or {}
+        tinsert(parent.child, self)
+        if not parent.hookDisable then
+            parent.hookDisable = true
+            hooksecurefunc(parent, "Disable", function()
+                if parent.Text then
+                    parent.Text:SetTextColor(.5, .5, .5)
+                end
+                for i, child in ipairs(parent.child) do
+                    child:Hide()
+                end
+            end)
+        end
+    end
+    --------------------------------------------------------------------------------------------------------------------------------------------------------
+    --------------------------------------------------------------------------------------------------------------------------------------------------------
+    -- 表格设置
+    do
+        local height = 0
+        local h = 30
+        -- UI缩放
+        do
+            local name = "scale"
+            BG.options[name .. "reset"] = 1
+            if not BGLite_equip.options[name] then
+                if BGLite_equip.Scale then
+                    BGLite_equip.options[name] = BGLite_equip.Scale
+                else
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+            end
+            BG.MainFrame:SetScale(BGLite_equip.options[name])
+            BG.ReceiveMainFrame:SetScale(tonumber(BGLite_equip.options[name]) * 0.95)
+
+            local ontext = {
+                L["表格UI缩放"] .. L["|cff808080（右键还原设置）|r"],
+                L["调整表格UI的大小。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["表格UI缩放"] .. "|r", biaoge, 0.5, 1.5, 0.01, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+
+            f:SetScript("OnValueChanged", function(self, value)
+                f.edit:ClearFocus()
+                value = tonumber(string.format("%.2f", value))
+                BGLite_equip.options[name] = value
+                f.edit:SetText(value)
+                BG.MainFrame:SetScale(value)
+                BG.ReceiveMainFrame:SetScale(tonumber(value) * 0.95)
+            end)
+            f.button:SetScript("OnClick", function(self, enter)
+                if enter == "RightButton" then
+                    if BG.options[name .. "reset"] then
+                        local value = BG.options[name .. "reset"]
+                        BGLite_equip.options[name] = value
+                        f:SetValue(value)
+                        f.edit:SetText(value)
+                        BG.MainFrame:SetScale(value)
+                        BG.ReceiveMainFrame:SetScale(tonumber(value) * 0.95)
+                        BG.PlaySound(1)
+                    end
+                end
+            end)
+        end
+        -- 背景材质透明度
+        do
+            local name = "alpha"
+            BG.options[name .. "reset"] = 0.8
+            if not BGLite_equip.options[name] then
+                if BGLite_equip.Alpha then
+                    BGLite_equip.options[name] = BGLite_equip.Alpha
+                else
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+            end
+            if type(BGLite_equip.options[name]) ~= "number" then
+                BGLite_equip.options[name] = BG.options[name .. "reset"]
+            end
+
+            local ontext = {
+                L["背景材质透明度"] .. L["|cff808080（右键还原设置）|r"],
+                L["调整背景材质透明度。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["背景材质透明度"] .. "|r", biaoge, 0, 1, 0.05, 220, height - h, ontext)
+            BG.options["button" .. name] = f
+
+            local function UpdateAlpha(alpha)
+                BG.MainFrame.Bg:SetAlpha(alpha)
+                BG.auctionLogFrame:SetBackdropColor(0, 0, 0, alpha)
+                BG.itemGuoQiFrame:SetBackdropColor(0, 0, 0, alpha)
+                for _, v in ipairs(BG.tabButtons) do
+                    v.button.bg:SetAlpha(alpha)
+                end
+            end
+
+            f:SetScript("OnValueChanged", function(self, value)
+                f.edit:ClearFocus()
+                value = tonumber(string.format("%.2f", value))
+                BGLite_equip.options[name] = value
+                f.edit:SetText(value)
+                UpdateAlpha(value)
+            end)
+            f.button:SetScript("OnClick", function(self, enter)
+                if enter == "RightButton" then
+                    if BG.options[name .. "reset"] then
+                        local value = BG.options[name .. "reset"]
+                        BGLite_equip.options[name] = value
+                        f:SetValue(value)
+                        f.edit:SetText(value)
+                        UpdateAlpha(value)
+                        BG.PlaySound(1)
+                    end
+                end
+            end)
+        end
+        -- 背景材质
+        do
+            local name = "bg"
+            BG.options[name .. "reset"] = "0.01,0.01,0.01,0.8"
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            if BGLite_equip.options[name] == "0,0,0,0.8" then
+                BGLite_equip.options[name] = "0.01,0.01,0.01,0.8"
+            end
+            BG.Once("options", 250610, function()
+                if BGLite_equip.options[name] == "Interface/FrameGeneral/UI-Background-Rock" then
+                    BGLite_equip.options[name] = "0.01,0.01,0.01,0.8"
+                    BGLite_equip.options["alpha"] = .8
+                end
+            end)
+
+            local table = {
+                { tex = "Interface/FrameGeneral/UI-Background-Rock", name = L["岩石"], alpha = 1 },
+                { tex = "Interface/FrameGeneral/UI-Background-Marble", name = L["大理石"], alpha = 1 },
+                { tex = "0.01,0.01,0.01,0.8", name = L["黑夜"], },
+                { tex = "0,0,0,0", name = L["皇帝的新衣"], },
+            }
+
+            local function SetTex(v, setAlpha)
+                if strfind(v, "/") or strfind(v, "\\") or not strfind(v, ",") then
+                    BG.MainFrame.Bg:SetTexture(v, "REPEAT", "REPEAT")
+                    BG.MainFrame.Bg:SetHorizTile(true)
+                    BG.MainFrame.Bg:SetVertTile(true)
+
+                    if setAlpha then
+                        local a = 1
+                        for index, value in ipairs(table) do
+                            if v == value.tex then
+                                a = value.alpha or 1
+                            end
+                        end
+                        BGLite_equip.options["alpha"] = a
+                        BG.options["buttonalpha"]:SetValue(BGLite_equip.options["alpha"])
+                        BG.options["buttonalpha"].edit:SetText(BGLite_equip.options["alpha"])
+                        BG.MainFrame.Bg:SetAlpha(BGLite_equip.options["alpha"])
+                    end
+                else
+                    local r, g, b, a = strsplit(",", v)
+                    if not a then a = 0.8 end
+                    a = tonumber(a)
+                    BG.MainFrame.Bg:SetColorTexture(r, g, b)
+
+                    if setAlpha then
+                        BGLite_equip.options["alpha"] = a
+                        BG.options["buttonalpha"]:SetValue(BGLite_equip.options["alpha"])
+                        BG.options["buttonalpha"].edit:SetText(BGLite_equip.options["alpha"])
+                        BG.MainFrame.Bg:SetAlpha(tonumber(BGLite_equip.options["alpha"]))
+                    end
+                end
+            end
+            local function Settext(text)
+                for i, v in ipairs(table) do
+                    if v.tex == text then
+                        return v.name
+                    end
+                end
+                return ""
+            end
+
+            BG.MainFrame.Bg:SetAlpha(BGLite_equip.options["alpha"])
+            SetTex(BGLite_equip.options[name])
+
+            local dropDown = LibBG:Create_UIDropDownMenu(nil, biaoge)
+            dropDown:SetPoint("TOPLEFT", 430, height - h)
+            LibBG:UIDropDownMenu_SetWidth(dropDown, 120)
+            LibBG:UIDropDownMenu_SetText(dropDown, Settext(BGLite_equip.options[name]))
+            LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+            BG.options["button" .. name] = dropDown
+
+            local t = dropDown:CreateFontString()
+            t:SetPoint("BOTTOM", dropDown, "TOP", 0, 8)
+            t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            t:SetTextColor(1, 1, 1)
+            t:SetText(L["背景材质"])
+
+            LibBG:UIDropDownMenu_Initialize(dropDown, function(self, level)
+                for i, v in ipairs(table) do
+                    local info = LibBG:UIDropDownMenu_CreateInfo()
+                    info.text = v.name
+                    info.func = function()
+                        BGLite_equip.options[name] = v.tex
+                        SetTex(v.tex, "alpha")
+                        LibBG:UIDropDownMenu_SetText(dropDown, v.name)
+                    end
+                    if v.tex == BGLite_equip.options[name] then
+                        info.checked = true
+                    end
+                    LibBG:UIDropDownMenu_AddButton(info)
+                end
+            end)
+        end
+        h = h + 60
+
+        O.CreateLine(biaoge, height - h)
+
+        h = h + 40
+        -- 快捷键
+        do
+            O.CreateBindKey(biaoge, 15, -h, nil, "CLICK BGLiteEquipToggle:LeftButton", L["表格快捷键"])
+        end
+        -- 输入框字号
+        do
+            local name = "editFontSize"
+            BG.options[name .. "reset"] = 14
+            local ontext = {
+                L["输入框字号"] .. L["|cff808080（右键还原设置）|r"],
+                L["BiaoGe插件大量使用输入框，该选项可以修改其字体大小。"],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["输入框字号（需重载）"] .. "|r", biaoge, 10, 20, 1, 220, height - h, ontext)
+            BG.options["button" .. name] = f
+        end
+        -- 字体
+        if BG.fontList then
+            local name = "font"
+
+            local dropDown = LibBG:Create_UIDropDownMenu(nil, biaoge)
+            dropDown:SetPoint("TOPLEFT", 430, height - h)
+            LibBG:UIDropDownMenu_SetWidth(dropDown, 120)
+            LibBG:UIDropDownMenu_SetText(dropDown, BGLite_equip[name])
+            LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+            BG.options["button" .. name] = dropDown
+
+            local t = dropDown:CreateFontString()
+            t:SetPoint("BOTTOM", dropDown, "TOP", 0, 8)
+            t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            t:SetTextColor(1, 1, 1)
+            t:SetText(L["字体（需重载）"])
+
+            LibBG:UIDropDownMenu_Initialize(dropDown, function(self, level)
+                for i, font in ipairs(BG.fontList) do
+                    local info = LibBG:UIDropDownMenu_CreateInfo()
+                    info.text = font
+                    info.arg1 = font
+                    info.func = function()
+                        BGLite_equip[name] = font
+                        LibBG:UIDropDownMenu_SetText(dropDown, font)
+                    end
+                    info.checked = font:lower() == BGLite_equip[name]:lower()
+                    LibBG:UIDropDownMenu_AddButton(info)
+                end
+            end)
+
+            local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+            f:SetBackdrop({
+                bgFile = "Interface/ChatFrame/ChatFrameBackground",
+                edgeFile = "Interface/ChatFrame/ChatFrameBackground",
+                edgeSize = 1,
+            })
+            f:SetBackdropColor(0, 0, 0, 0.5)
+            f:SetBackdropBorderColor(0, 0, 0, 1)
+            f:SetSize(20, 40)
+            f.t = f:CreateFontString()
+            f.t:SetPoint("CENTER")
+            f.t:SetTextColor(1, 1, 1)
+            f.t:SetJustifyH("LEFT")
+            function f:Update(button, font)
+                f:SetParent(button)
+                f:ClearAllPoints()
+                f:SetPoint("BOTTOMLEFT", button, "TOPRIGHT", 0, 0)
+                f.t:SetFont(format("Fonts\\%s", font), 15, "OUTLINE")
+                f.t:SetText(font .. L["字体预览\n\nBiaoGe插件\n1234567890"])
+                f:SetWidth(f.t:GetStringWidth() + 10)
+                f:SetHeight(f.t:GetStringHeight() + 10)
+                f:Show()
+            end
+
+            ns.Menu:ForEachRow(function(button, i)
+                button:HookScript("OnEnter", function()
+                    if ns.Menu:GetPanel(1).dropdown ~= dropDown then return end
+                    if button.arg1 then
+                        f:Update(button, button.arg1)
+                    end
+                end)
+                button:HookScript("OnLeave", function()
+                    if ns.Menu:GetPanel(1).dropdown ~= dropDown then return end
+                    button.isOnEnter = false
+                    f:Hide()
+                end)
+            end)
+        end
+        h = h + 60
+
+        O.CreateLine(biaoge, height - h)
+
+        h = h + 15
+        -- 悬浮框
+        local mainIconOptions
+        do
+            local name = "mainIcon"
+            BG.options[name .. "reset"] = 0
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["显示悬浮框"],
+            }
+            local f = O.CreateCheckButton(name, BG.STC_g1(L["显示悬浮框"]), biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function(self)
+                BG.MainIcon:SetShown(self:GetChecked())
+                if not self:GetChecked() then
+                    mainIconOptions:Hide()
+                end
+            end)
+
+            local more = CreateFrame("Button", nil, biaoge)
+            more:SetNormalFontObject(BG.FontGold15)
+            more:SetHighlightFontObject(BG.FontWhite15)
+            more:SetText(L["更多选项"])
+            more:SetSize(more:GetFontString():GetStringWidth() + 10, 25)
+            more:SetPoint("LEFT", f.Text, "RIGHT", 0, 0)
+            SetParent(more, "mainIcon")
+
+            mainIconOptions = CreateFrame("Frame", nil, more, "BackdropTemplate")
+            mainIconOptions:SetSize(300, 120)
+            mainIconOptions:SetPoint("TOPLEFT", more, "BOTTOMLEFT", 5, -5)
+            mainIconOptions:SetFrameLevel(biaoge:GetFrameLevel() + 20)
+            mainIconOptions:SetBackdrop({
+                bgFile = "Interface/ChatFrame/ChatFrameBackground",
+                edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+                edgeSize = 16,
+                insets = { left = 3, right = 3, top = 3, bottom = 3 },
+            })
+            mainIconOptions:SetBackdropColor(0, 0, 0, .95)
+            mainIconOptions:SetBackdropBorderColor(.5, .5, .5)
+            mainIconOptions:EnableMouse(true)
+            mainIconOptions:Hide()
+
+            local close = CreateFrame("Button", nil, mainIconOptions, "UIPanelCloseButton")
+            close:SetPoint("TOPRIGHT", -2, -2)
+            close:SetScript("OnClick", function()
+                mainIconOptions:Hide()
+            end)
+            more:SetScript("OnClick", function()
+                mainIconOptions:SetShown(not mainIconOptions:IsShown())
+                BG.PlaySound(1)
+            end)
+            more:SetScript("OnHide", function()
+                mainIconOptions:Hide()
+            end)
+        end
+        -- 悬浮框缩放
+        do
+            local name = "mainIconScale"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            if not tonumber(BGLite_equip.options[name]) then
+                BGLite_equip.options[name] = BG.options[name .. "reset"]
+            end
+            local ontext = {
+                L["悬浮框缩放"] .. L["|cff808080（右键还原设置）|r"],
+                L["调整悬浮框UI的大小。"],
+            }
+            local f = O.CreateSlider2(name, L["悬浮框缩放："], mainIconOptions, 0.5, 1.5, 0.01, 15, -5, ontext, 70)
+            BG.options["button" .. name] = f
+
+            f:HookScript("OnValueChanged", function()
+                BG.MainIcon:SetScale(BGLite_equip.options[name])
+            end)
+        end
+        -- 框架层级
+        do
+            local name = "mainIconFrameLevel"
+            BG.options[name .. "reset"] = "HIGH"
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+
+            local dropDown = LibBG:Create_UIDropDownMenu(nil, mainIconOptions)
+            LibBG:UIDropDownMenu_SetWidth(dropDown, 100)
+            LibBG:UIDropDownMenu_SetText(dropDown, BGLite_equip.options[name])
+            LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+            BG.options["button" .. name] = dropDown
+
+            local t = mainIconOptions:CreateFontString()
+            t:SetPoint("LEFT", mainIconOptions, "TOPLEFT", 15, -55)
+            t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            t:SetTextColor(1, 1, 1)
+            t:SetText(L["悬浮框层级："])
+            dropDown:SetPoint("LEFT", t, "RIGHT", 10, 0)
+
+            LibBG:UIDropDownMenu_Initialize(dropDown, function(self, level)
+                local info = LibBG:UIDropDownMenu_CreateInfo()
+                for _, text in ipairs({ "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP", }) do
+                    info.text = text
+                    info.func = function()
+                        BGLite_equip.options[name] = text
+                        LibBG:UIDropDownMenu_SetText(dropDown, BGLite_equip.options[name])
+                        if BG.MainIcon then
+                            BG.MainIcon:SetFrameStrata(BGLite_equip.options[name])
+                        end
+                    end
+                    info.checked = BGLite_equip.options[name] == text
+                    LibBG:UIDropDownMenu_AddButton(info)
+                end
+            end)
+        end
+
+        -- 悬浮框插件名字
+        do
+            local name = "mainIconShowName"
+            BG.options[name .. "reset"] = 1
+            if BGLite_equip.options[name] == nil then
+                BGLite_equip.options[name] = BG.options[name .. "reset"]
+            end
+            local ontext = {
+                L["悬浮框显示插件名字"],
+                L["取消勾选后，悬浮框仅显示插件图标"],
+            }
+            local f = O.CreateCheckButton(name, AddTexture('QUEST')..L["悬浮框显示插件名字"], mainIconOptions, 10, -75, ontext, true)
+            f:HookScript("OnClick", function()
+                if BG.MainIcon then
+                    BG.MainIcon:UpdateNameVisibility()
+                end
+            end)
+        end
+
+        h = h + 45
+
+        O.CreateLine(biaoge, height - h)
+
+        h = h + 15
+        -- 自动记录装备
+        do
+            local name = "autoLoot"
+            BG.options[name .. "reset"] = 1
+            if not BGLite_equip.options[name] then
+                if BGLite_equip.AutoLoot then
+                    BGLite_equip.options[name] = BGLite_equip.AutoLoot
+                else
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+            end
+            local ontext = {
+                L["自动记录装备"],
+                L["在团本里拾取装备时，会自动记录进表格。"],
+                " ",
+                L["不同的副本，要求的最低品质会不同。大团本一般从紫装开始记录，小团本一般从蓝装开始记录。小怪的掉落会记录到杂项里。"],
+            }
+            local f = O.CreateCheckButton(name, BG.STC_g1(L["自动记录装备"]), biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                local name1 = "lootTime"
+                local name2 = "lootFontSize"
+                local name3 = "autolootNotice"
+                local name4 = "autolootRemind"
+                if f:GetChecked() then
+                    BG.options["button" .. name1]:Show()
+                    BG.options["button" .. name2]:Show()
+                    BG.options["button" .. name3]:Show()
+                    BG.options["button" .. name4]:Show()
+                else
+                    BG.options["button" .. name1]:Hide()
+                    BG.options["button" .. name2]:Hide()
+                    BG.options["button" .. name3]:Hide()
+                    BG.options["button" .. name4]:Hide()
+                end
+            end)
+        end
+        -- 装备记录通知显示时长
+        do
+            local name = "lootTime"
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["装备记录通知时长"] .. L["|cff808080（右键还原设置）|r"],
+                L["自动记录装备后会在屏幕上方通知记录结果。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["装备记录通知时长(秒)"] .. "*" .. "|r", biaoge, 1, 30, 1, 220, height - h - 25, ontext)
+            BG.options["button" .. name] = f
+            local name = "autoLoot"
+            if BGLite_equip.options[name] ~= 1 then
+                f:Hide()
+            end
+        end
+        -- 装备记录通知字体大小
+        do
+            local name = "lootFontSize"
+            BG.options[name .. "reset"] = 20
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["装备记录通知字号"] .. L["|cff808080（右键还原设置）|r"],
+                L["调整该字体的大小。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["装备记录通知字号"] .. "|r", biaoge, 10, 30, 1, 425, height - h - 25, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnValueChanged", function(self, value)
+                BG.FrameLootMsg:SetFont(BIAOGE_TEXT_FONT, value, "OUTLINE")
+            end)
+            local name = "autoLoot"
+            if BGLite_equip.options[name] ~= 1 then
+                f:Hide()
+            end
+        end
+        h = h + 30
+        -- 记录装备通知
+        do
+            local name = "autolootNotice"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["装备记录通知"],
+                L["自动记录装备后会在屏幕上方显示记录了什么装备、记录在哪个BOSS槽位。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateCheckButton(name, L["装备记录通知"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            local name = "autoLoot"
+            if BGLite_equip.options[name] ~= 1 then
+                f:Hide()
+            end
+        end
+        h = h + 30
+        -- 未拾取提醒
+        do
+            local name = "autolootRemind"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["装备未拾取提醒"],
+                L["击杀BOSS超过30秒装备还没拾取，且你是物品分配者时，屏幕中间红字提醒。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateCheckButton(name, L["装备未拾取提醒"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            local name = "autoLoot"
+            if BGLite_equip.options[name] ~= 1 then
+                f:Hide()
+            end
+        end
+        h = h + 40
+
+        O.CreateLine(biaoge, height - h)
+        h = h + 15
+        -- 交易自动记账
+        do
+            local name = "autoTrade"
+            BG.options[name .. "reset"] = 1
+            if not BGLite_equip.options[name] then
+                if BGLite_equip.AutoTrade then
+                    BGLite_equip.options[name] = BGLite_equip.AutoTrade
+                else
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+            end
+            local ontext = {
+                L["交易自动记账"],
+                L["需要配合自动记录装备，因为如果表格里没有该交易的装备，则记账失败。"],
+                " ",
+                L["如果一次交易两件装备以上，则只会记第一件装备。"],
+            }
+            local f = O.CreateCheckButton(name, BG.STC_g1(L["交易自动记账"]), biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+        end
+        -- 交易通知显示时长
+        do
+            local name = "tradeTime"
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["交易通知时长"] .. L["|cff808080（右键还原设置）|r"],
+                L["通知显示多久。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["交易通知时长(秒)"] .. "*" .. "|r", biaoge, 1, 10, 1, 220, height - h - 25, ontext)
+            BG.options["button" .. name] = f
+            SetParent(f, "autoTrade")
+            BG.After(0, function()
+                SetParent(f, "tradeNotice")
+            end)
+        end
+        -- 交易通知字体大小
+        do
+            local name = "tradeFontSize"
+            BG.options[name .. "reset"] = 20
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["交易通知字号"] .. L["|cff808080（右键还原设置）|r"],
+                L["调整该字体的大小。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["交易通知字号"] .. "|r", biaoge, 10, 30, 1, 425, height - h - 25, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnValueChanged", function(self, value)
+                BG.FrameTradeMsg:SetFont(BIAOGE_TEXT_FONT, value, "OUTLINE")
+            end)
+            SetParent(f, "autoTrade")
+            BG.After(0, function()
+                SetParent(f, "tradeNotice")
+            end)
+        end
+        h = h + 30
+        -- 交易通知
+        do
+            local name = "tradeNotice"
+            BG.options[name .. "reset"] = 1
+            if not BGLite_equip.options[name] then
+                if BGLite_equip.AutoTrade then
+                    BGLite_equip.options[name] = BGLite_equip.AutoTrade
+                else
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+            end
+            local ontext = {
+                L["交易通知"],
+                L["交易完成后会在屏幕中央通知本次记账结果。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateCheckButton(name, L["交易通知"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                local name1 = "tradeTime"
+                local name2 = "tradeFontSize"
+                if f:GetChecked() then
+                    BG.options["button" .. name1]:Show()
+                    BG.options["button" .. name2]:Show()
+                else
+                    BG.options["button" .. name1]:Hide()
+                    BG.options["button" .. name2]:Hide()
+                end
+            end)
+            SetParent(f, "autoTrade")
+        end
+        h = h + 30
+        -- 交易增强
+        do
+            local name = "tradePreview"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["在交易界面增加以下功能"],
+                " ",
+                L["记账效果预览框："],
+                L["可以预览这次的记账效果。"],
+                " ",
+                L["最近拍卖/对方已拍："],
+                L["如果你是物品分配者，会显示最近拍卖且可交易的装备，点击一下就能把装备放到交易里。"],
+                " ",
+                L["工资与补贴："],
+                L["增加复制工资与补贴的按钮。"],
+                " ",
+                L["对方欠款记录："],
+                L["如果对方曾有欠款，则会在交易框下方显示其欠款记录，点击可以清除欠款。"],
+                " ",
+                L["重复交易工资提醒："],
+                L["如果2分钟内你曾与同一个人交易过相同的金币，会有红字提醒。"],
+                " ",
+                L["交易金额超上限提醒："],
+                format(L["交易时，如果交易金额超过游戏上限（%s金），则会红字提醒。"], BG.tradeGoldTop.topNum),
+                " ",
+                L["交易后台提醒："],
+                L["交易时，如果魔兽世界在后台运行，任务栏图标会闪烁提醒。"],
+            }
+            local f = O.CreateCheckButton(name, L["交易增强"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            SetParent(f, "autoTrade")
+        end
+        h = h + 30
+        -- 团长是否正在交易
+        do
+            local name = "isTrading"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["团长是否正在交易"],
+                L["在团长的团队框架显示其是否正在交易。"],
+                L["支持NDui、ElvUI、Cell、原生框架。"],
+            }
+            local f = O.CreateCheckButton(name, L["团长是否正在交易"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            SetParent(f, "autoTrade")
+        end
+        h = h + 30
+        -- 禁止NDui插件交易自动打开背包
+        do
+            local name = "NDuiOpenBag"
+            BG.options[name .. "reset"] = 0
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["禁止NDui插件交易时自动打开背包"],
+            }
+            local f = O.CreateCheckButton(name, L["禁止NDui插件交易时自动打开背包"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            SetParent(f, "autoTrade")
+            local function Set(self)
+                if C_AddOns.IsAddOnLoaded("NDui") then
+                    local B = unpack(NDui)
+                    local module = B:GetModule("Bags")
+                    if module and type(module.OpenBags) == "function" then
+                        if self:GetChecked() then
+                            B:UnregisterEvent("TRADE_SHOW", module.OpenBags)
+                        else
+                            B:RegisterEvent("TRADE_SHOW", module.OpenBags)
+                        end
+                    end
+                end
+            end
+            f:HookScript("OnClick", Set)
+            BG.Init2(function()
+                Set(f)
+            end)
+        end
+        h = h + 40
+
+        O.CreateLine(biaoge, height - h)
+        h = h + 15
+        -- 高亮拍卖装备
+        do
+            local name = "auctionHigh"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["高亮拍卖装备"],
+                L["当团长或物品分配者贴出装备开始拍卖时，会自动高亮表格里相应的装备。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateCheckButton(name, BG.STC_g1(L["高亮拍卖装备"]), biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                local name = "auctionHighTime"
+                if f:GetChecked() then
+                    BG.options["button" .. name]:Show()
+                else
+                    BG.options["button" .. name]:Hide()
+                end
+            end)
+        end
+        -- 高亮拍卖装备时长
+        do
+            local name = "auctionHighTime"
+            BG.options[name .. "reset"] = 20
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["高亮拍卖装备时长"] .. L["|cff808080（右键还原设置）|r"],
+                L["高亮拍卖装备多久。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["高亮拍卖装备时长(秒)"] .. "|r", biaoge, 1, 60, 1, 220, height - h - 25, ontext)
+            BG.options["button" .. name] = f
+            local name = "auctionHigh"
+            if BGLite_equip.options[name] ~= 1 then
+                f:Hide()
+            end
+        end
+        h = h + 30
+        -- 高亮对应装备
+        do
+            local name = "HighOnterItem"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["高亮对应装备"],
+                L["当鼠标悬停在表格装备时，高亮背包里对应的装备。"],
+                " ",
+                L["当鼠标悬停在背包装备时，高亮表格里对应的装备。"],
+                " ",
+                L["当鼠标悬停在聊天框装备时，高亮表格和背包里对应的装备。"],
+                " ",
+                L["（背包系统支持原生背包、NDui背包、ElvUI背包、大脚背包、Bagnon）"],
+            }
+            local f = O.CreateCheckButton(name, L["高亮对应装备"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+        end
+        h = h + 50
+
+        O.CreateLine(biaoge, height - h)
+        h = h + 15
+        -- 拍卖聊天记录框
+        do
+            local name = "auctionChat"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["拍卖聊天记录框"],
+                L["自动记录全团跟拍卖有关的聊天。"],
+                " ",
+                L["当你点击买家或金额时会显示拍卖聊天记录。"],
+            }
+            local f = O.CreateCheckButton(name, BG.STC_g1(L["拍卖聊天记录框"]), biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                local name = "auctionChatHoldNew"
+                if f:GetChecked() then
+                    BG.options["button" .. name]:Show()
+                else
+                    BG.options["button" .. name]:Hide()
+                end
+            end)
+        end
+        h = h + 30
+        -- 拍卖聊天记录总是保持在最新位置
+        do
+            local name = "auctionChatHoldNew"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["拍卖聊天记录总是保持在最新位置"],
+                L["每次打开拍卖聊天记录框时，自动回到最新的聊天位置。"],
+            }
+            local f = O.CreateCheckButton(name, L["拍卖聊天记录总是保持在最新位置"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            local name = "auctionChat"
+            if BGLite_equip.options[name] ~= 1 then
+                f:Hide()
+            end
+        end
+        h = h + 40
+
+        O.CreateLine(biaoge, height - h)
+        h = h + 15
+        -- 拍卖倒数
+        do
+            local name = "countDown"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["拍卖自动倒数"],
+                L["该功能只有团长或物品分配者可用。"],
+                " ",
+                L["使用方法：右键聊天框装备时开始倒数。"],
+            }
+            local f = O.CreateCheckButton(name, BG.STC_g1(L["拍卖自动倒数"]), biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                local name1 = "countDownDuration"
+                local name2 = "countDownSendChannel"
+                local name3 = "countDownStop"
+                if f:GetChecked() then
+                    BG.options["button" .. name1]:Show()
+                    BG.options["button" .. name2]:Show()
+                    BG.options["button" .. name3]:Show()
+                else
+                    BG.options["button" .. name1]:Hide()
+                    BG.options["button" .. name2]:Hide()
+                    BG.options["button" .. name3]:Hide()
+                end
+            end)
+        end
+        -- 拍卖倒数时长
+        do
+            local name = "countDownDuration"
+            BG.options[name .. "reset"] = 5
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["拍卖倒数时长"] .. L["|cff808080（右键还原设置）|r"],
+                format(L["拍卖装备倒数多久，默认是%s秒。"], BG.options[name .. "reset"]),
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["拍卖倒数时长(秒)"] .. "|r", biaoge, 1, 20, 1, 220, height - h - 25, ontext)
+            BG.options["button" .. name] = f
+            if BGLite_equip.options["countDown"] ~= 1 then
+                f:Hide()
+            end
+        end
+        h = h + 30
+        -- 倒数自动暂停
+        do
+            local name = "countDownStop"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["倒数自动暂停"],
+                L["正在自动倒数时，如果有人出价（在团队频道打出纯数字时），则自动暂停倒数。"],
+            }
+            local f = O.CreateCheckButton(name, L["倒数自动暂停"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            if BGLite_equip.options["countDown"] ~= 1 then
+                f:Hide()
+            end
+        end
+        h = h + 30
+        -- 拍卖倒数通报频道
+        do
+            local name = "countDownSendChannel"
+            BG.options[name .. "reset"] = "RAID"
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+
+            local function RaidText(channel)
+                local text
+                if channel == "RAID_WARNING" then
+                    text = L["通报至团队通知频道"]
+                elseif channel == "RAID" then
+                    text = L["通报至团队频道"]
+                end
+                return text
+            end
+
+            local dropDown = LibBG:Create_UIDropDownMenu(nil, biaoge)
+            dropDown:SetPoint("TOPLEFT", 15, height - h - 2)
+            LibBG:UIDropDownMenu_SetWidth(dropDown, 170)
+            LibBG:UIDropDownMenu_SetText(dropDown, RaidText(BGLite_equip.options[name]))
+            LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+            BG.options["button" .. name] = dropDown
+
+            LibBG:UIDropDownMenu_Initialize(dropDown, function(self, level)
+                local info = LibBG:UIDropDownMenu_CreateInfo()
+                info.text = L["通报至团队通知频道"]
+                info.func = function()
+                    BGLite_equip.options[name] = "RAID_WARNING"
+                    LibBG:UIDropDownMenu_SetText(dropDown, RaidText(BGLite_equip.options[name]))
+                end
+                if BGLite_equip.options[name] == "RAID_WARNING" then
+                    info.checked = true
+                end
+                LibBG:UIDropDownMenu_AddButton(info)
+                local info = LibBG:UIDropDownMenu_CreateInfo()
+                info.text = L["通报至团队频道"]
+                info.func = function()
+                    BGLite_equip.options[name] = "RAID"
+                    LibBG:UIDropDownMenu_SetText(dropDown, RaidText(BGLite_equip.options[name]))
+                end
+                if BGLite_equip.options[name] == "RAID" then
+                    info.checked = true
+                end
+                LibBG:UIDropDownMenu_AddButton(info)
+            end)
+
+            if BGLite_equip.options["countDown"] ~= 1 then
+                dropDown:Hide()
+            end
+        end
+        h = h + 50
+
+        O.CreateLine(biaoge, height - h)
+        h = h + 15
+        -- 快速记账
+        do
+            local name = "fastCount"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["快速记账"],
+                L["这是一种不用打开表格界面就可以完成记账的方式。"],
+                " ",
+                L["该功能只有普通团员可用（非团长和物品分配者）。"],
+                " ",
+                L["使用方法：右键聊天框装备时打开。"],
+            }
+            local f = O.CreateCheckButton(name, BG.STC_g1(L["快速记账"]), biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                local name1 = "fastCountMsg"
+                local name2 = "fastCountPreview"
+                if f:GetChecked() then
+                    BG.options["button" .. name1]:Show()
+                    BG.options["button" .. name2]:Show()
+                else
+                    BG.options["button" .. name1]:Hide()
+                    BG.options["button" .. name2]:Hide()
+                end
+            end)
+        end
+        h = h + 30
+        -- 记账通知
+        do
+            local name = "fastCountMsg"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["记账通知"],
+                L["快速记账完成后会在屏幕中央通知本次记账结果。"],
+            }
+            local f = O.CreateCheckButton(name, L["记账通知"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            local name = "fastCount"
+            if BGLite_equip.options[name] ~= 1 then
+                f:Hide()
+            end
+        end
+        h = h + 30
+        -- 记账效果预览框
+        do
+            local name = "fastCountPreview"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["记账效果预览框"],
+                L["快速记账的时候，可以预览这次的记账效果。"],
+            }
+            local f = O.CreateCheckButton(name, L["记账效果预览框"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            local name = "fastCount"
+            if BGLite_equip.options[name] ~= 1 then
+                f:Hide()
+            end
+        end
+        h = h + 40
+
+        O.CreateLine(biaoge, height - h)
+        h = h + 15
+        -- 装备过期提醒
+        do
+            local name = "guoqiRemind"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["装备过期提醒"],
+                L["当装备剩余可交易时间低于一定时（默认是低于30分钟），会有语音+文字提醒。每次提醒的最低间隔是5分钟，避免提醒过于频繁。"],
+                " ",
+                L["该功能只有你是团长或物品分配者时起作用。"],
+            }
+            local f = O.CreateCheckButton(name, BG.STC_g1(L["装备过期提醒"]), biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                local name1 = "guoqiRemindMinTime"
+                if f:GetChecked() then
+                    BG.options["button" .. name1]:Show()
+                else
+                    BG.options["button" .. name1]:Hide()
+                end
+            end)
+        end
+        -- 剩余多少分钟时提醒
+        do
+            local name = "guoqiRemindMinTime"
+            BG.options[name .. "reset"] = 30
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["剩余时间低于多少时提醒"] .. L["|cff808080（右键还原设置）|r"],
+                L["当装备剩余可交易时间低于该时间时，会提醒，默认是30分钟。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["剩余时间低于多少时提醒(分)"] .. "|r", biaoge, 1, 120, 1, 220, height - h - 25, ontext)
+            BG.options["button" .. name] = f
+            if BGLite_equip.options["guoqiRemind"] ~= 1 then
+                f:Hide()
+            end
+        end
+        h = h + 80
+
+        O.CreateLine(biaoge, height - h)
+        h = h + 15
+        -- 进本自动清空表格
+        do
+            local name = "autoQingKong"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["进本自动清空表格"],
+                L["当你进入一个新CD团本时，表格会自动清空，原表格数据会保存至历史表格1。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateCheckButton(name, L["进本自动清空表格"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                local name = "autoQingKongSaveHistory"
+                if f:GetChecked() then
+                    BG.options["button" .. name]:Show()
+                else
+                    BG.options["button" .. name]:Hide()
+                end
+            end)
+
+            -- 删除旧设置
+            if BGLite_equip.options["showQingKong"] then
+                BGLite_equip.options["showQingKong"] = nil
+            end
+        end
+        h = h + 30
+        -- 清空表格不保存历史表格
+        do
+            local name = "autoQingKongSaveHistory"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["自动清空表格时保存表格"],
+                L["进本自动清空表格时，把表格保存至历史表格1。"],
+                " ",
+                L["取消勾选则不会保存表格。"],
+            }
+            local f = O.CreateCheckButton(name, L["自动清空表格时保存表格"], biaoge, 40, height - h, ontext)
+            BG.options["button" .. name] = f
+            if BGLite_equip.options["autoQingKong"] ~= 1 then
+                f:Hide()
+            end
+        end
+        h = h + 30
+        -- 清空表格时保留支出补贴名称
+        do
+            local name = "retainExpenses"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["清空表格时保留支出补贴名称"],
+                L["只保留补贴名称（例如XX补贴）。支出金额正常清空。"],
+                " ",
+                L["这样就不用每次都重复填写补贴名称。"],
+                " ",
+                L["只有补贴名称，但没有补贴金额的，在通报账单时不会被通报。"],
+            }
+            local f = O.CreateCheckButton(name, L["清空表格时保留支出补贴名称"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                local name = "retainExpensesMoney"
+                if f:GetChecked() then
+                    BG.options["button" .. name]:Show()
+                else
+                    BG.options["button" .. name]:Hide()
+                end
+            end)
+        end
+        h = h + 30
+        -- 清空表格时保留支出金额
+        do
+            local name = "retainExpensesMoney"
+            BG.options[name .. "reset"] = 0
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["清空表格时保留支出金额"],
+                L["如果你们团每次支出的金额都是固定的，可以勾选此项。"],
+            }
+            local f = O.CreateCheckButton(name, L["清空表格时保留支出金额"], biaoge, 40, height - h, ontext)
+            BG.options["button" .. name] = f
+            if BGLite_equip.options["retainExpenses"] ~= 1 then
+                f:Hide()
+            end
+        end
+        -- 清空表格时根据副本难度设置分钱人数
+        h = h + 45
+
+        O.CreateLine(biaoge, height - h)
+        h = h + 15
+        -- 按键交互声音
+        do
+            local name = "buttonSound"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["按键交互声音"],
+                L["点击按钮时的声音。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateCheckButton(name, L["按键交互声音"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+        end
+        h = h + 30
+        -- 语音提醒
+        do
+            local name = "tipsSound"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["语音提醒"],
+                L["在某些情况下，会有语音提醒，比如：装备快过期、拍卖啦、心愿达成、炼金转化已就绪等等。"],
+            }
+            local f = O.CreateCheckButton(name, L["语音提醒"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                local name = "Sound"
+                if f:GetChecked() then
+                    BG.options["button" .. name]:Show()
+                else
+                    BG.options["button" .. name]:Hide()
+                end
+            end)
+        end
+        -- 语音包
+        do
+            local name = "Sound"
+
+            BG.Once("sound", 250527, function()
+                BGLite_equip.options.Sound = "AI"
+            end)
+
+            BGLite_equip.options.Sound = BGLite_equip.options.Sound or "AI"
+
+            local function GetName()
+                for i, v in ipairs(BG.soundAuthor) do
+                    if v.ID == BGLite_equip.options.Sound then
+                        return v.ID
+                    end
+                end
+            end
+
+            local dropDown = LibBG:Create_UIDropDownMenu(nil, biaoge)
+            dropDown:SetPoint("TOPLEFT", 220, height - h + 10)
+            LibBG:UIDropDownMenu_SetWidth(dropDown, 120)
+            LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+            BG.options["button" .. name] = dropDown
+
+            local f = CreateFrame("Frame", nil, dropDown, "BackdropTemplate")
+            f:SetPoint("BOTTOM", dropDown, "TOP", 0, 8)
+            local t = f:CreateFontString()
+            t:SetPoint("CENTER")
+            t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            t:SetTextColor(1, 1, 1)
+            t:SetText(L["语音包"])
+            f:SetSize(t:GetWidth(), t:GetHeight())
+
+            LibBG:UIDropDownMenu_Initialize(dropDown, function(self, level)
+                for _, v in ipairs(BG.soundAuthor) do
+                    local info = LibBG:UIDropDownMenu_CreateInfo()
+                    info.text = v.ID
+                    info.func = function()
+                        BGLite_equip.options[name] = v.ID
+                        LibBG:UIDropDownMenu_SetText(dropDown, v.ID)
+                    end
+                    if v.ID == BGLite_equip.options[name] then
+                        info.checked = true
+                    end
+                    info.arg1 = v.ID
+                    LibBG:SetItemButton(info, {
+                        icon = "Interface/ChatFrame/UI-ChatIcon-ArmoryChat",
+                        size = 20,
+                        hoverOnly = false,
+                        iconColor = { 0, 1, 0 },
+                        hoverIconColor = { 1, 1, 1 },
+                        tooltipTitle = L["语音包"],
+                        noClickSound = true,
+                        func = function(control, item)
+                            local index = random(#BG.soundTbl2)
+                            local path = BG["sound_" .. BG.soundTbl2[index].ID .. item.arg1]
+                            if path and not PlaySoundFile(path .. ".ogg", "Master") then
+                                PlaySoundFile(path .. ".mp3", "Master")
+                            end
+                        end,
+                    })
+                    LibBG:UIDropDownMenu_AddButton(info)
+                end
+            end)
+
+            if BGLite_equip.options["tipsSound"] ~= 1 then
+                dropDown:Hide()
+            end
+
+            BG.Init2(function()
+                LibBG:UIDropDownMenu_SetText(dropDown, GetName())
+            end)
+
+            -- 自制语音包提示
+            local bt = BG.CreateButton(biaoge)
+            bt:SetSize(120, 25)
+            bt:SetPoint("TOPLEFT", biaoge, "TOPLEFT", 450, height - h + 10)
+            bt:SetText(L["查看教程"])
+            bt:SetScript("OnClick", function(self)
+                BG.PlaySound(1)
+                BG.ChatEditSetText("https://docs.qq.com/doc/DYXBObWZTeFdFaFFI")
+            end)
+
+            local t = biaoge:CreateFontString()
+            t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            t:SetPoint("BOTTOM", bt, "TOP", 0, 8)
+            t:SetTextColor(1, 1, 1)
+            t:SetText(L["我想成为语音包作者"])
+            t:SetWidth(150)
+        end
+        h = h + 40
+
+        O.CreateLine(biaoge, height - h)
+        h = h + 15
+        -- 金额自动加零
+        do
+            local name = "autoAdd0"
+            BG.options[name .. "reset"] = 0
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["金额自动加零"],
+                L["输入金额和欠款时自动加两个0，减少记账操作，提高记账效率。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateCheckButton(name, L["金额自动加零"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+        end
+
+        -- 对账单保存时长(小时)
+        do
+            local name = "duiZhangTime"
+            local ontext = {
+                L["对账单保存时长"] .. L["|cff808080（右键还原设置）|r"],
+                L["对账单保存多久后自动删除。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["对账单保存时长(小时)"] .. "|r", biaoge, 1, 168, 1, 220, height - h - 25, ontext)
+            BG.options["button" .. name] = f
+        end
+
+        -- 表格底部标签排序
+        do
+            local bt
+            local sortFrame
+            local rows = {}
+            local rowByKey = {}
+            local positions = {}
+            local chosenIndex
+            local chosenRow
+            local dragOffsetX
+            local dragOffsetY
+            local rowHeight = 24
+            local rowSpacing = 0
+            local topOffset = 58
+            local defaultBackground = { .25, .25, .25, .3 }
+
+            local function SetRowPoint(row, index)
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", sortFrame, "TOPLEFT", 20,
+                    -topOffset - (index - 1) * (rowHeight + rowSpacing))
+            end
+
+            local function RefreshPositions()
+                wipe(positions)
+                for i, row in ipairs(rows) do
+                    positions[i] = {
+                        top = row:GetTop(),
+                        bottom = row:GetBottom(),
+                    }
+                end
+            end
+
+            local function FinishDrag(save)
+                if not chosenRow then return end
+                sortFrame:SetScript("OnUpdate", nil)
+                for i, row in ipairs(rows) do
+                    row.index = i
+                    row:SetFrameLevel(sortFrame:GetFrameLevel() + 1)
+                    SetRowPoint(row, i)
+                end
+                chosenRow:SetBackdropColor(unpack(defaultBackground))
+                if save then
+                    local order = {}
+                    for i, row in ipairs(rows) do
+                        order[i] = row.key
+                    end
+                    BG.SetMainTabOrder(order)
+                    BG.PlaySound(1)
+                end
+                chosenIndex = nil
+                chosenRow = nil
+                dragOffsetX = nil
+                dragOffsetY = nil
+                RefreshPositions()
+            end
+
+            local function DragOnUpdate()
+                if not chosenRow then return end
+                local uiScale = UIParent:GetEffectiveScale()
+                local cursorX, cursorY = GetCursorPosition()
+                local x, y = cursorX / uiScale, cursorY / uiScale
+                for i, p in ipairs(positions) do
+                    if i ~= chosenIndex and p.top and p.bottom and y < p.top and y > p.bottom then
+                        tremove(rows, chosenIndex)
+                        tinsert(rows, i, chosenRow)
+                        chosenIndex = i
+                        break
+                    end
+                end
+                for i, row in ipairs(rows) do
+                    if row == chosenRow then
+                        row:ClearAllPoints()
+                        row:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", x - dragOffsetX, y - dragOffsetY)
+                    else
+                        SetRowPoint(row, i)
+                    end
+                end
+            end
+
+            local function CreateRow(key)
+                local row = CreateFrame("Frame", nil, sortFrame, "BackdropTemplate")
+                row:SetSize(220, rowHeight)
+                row:SetBackdrop({
+                    bgFile = "Interface/ChatFrame/ChatFrameBackground",
+                    edgeFile = "Interface/ChatFrame/ChatFrameBackground",
+                    edgeSize = 1,
+                })
+                row:SetBackdropColor(unpack(defaultBackground))
+                row:SetBackdropBorderColor(1, 1, 1, .8)
+                row:EnableMouse(true)
+                row.key = key
+
+                row.Text = row:CreateFontString()
+                row.Text:SetFont(BIAOGE_TEXT_FONT, 14, "OUTLINE")
+                row.Text:SetPoint("LEFT", 10, 0)
+                row.Text:SetPoint("RIGHT", -10, 0)
+                row.Text:SetJustifyH("LEFT")
+                row.Text:SetWordWrap(false)
+
+                row:SetScript("OnMouseDown", function(self, button)
+                    if button ~= "LeftButton" then return end
+                    chosenIndex = self.index
+                    chosenRow = self
+                    local uiScale = UIParent:GetEffectiveScale()
+                    local cursorX, cursorY = GetCursorPosition()
+                    dragOffsetX = cursorX / uiScale - self:GetLeft()
+                    dragOffsetY = cursorY / uiScale - self:GetBottom()
+                    self:SetBackdropColor(1, 1, 0, 0.8)
+                    self:SetFrameLevel(sortFrame:GetFrameLevel() + 2)
+                    sortFrame:SetScript("OnUpdate", DragOnUpdate)
+                    BG.PlaySound(1)
+                end)
+                row:SetScript("OnMouseUp", function(self, button)
+                    if button == "LeftButton" and self == chosenRow then
+                        FinishDrag(true)
+                    end
+                end)
+                rowByKey[key] = row
+                return row
+            end
+
+            local function RefreshRows()
+                for _, row in pairs(rowByKey) do
+                    row:Hide()
+                end
+                wipe(rows)
+                for i, v in ipairs(BG.tabButtons) do
+                    local row = rowByKey[v.key] or CreateRow(v.key)
+                    row.key = v.key
+                    row.index = i
+                    row.Text:SetText(v.text)
+                    row:Show()
+                    row:SetBackdropColor(unpack(defaultBackground))
+                    row:SetFrameLevel(sortFrame:GetFrameLevel() + 1)
+                    tinsert(rows, row)
+                    SetRowPoint(row, i)
+                end
+                sortFrame:SetHeight(topOffset + #rows * (rowHeight + rowSpacing) + 42)
+                BG.After(0, RefreshPositions)
+            end
+
+            local function CreateSortFrame(owner)
+                if not sortFrame then
+                    sortFrame = CreateFrame("Frame", "BiaoGeMainTabSortFrame", UIParent, "BackdropTemplate")
+                    sortFrame:SetWidth(260)
+                    sortFrame:SetFrameStrata("HIGH")
+                    sortFrame:SetToplevel(true)
+                    sortFrame:EnableMouse(true)
+                    sortFrame:SetMovable(true)
+                    sortFrame:SetBackdrop({
+                        bgFile = "Interface/ChatFrame/ChatFrameBackground",
+                        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+                        edgeSize = 16,
+                        insets = { left = 3, right = 3, top = 3, bottom = 3 },
+                    })
+                    sortFrame:SetBackdropColor(0, 0, 0, .95)
+                    sortFrame:SetBackdropBorderColor(1, 1, 1, 1)
+                    sortFrame:SetScript("OnMouseDown", function(self, button)
+                        if button == "LeftButton" then
+                            self:StartMoving()
+                        end
+                    end)
+                    sortFrame:SetScript("OnMouseUp", function(self, button)
+                        if button == "LeftButton" then
+                            self:StopMovingOrSizing()
+                            RefreshPositions()
+                        end
+                    end)
+                    sortFrame:SetScript("OnHide", function()
+                        sortFrame:StopMovingOrSizing()
+                        FinishDrag(false)
+                    end)
+                    tinsert(UISpecialFrames, "BiaoGeMainTabSortFrame")
+
+                    local close = CreateFrame("Button", nil, sortFrame, "UIPanelCloseButton")
+                    close:SetPoint("TOPRIGHT", 2, 2)
+
+                    local title = sortFrame:CreateFontString()
+                    title:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                    title:SetPoint("TOP", 0, -10)
+                    title:SetText(L["表格底部标签排序"])
+
+                    local tip = sortFrame:CreateFontString()
+                    tip:SetFont(BIAOGE_TEXT_FONT, 13, "OUTLINE")
+                    tip:SetPoint("TOP", title, "BOTTOM", 0, -6)
+                    tip:SetTextColor(1, .82, 0)
+                    tip:SetText(L["拖动标签调整顺序"])
+
+                    local reset = BG.CreateButton(sortFrame)
+                    reset:SetSize(110, 22)
+                    reset:SetPoint("BOTTOM", 0, 12)
+                    reset:SetText(L["恢复默认顺序"])
+                    reset:SetScript("OnClick", function()
+                        BG.ResetMainTabOrder()
+                        RefreshRows()
+                        BG.PlaySound(1)
+                    end)
+                end
+                sortFrame:ClearAllPoints()
+                owner = owner or bt
+                local scale = owner:GetEffectiveScale() / UIParent:GetEffectiveScale()
+                local centerX = owner:GetCenter() * scale
+                local top = owner:GetTop() * scale
+                sortFrame:SetPoint("BOTTOM", UIParent, "BOTTOMLEFT", centerX, top + 2)
+            end
+
+            function BG.CreateSortFrame(owner)
+                CreateSortFrame(owner)
+                RefreshRows()
+                sortFrame:Show()
+            end
+
+            bt = BG.CreateButton(biaoge)
+            bt:SetSize(120, 25)
+            bt:SetPoint("TOPLEFT", biaoge, "TOPLEFT", 450, height - h - 25)
+            bt:SetText(L["修改排序"])
+            bt:SetScript("OnClick", function(self)
+                if sortFrame and sortFrame:IsVisible() then
+                    sortFrame:Hide()
+                else
+                    BG.CreateSortFrame()
+                end
+                BG.PlaySound(1)
+            end)
+
+            local t = biaoge:CreateFontString()
+            t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            t:SetPoint("BOTTOM", bt, "TOP", 0, 8)
+            t:SetTextColor(1, 1, 1)
+            t:SetText(AddTexture('QUEST') .. L["表格底部标签排序"])
+            t:SetWidth(150)
+        end
+        h = h + 30
+
+        -- 自动获取在线人数
+        if BG.IsTW then
+            do
+                local name = "autoGetOnline"
+                BG.options[name .. "reset"] = 0
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                BG.Once("autoGetOnline", 240615, function()
+                    BGLite_equip.options[name] = 0
+                end)
+
+                local ontext = {
+                    L["自动获取在线人数"],
+                    L["打开表格界面时，自动获取当前阵营在线人数。如果你打开表格时出现掉线的情况，请关闭该功能。"],
+                    -- " ",
+                    -- L[""],
+                }
+                local f = O.CreateCheckButton(name, L["自动获取在线人数"], biaoge, 15, height - h, ontext)
+                BG.options["button" .. name] = f
+            end
+            h = h + 30
+        end
+
+        -- 支出百分比自动计算
+        do
+            local name = "zhichuPercent"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+
+            local ontext = {
+                L["支出百分比计算"],
+                L["如果支出项目有百分比符号，则按照百分比自动计算该支出金额。"],
+                " ",
+                L[ [[比如支出项目为：TN10%，则该支出金额会自动更新为：总收入*10%]] ],
+            }
+            local f = O.CreateCheckButton(name, L["支出百分比计算"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                for _, FB in pairs(BG.FBtable) do
+                    local b = Maxb[FB] + 1
+                    for i = 1, BG.GetMaxi(FB, b) do
+                        local zhuangbei = BG.Frame[FB]["boss" .. b]["zhuangbei" .. i]
+                        local jine = BG.Frame[FB]["boss" .. b]["jine" .. i]
+                        if zhuangbei then
+                            BG.UpdateZhiChuPercent(zhuangbei, jine)
+                        end
+                    end
+                end
+            end)
+        end
+        h = h + 30
+
+        -- 数字小键盘
+        do
+            local name = "NumFrame"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+
+            local ontext = {
+                L["数字小键盘"],
+                L["在可以输入数字的地方，自动显示一个数字小键盘。用鼠标就能完成数字的输入。"],
+            }
+            local f = O.CreateCheckButton(name, L["数字小键盘"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+        end
+        h = h + 30
+
+        -- 显示模型
+        do
+            local name = "model"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            if BGLite_equip.options["model"] ~= 1 then
+                for i, model in ipairs(BG.bossModels) do
+                    model:Hide()
+                end
+            end
+
+            local ontext = {
+                L["显示BOSS模型"],
+                L["在表格里显示BOSS的模型。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateCheckButton(name, L["显示BOSS模型"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                if f:GetChecked() then
+                    for i, model in ipairs(BG.bossModels) do
+                        model:Show()
+                    end
+                else
+                    for i, model in ipairs(BG.bossModels) do
+                        model:Hide()
+                    end
+                end
+            end)
+        end
+        h = h + 30
+
+        -- 自动删除屏蔽团员
+        do
+            local name = "ignore"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+
+            local ontext = {
+                L["自动移除屏蔽对象"],
+                L["使用自动拍卖时，如果某个团员在你的屏蔽列表里，则自动把它移出该列表。"],
+                " ",
+                L["这是为了防止你看不到对方的拍卖聊天信息和自动拍卖出价消息。"],
+            }
+            local f = O.CreateCheckButton(name, L["自动移除屏蔽对象"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+        end
+        h = h + 30
+
+        -- 鼠标提示对方的欠款和罚款
+        do
+            local name = "mouseFK"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+
+            local ontext = {
+                L["鼠标提示对方的欠款和罚款"],
+                L["鼠标悬浮在一个玩家时，显示他的欠款和罚款。"],
+            }
+            local f = O.CreateCheckButton(name, L["鼠标提示对方的欠款和罚款"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+        end
+        h = h + 30
+
+        -- 鼠标提示装备的历史价格区间
+        do
+            local name = "mouseHistoryMoney"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+
+            local ontext = {
+                L["鼠标提示装备的历史价格区间"],
+                L["鼠标悬浮在一个装备时，显示其历史价格区间，数据来自你的历史表格。"],
+            }
+            local f = O.CreateCheckButton(name, L["鼠标提示装备的历史价格区间"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+        end
+        h = h + 30
+
+        -- 小地图图标
+        do
+            local name = "miniMap"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["小地图图标"],
+                L["显示小地图图标。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateCheckButton(name, L["小地图图标"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function()
+                local icon = LibStub("LibDBIcon-1.0", true)
+                if icon then
+                    if f:GetChecked() then
+                        icon:Show(AddonName)
+                    else
+                        icon:Hide(AddonName)
+                    end
+                end
+            end)
+        end
+        h = h + 30
+
+        -- 插件过期提醒
+        do
+            local name = "addonsOutTime"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+
+            local ontext = {
+                L["插件过期提醒"],
+                L["当插件有可用更新时，红字提醒。"],
+            }
+            local f = O.CreateCheckButton(name, L["插件过期提醒"], biaoge, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+        end
+    end
+
+    -- 自动拍卖
+    do
+        -- 兜底：拍卖数据表可能因上游模块初始化失败而缺字段，先补齐，避免整页设置报错后拖垮后面所有标签
+        BGLite_equip.Auction = BGLite_equip.Auction or {}
+        if not BGLite_equip.Auction.fastMoney then
+            BGLite_equip.Auction.fastMoney = { 100, 300, 500, 1000, 2000 }
+        end
+        if BGLite_equip.Auction.gen == nil then BGLite_equip.Auction.gen = 2 end
+        if BGLite_equip.Auction.mod == nil then BGLite_equip.Auction.mod = "normal" end
+        if BGLite_equip.Auction.aotoSendLate == nil then BGLite_equip.Auction.aotoSendLate = 3 end
+        if BGLite_equip.Auction.money == nil or BGLite_equip.Auction.money == "" then BGLite_equip.Auction.money = 1 end
+        if BGLite_equip.Auction.duration == nil or BGLite_equip.Auction.duration == "" then BGLite_equip.Auction.duration = 40 end
+        if BGLite_equip.Auction.resetThreshold == nil then BGLite_equip.Auction.resetThreshold = 20 end
+
+        local height = 0
+        local h = 30
+        -- UI缩放
+        do
+            local name = "autoAuctionScale"
+            BG.options[name .. "reset"] = 0.9
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            if not tonumber(BGLite_equip.options[name]) then
+                BGLite_equip.options[name] = BG.options[name .. "reset"]
+            end
+            local ontext = {
+                L["自动拍卖UI缩放"] .. L["|cff808080（右键还原设置）|r"],
+                L["调整自动拍卖UI的大小。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["自动拍卖UI缩放"] .. "|r", autoAuction, 0.5, 1.5, 0.01, 15, height - h, ontext)
+            BG.options["button" .. name] = f
+
+            f:SetScript("OnValueChanged", function(self, value)
+                f.edit:ClearFocus()
+                value = tonumber(string.format("%.2f", value))
+                BGLite_equip.options[name] = value
+                f.edit:SetText(value)
+                BGA.AuctionMainFrame:SetScale(value)
+            end)
+            f.button:SetScript("OnClick", function(self, enter)
+                if enter == "RightButton" then
+                    if BG.options[name .. "reset"] then
+                        local value = BG.options[name .. "reset"]
+                        BGLite_equip.options[name] = value
+                        f:SetValue(value)
+                        f.edit:SetText(value)
+                        BGA.AuctionMainFrame:SetScale(value)
+                        BG.PlaySound(1)
+                    end
+                end
+            end)
+        end
+
+        -- UI层级
+        do
+            local name = "autoAuctionFrameLevel"
+            BG.options[name .. "reset"] = "HIGH"
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+
+            local dropDown = LibBG:Create_UIDropDownMenu(nil, autoAuction)
+            dropDown:SetPoint("TOPLEFT", 220, height - h - 2)
+            LibBG:UIDropDownMenu_SetWidth(dropDown, 120)
+            LibBG:UIDropDownMenu_SetText(dropDown, BGLite_equip.options[name])
+            LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+            BG.options["button" .. name] = dropDown
+
+            local t = dropDown:CreateFontString()
+            t:SetPoint("BOTTOM", dropDown, "TOP", 0, 8)
+            t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            t:SetTextColor(1, 1, 1)
+            t:SetText(L["UI层级"])
+
+            LibBG:UIDropDownMenu_Initialize(dropDown, function(self, level)
+                local info = LibBG:UIDropDownMenu_CreateInfo()
+                for _, text in ipairs({ "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP", }) do
+                    info.text = text
+                    info.func = function()
+                        BGLite_equip.options[name] = text
+                        LibBG:UIDropDownMenu_SetText(dropDown, BGLite_equip.options[name])
+                        if BGA.AuctionMainFrame then
+                            BGA.AuctionMainFrame:SetFrameStrata(BGLite_equip.options[name])
+                        end
+                    end
+                    info.checked = BGLite_equip.options[name] == text
+                    LibBG:UIDropDownMenu_AddButton(info)
+                end
+            end)
+        end
+
+        -- 调试模式
+        do
+            local mainFrame = BGA.AuctionMainFrame
+
+            local bt = BG.CreateButton(autoAuction)
+            bt:SetSize(120, 25)
+            bt:SetPoint("TOPLEFT", autoAuction, 420, height - h - 2)
+            bt:RegisterForClicks("AnyUp")
+            bt:SetScript("OnClick", function(self)
+                if IsInRaid(1) then
+                    BG.SendSystemMessage(L["只能在非团队状态使用调试模式。"])
+                    return
+                end
+                BG.PlaySound(1)
+                if mainFrame.testFrame and mainFrame.testFrame:IsVisible() then
+                    mainFrame.testFrame:Hide()
+                else
+                    if not mainFrame.testFrame then
+                        local f = CreateFrame("Frame", nil, mainFrame, "BackdropTemplate")
+                        f:SetBackdrop({
+                            bgFile = "Interface/ChatFrame/ChatFrameBackground",
+                            edgeFile = "Interface/ChatFrame/ChatFrameBackground",
+                            edgeSize = 1,
+                        })
+                        f:SetBackdropColor(0, 0, 0, 0.8)
+                        f:SetBackdropBorderColor(0, 1, 0, 1)
+                        f:SetAllPoints()
+                        f:SetFrameLevel(mainFrame:GetFrameLevel() - 1)
+                        mainFrame.testFrame = f
+
+                        local t = f:CreateFontString()
+                        t:SetFont(BIAOGE_TEXT_FONT, 20, "OUTLINE")
+                        t:SetPoint("CENTER", f, "CENTER", 0, 0)
+                        t:SetTextColor(1, 0.82, 0)
+                        t:SetText(L["这是拍卖框架\n你可以通过拖动来改变位置。"])
+
+                        f:SetScript("OnMouseUp", function(self)
+                            mainFrame:StopMovingOrSizing()
+                            BGLite_equip.point.Auction = { mainFrame:GetPoint(1) }
+                        end)
+                        f:SetScript("OnMouseDown", function(self)
+                            mainFrame:StartMoving()
+                        end)
+                    end
+                    mainFrame.testFrame:Show()
+                end
+                bt:Update()
+            end)
+            bt:SetScript("OnEnter", function(self)
+                GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT", 0, 0)
+                GameTooltip:ClearLines()
+                GameTooltip:AddLine(L["调试模式"], 1, 1, 1, true)
+                GameTooltip:AddLine(L["你可以在该模式，调整拍卖UI的位置，预览UI缩放和层级效果。只能在非团队状态下使用。"], 1, 0.82, 0, true)
+                GameTooltip:Show()
+            end)
+            bt:SetScript("OnLeave", GameTooltip_Hide)
+            bt:SetScript("OnShow", function(self)
+                bt:Update()
+            end)
+            bt:SetScript("OnHide", function(self)
+                if mainFrame.testFrame then
+                    mainFrame.testFrame:Hide()
+                end
+                bt:Update()
+            end)
+
+            function bt:Update()
+                if mainFrame.testFrame and mainFrame.testFrame:IsVisible() then
+                    bt:SetText(L["退出调试模式"])
+                else
+                    bt:SetText(L["进入调试模式"])
+                end
+            end
+
+            BG.RegisterEvent("GROUP_ROSTER_UPDATE", function()
+                BG.After(.5, function()
+                    if IsInRaid(1) then
+                        if mainFrame.testFrame then
+                            mainFrame.testFrame:Hide()
+                        end
+                    end
+                end)
+            end)
+        end
+
+        h = h + 50
+
+        O.CreateLine(autoAuction, height - h)
+        h = h + 20
+
+        -- 团长拍卖面板
+        do
+            local gens = {
+                [1] = L["第一代拍卖"],
+                [2] = L["第二代拍卖"],
+            }
+            local mods = {
+                normal = L["常规模式"],
+                -- anonymous = L["匿名模式"],
+            }
+
+            -- 控制第一代/第二代切换时启用/禁用关联控件
+            local modDropDown, modText, resetText, resetEdit
+            local function UpdateGen2State()
+                local isGen2 = BGLite_equip.Auction.gen == 2
+                if modDropDown then
+                    -- 重建下拉菜单以更新 info.disabled 状态
+                    if modDropDown.open then
+                        LibBG:CloseDropDownMenus()
+                    end
+                end
+                if resetText then
+                    resetText:SetTextColor(isGen2 and 1 or 0.5, isGen2 and 1 or 0.5, isGen2 and 1 or 0.5)
+                end
+                if resetEdit then
+                    if isGen2 then
+                        resetEdit:Enable()
+                        resetEdit:SetTextColor(1, 1, 1)
+                        resetEdit:SetText(BGLite_equip.Auction.resetThreshold)
+                    else
+                        resetEdit:Disable()
+                        resetEdit:SetTextColor(0.5, 0.5, 0.5)
+                        resetEdit:SetText(20)
+                    end
+                end
+                -- 如果当前是第一代且选了匿名模式，自动切回常规
+                if not isGen2 and BGLite_equip.Auction.mod == "anonymous" then
+                    BGLite_equip.Auction.mod = "normal"
+                    LibBG:UIDropDownMenu_SetText(modDropDown, mods[BGLite_equip.Auction.mod])
+                end
+            end
+
+            -- 拍卖版本
+            do
+                local key = "gen"
+
+                local t = autoAuction:CreateFontString()
+                t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                t:SetPoint("TOPLEFT", autoAuction, "TOPLEFT", 15, -h)
+                t:SetTextColor(1, 1, 1)
+                t:SetText(L["拍卖版本："])
+
+                local dropDown = LibBG:Create_UIDropDownMenu(nil, autoAuction)
+                dropDown:SetPoint("LEFT", t, "RIGHT", 5, 0)
+                LibBG:UIDropDownMenu_SetWidth(dropDown, 120)
+                LibBG:UIDropDownMenu_SetText(dropDown, gens[BGLite_equip.Auction[key]])
+                LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+
+                LibBG:UIDropDownMenu_Initialize(dropDown, function(self, level)
+                    for gen, genName in pairs(gens) do
+                        local info = LibBG:UIDropDownMenu_CreateInfo()
+                        info.text = genName
+                        info.arg1 = gen
+                        info.func = function()
+                            BGLite_equip.Auction[key] = gen
+                            LibBG:UIDropDownMenu_SetText(dropDown, gens[BGLite_equip.Auction[key]])
+                            UpdateGen2State()
+                        end
+                        info.checked = gen == BGLite_equip.Auction[key]
+                        if gen == 2 then
+                            info.tooltipTitle = L['第二代拍卖']
+                            info.tooltipText = L['需要团员的BiaoGe版本高于v2.0.0，否则团员无法看见拍卖框。']
+                            info.tooltipOnButton = true
+                        end
+                        LibBG:UIDropDownMenu_AddButton(info)
+                    end
+                end)
+                dropDown:SetScript('OnShow', function()
+                    LibBG:UIDropDownMenu_SetText(dropDown, gens[BGLite_equip.Auction[key]])
+                    UpdateGen2State()
+                end)
+            end
+
+            -- 拍卖模式
+            do
+                local key = "mod"
+
+                local t = autoAuction:CreateFontString()
+                t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                t:SetPoint("TOPLEFT", autoAuction, "TOPLEFT", 300, -h)
+                t:SetTextColor(1, 1, 1)
+                t:SetText(L["拍卖模式："])
+                modText = t
+
+                local dropDown = LibBG:Create_UIDropDownMenu(nil, autoAuction)
+                dropDown:SetPoint("LEFT", t, "RIGHT", 5, 0)
+                LibBG:UIDropDownMenu_SetWidth(dropDown, 120)
+                LibBG:UIDropDownMenu_SetText(dropDown, mods[BGLite_equip.Auction[key]])
+                LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+                modDropDown = dropDown
+
+                LibBG:UIDropDownMenu_Initialize(dropDown, function(self, level)
+                    for modKey, modName in pairs(mods) do
+                        local info = LibBG:UIDropDownMenu_CreateInfo()
+                        info.text = modName
+                        info.arg1 = modKey
+                        info.func = function()
+                            BGLite_equip.Auction[key] = modKey
+                            LibBG:UIDropDownMenu_SetText(dropDown, mods[BGLite_equip.Auction[key]])
+                        end
+                        info.checked = modKey == BGLite_equip.Auction[key]
+                        if BGLite_equip.Auction.gen ~= 2 and modKey == "anonymous" then
+                            info.disabled = true
+                        end
+                        LibBG:UIDropDownMenu_AddButton(info)
+                    end
+                end)
+
+                dropDown:SetScript('OnShow', function()
+                    LibBG:UIDropDownMenu_SetText(dropDown, mods[BGLite_equip.Auction[key]])
+                    UpdateGen2State()
+                end)
+            end
+            h = h + 30
+
+            -- 拍卖时长
+            do
+                local name = "duration"
+                local t = autoAuction:CreateFontString()
+                t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                t:SetPoint("TOPLEFT", autoAuction, "TOPLEFT", 15, -h)
+                t:SetTextColor(1, 1, 1)
+                t:SetText(L["拍卖时长："])
+
+                local edit = CreateFrame("EditBox", nil, autoAuction, BG.editTemplate)
+                edit:SetSize(60, 20)
+                edit:SetPoint("LEFT", t, "RIGHT", 10, 0)
+                edit:SetAutoFocus(false)
+                edit:SetNumeric(true)
+                edit:SetMaxLetters(3)
+                BG.SetEditBaseClass(edit, true)
+                edit:SetScript("OnTextChanged", function(self)
+                    BGLite_equip.Auction[name] = self:GetText()
+                end)
+                edit:SetScript("OnShow", function(self)
+                    edit:SetText(BGLite_equip.Auction[name])
+                end)
+            end
+
+            -- 重置阈值
+            do
+                local name = "resetThreshold"
+                local t = autoAuction:CreateFontString()
+                t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                t:SetPoint("TOPLEFT", autoAuction, "TOPLEFT", 190, -h)
+                t:SetTextColor(1, 1, 1)
+                t:SetText(L["重置阈值："])
+                resetText = t
+
+                local edit = CreateFrame("EditBox", nil, autoAuction, BG.editTemplate)
+                edit:SetSize(60, 20)
+                edit:SetPoint("LEFT", t, "RIGHT", 10, 0)
+                edit:SetAutoFocus(false)
+                edit:SetNumeric(true)
+                edit:SetMaxLetters(3)
+                BG.SetEditBaseClass(edit, true)
+                edit:SetScript("OnTextChanged", function(self)
+                    BGLite_equip.Auction[name] = self:GetText()
+                end)
+                edit:SetScript("OnShow", function(self)
+                    edit:SetText(BGLite_equip.Auction[name])
+                end)
+                resetEdit = edit
+            end
+
+            -- 起拍价
+            do
+                local name = "money"
+                local t = autoAuction:CreateFontString()
+                t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                t:SetPoint("TOPLEFT", autoAuction, "TOPLEFT", 380, -h)
+                t:SetTextColor(1, 1, 1)
+                t:SetText(L["起拍价："])
+
+                local edit = CreateFrame("EditBox", nil, autoAuction, BG.editTemplate)
+                edit:SetSize(100, 20)
+                edit:SetPoint("LEFT", t, "RIGHT", 10, 0)
+                edit:SetAutoFocus(false)
+                edit:SetNumeric(true)
+                edit:SetMaxLetters(8)
+                BG.SetEditBaseClass(edit, true)
+                edit:SetScript("OnTextChanged", function(self)
+                    BGLite_equip.Auction[name] = self:GetText()
+                end)
+                edit:SetScript("OnShow", function(self)
+                    edit:SetText(BGLite_equip.Auction[name])
+                end)
+            end
+
+            -- 初始状态
+            UpdateGen2State()
+        end
+        h = h + 35
+        O.CreateLine(autoAuction, height - h)
+        h = h + 15
+        -- 快速开拍
+        do
+            local buttons = {}
+
+            local name = "fastMoney"
+            BG.options[name .. "reset"] = 1
+            BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+            local ontext = {
+                L["快速开拍"],
+                L["在团长拍卖面板里，增加多个价格按钮，点击后直接按该价格开始拍卖。"],
+            }
+            local f = O.CreateCheckButton(name, L["快速开拍"], autoAuction, 15, height - h, ontext, true)
+            BG.options["button" .. name] = f
+            f:HookScript("OnClick", function(self)
+                if self:GetChecked() then
+                    buttons[1]:Show()
+                else
+                    buttons[1]:Hide()
+                end
+            end)
+
+            local function CreateEdit(i)
+                local edit = CreateFrame("EditBox", nil, f, BG.editTemplate)
+                edit:SetSize(80, 20)
+                if i == 1 then
+                    edit:SetPoint("TOPLEFT", f, "BOTTOMRIGHT", 5, 0)
+                    if BGLite_equip.options[name] ~= 1 then edit:Hide() end
+                else
+                    edit:SetParent(buttons[1])
+                    edit:SetPoint("LEFT", buttons[i - 1], "RIGHT", 10, 0)
+                end
+                edit:SetAutoFocus(false)
+                edit:SetNumeric(true)
+                edit:SetMaxBytes(8)
+                edit.i = i
+                tinsert(buttons, edit)
+                BG.SetEditBaseClass(edit)
+                edit:SetScript("OnTextChanged", function(self)
+                    BGLite_equip.Auction.fastMoney[i] = tonumber(self:GetText()) or ""
+                end)
+                edit:SetScript("OnShow", function(self)
+                    self:SetText(BGLite_equip.Auction.fastMoney[i] or "")
+                end)
+                edit:HookScript("OnTabPressed", function(self)
+                    if buttons[i + 1] then
+                        buttons[i + 1]:SetFocus()
+                    end
+                end)
+            end
+            for i = 1, #BGLite_equip.Auction.fastMoney do
+                CreateEdit(i)
+            end
+        end
+        h = h + 30
+        h = h + 30
+        -- 数据驱动：两列布局创建选项
+        do
+            local MAX_LEFT_ROWS = 9 -- 左列最大行数，可自行调整
+            local RIGHT_COL_X = 320 -- 右列起始X坐标
+            local ROW_H = 30        -- 每行高度
+            local h_start = h       -- 记录起始h值
+
+            -- ontext 数据表
+            local ontextDB = {
+                autoAuctionStart         = { L["使用组合键打开拍卖面板"], L["团长或物品分配者ALT+点击背包/表格/聊天框装备，来打开拍卖面板。"] },
+                autoAuctionPut           = { L["交易时自动摆放装备"], L["交易时，如果你是物品分配者，会自动把对方所拍装备摆放到交易框。"] },
+                autoAuctionMoney         = { L["交易时显示应收或应付金额"], L["交易时，根据对方或你所拍装备显示应收或应付金额。"] },
+                autoAuctionSetMoney      = { L["复制应付金额"], L["在交易界面增加一个复制应付金额的按钮。"] },
+                autoShowTradeCopyMoney   = { L["自动弹出复制应付金额窗口"], L["交易时，无需点击按钮，复制应付金额的窗口会自动弹出。"] },
+                autoAuctionSureClick     = { L["自动点击交易按钮"], L["当交易金额等于应收/应付金额时，自动点击交易按钮。但屏幕中间的二次确认框还是需要你手动确认。"] },
+                autoAuctionLogLink       = { L["拍卖成功的聊天消息后面增加[出价记录]"], L["鼠标悬停在[出价记录]时会显示该装备的出价记录。"] },
+                autoAuctionHappySay      = { L["竞拍欢呼语"],
+                    format(L["在竞价过程中，如果有人出价超过%s，有%s概率团长在团队频道发送一段随机的欢呼语，以活跃拍卖氛围。"], BG.autoAuctionHappySay_minMoney, "50%"),
+                    " ",
+                    L["需要使用非匿名模式，而且你是团长时才会生效。"],
+                },
+                autoAuctionAutoEndTips   = { L["拍卖语音提醒"],
+                    L["自动出价结束后，语音提醒你，防止你错过装备。"], " ",
+                    L["没有使用自动出价时，如果拍卖剩余时间低于10秒时被顶价，语音提醒你\"小心偷家\"。"],
+                },
+                autoCreateBill           = { L["自动生成表格账单"], L["当一个装备拍卖成功时，会根据拍卖记录，自动填写表格里该装备所对应的买家和金额。"], " ",
+                    L["启用该功能时，交易记账会被自动禁用，以免记账冲突。"], " ",
+                    L["注意：如果你是团长或物品分配者，该功能不会生效。团长或物品分配者仍会使用更为可靠的交易记账。"] },
+                autoAuctionFold          = { L["被过滤的装备自动折叠"], L["启用装备过滤时，如果拍卖的装备不合适你，自动折叠。"] },
+                autoAuctionFoldIfNotHope = { L['未关注且未加入心愿单的装备自动折叠'], L["仅保留关注/心愿装备展开，其余自动折叠。"] },
+                autoAuctionUp            = { L["拍卖竞价窗口自动往上吸附"], L["当靠前的窗口消失时，后面的窗口会自动往上吸附。"] },
+                aotoSendLate             = { L["自动出价的延迟时间随机"], L["启用自动出价时，当别人出价后，默认是自己会延迟0.5秒后才自动出价。"], " ",
+                    format(L["现在可以修改这个延迟时间，并在一定范围内随机（%s秒-X秒）。X最低为%s秒，最高为%s秒。"], 1, 1, 5) },
+                auctionMoveByShift       = { L["锁定拍卖竞价窗口"], L["拍卖竞价窗口默认不可拖动，需要按住SHIFT键才能拖动。"] },
+            }
+
+            -- 选项配置表
+            local auctionCheckButtons = {
+                { name = "autoAuctionStart", default = 1, },
+                { name = "autoAuctionPut", default = 1, },
+                { name = "autoAuctionMoney", default = 1, },
+                { name = "autoAuctionSetMoney", default = 1, x = 40, parent = "autoAuctionMoney" },
+                {
+                    name = "autoShowTradeCopyMoney",
+                    default = 1,
+                    x = 40,
+                    parent = "autoAuctionMoney",
+                    init = function(f)
+                        f:HookScript("OnShow", function(self)
+                            f:SetChecked(BGLite_equip.options.autoShowTradeCopyMoney == 1)
+                        end)
+                        BG.Once("autoShowTradeCopyMoney", 260218, function()
+                            BGLite_equip.options.autoShowTradeCopyMoney = 1
+                        end)
+                    end
+                },
+                { name = "autoAuctionSureClick", default = 1, x = 40, parent = "autoAuctionMoney" },
+                { name = "autoAuctionLogLink", default = 1, },
+                { name = "autoAuctionHappySay", default = 1 },
+                { name = "autoAuctionAutoEndTips", default = 1, },
+                { name = "autoCreateBill", default = 1, callback = { BG.UpdateAutoCreateBillButton } },
+                { name = "autoAuctionFold", default = 0, isnew = true },
+                { name = "autoAuctionFoldIfNotHope", default = 0, isnew = true },
+                { name = "autoAuctionUp", default = 0, },
+                {
+                    name = "aotoSendLate",
+                    default = 0,
+                    textwidth = 200,
+                    init = function(f)
+                        f:HookScript("OnClick", function(self)
+                            if self:GetChecked() then f.editBox:Show() else f.editBox:Hide() end
+                        end)
+                        local edit = CreateFrame("EditBox", nil, f, BG.editTemplate)
+                        edit:SetSize(50, 20)
+                        edit:SetPoint("LEFT", f.Text, "RIGHT", 0, 0)
+                        edit:SetAutoFocus(false)
+                        edit:SetMaxBytes(8)
+                        edit:SetNumeric(true)
+                        if BGLite_equip.options.aotoSendLate ~= 1 then edit:Hide() end
+                        BG.SetEditBaseClass(edit)
+                        edit:SetScript("OnTextChanged", function(self)
+                            BGLite_equip.Auction.aotoSendLate = tonumber(self:GetText()) or ""
+                        end)
+                        edit:SetScript("OnShow", function(self)
+                            self:SetText(BGLite_equip.Auction.aotoSendLate or "")
+                        end)
+                        f.editBox = edit
+                    end
+                },
+                { name = "auctionMoveByShift", default = 0, },
+            }
+
+            -- 检查条件是否满足
+            local function isConditionMet(opt)
+                return opt.condition == nil or opt.condition()
+            end
+
+            -- 计算子项数量
+            local function countChildren(parentName)
+                local count = 0
+                for _, opt in ipairs(auctionCheckButtons) do
+                    if opt.parent == parentName and isConditionMet(opt) then
+                        count = count + 1
+                    end
+                end
+                return count
+            end
+
+            -- 列分配
+            local leftCount, rightCount = 0, 0
+            local i = 1
+            while i <= #auctionCheckButtons do
+                local opt = auctionCheckButtons[i]
+                if not isConditionMet(opt) then
+                    i = i + 1
+                elseif opt.parent then
+                    i = i + 1 -- 子项由父项循环一并处理
+                else
+                    local groupSize = 1 + countChildren(opt.name)
+                    if leftCount + groupSize <= MAX_LEFT_ROWS then
+                        for j = 0, groupSize - 1 do
+                            local item = auctionCheckButtons[i + j]
+                            item._col, item._row = 1, leftCount + j
+                        end
+                        leftCount = leftCount + groupSize
+                    else
+                        for j = 0, groupSize - 1 do
+                            local item = auctionCheckButtons[i + j]
+                            item._col, item._row = 2, rightCount + j
+                        end
+                        rightCount = rightCount + groupSize
+                    end
+                    i = i + groupSize
+                end
+            end
+
+            -- 将分配信息复制到子项
+            for idx, opt in ipairs(auctionCheckButtons) do
+                if opt.parent and not opt._col then
+                    local parentOpt
+                    for _, p in ipairs(auctionCheckButtons) do
+                        if p.name == opt.parent then
+                            parentOpt = p; break
+                        end
+                    end
+                    if parentOpt and parentOpt._col then
+                        opt._col = parentOpt._col
+                        -- 行号需要重新计算：找到该列中该父项后的偏移
+                        local offset = 0
+                        for j = idx - 1, 1, -1 do
+                            local prev = auctionCheckButtons[j]
+                            if prev._col == parentOpt._col and prev.parent == opt.parent then
+                                offset = offset + 1
+                            end
+                            if prev.name == opt.parent then break end
+                        end
+                        opt._row = parentOpt._row + offset + 1
+                    end
+                end
+            end
+
+            -- 两列之间竖线分隔
+            do
+                local lineX = RIGHT_COL_X - 20
+                local lineH = math.max(leftCount, rightCount) * ROW_H
+                local l = autoAuction:CreateLine()
+                l:SetColorTexture(RGB("808080", 0.6))
+                l:SetStartPoint("TOPLEFT", lineX, height - h_start)
+                l:SetEndPoint("TOPLEFT", lineX, height - h_start - lineH)
+                l:SetThickness(1.5)
+            end
+
+            -- 创建选项
+            for _, opt in ipairs(auctionCheckButtons) do
+                if isConditionMet(opt) then
+                    local name = opt.name
+                    BG.options[name .. "reset"] = opt.default or 1
+                    BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+
+                    local colX = (opt._col == 1) and 15 or RIGHT_COL_X
+                    local rowY = height - h_start - opt._row * ROW_H
+
+                    -- 计算 ontext（都从 ontextDB 获取）
+                    local ontext = ontextDB[name]
+
+                    -- 按钮文本：从 ontextDB 获取标题
+                    local buttonText = ontextDB[name][1]
+                    if opt.isnew then
+                        buttonText = AddTexture("QUEST") .. buttonText
+                    end
+
+                    local f = O.CreateCheckButton(name, buttonText, autoAuction, colX + ((opt.x or 15) - 15), rowY, ontext, opt.textwidth or 240, opt.callback)
+                    BG.options["button" .. name] = f
+
+                    if opt.parent then
+                        SetParent(f, opt.parent)
+                    end
+
+                    if opt.init then
+                        opt.init(f)
+                    end
+                end
+            end
+
+            -- 更新总高度（取两列中较高的一列）
+            h = h_start + math.max(leftCount, rightCount) * ROW_H
+        end
+    end
+
+    -- 团本攻略设置
+    if BG.BossMainFram then
+        local height = 0
+
+        -- 团本攻略字体大小
+        do
+            local name = "BossFontSize"
+            if not BGLite_equip.options[name] then
+                BGLite_equip.options[name] = BG.options[name .. "reset"]
+            end
+            local ontext = {
+                L["团本攻略字号"] .. L["|cff808080（右键还原设置）|r"],
+                L["调整该字体的大小。"],
+                -- " ",
+                -- L[""],
+            }
+            local f = O.CreateSlider(name, "|cffFFFFFF" .. L["团本攻略字号"] .. "|r", boss, 10, 20, 1, 15, height - 30, ontext)
+            BG.options["button" .. name] = f
+        end
+    end
+
+    -- 战术
+    if map then
+        local __ok, __err = pcall(function()
+        local width = 15
+        local height = -10
+        local height_jiange = 22
+        local line_height = 4
+        local h = 0
+
+        -- 站位图
+        do
+            local text = map:CreateFontString()
+            text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            text:SetPoint("TOPLEFT", width, height)
+            text:SetText(BG.STC_g1(L["站位图"]))
+            height = height - height_jiange
+
+            O.CreateLine(map, height + line_height)
+
+            h = h + 30
+            -- UI缩放
+            do
+                local name = "mapScale"
+                BG.options[name .. "reset"] = 0.75
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                if not tonumber(BGLite_equip.options[name]) then
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+                local ontext = {
+                    L["站位图UI缩放"] .. L["|cff808080（右键还原设置）|r"],
+                    L["调整站位图UI的大小。"],
+                }
+                local f = O.CreateSlider(name, "|cffFFFFFF" .. L["站位图UI缩放"] .. "|r", map, 0.5, 1.5, 0.01, 15, height - h, ontext)
+                BG.options["button" .. name] = f
+
+                f:SetScript("OnValueChanged", function(self, value)
+                    f.edit:ClearFocus()
+                    value = tonumber(string.format("%.2f", value))
+                    BGLite_equip.options[name] = value
+                    f.edit:SetText(value)
+                    BG.MapFrame:SetScale(BGLite_equip.options.mapScale)
+                end)
+                f.button:SetScript("OnClick", function(self, enter)
+                    if enter == "RightButton" then
+                        if BG.options[name .. "reset"] then
+                            local value = BG.options[name .. "reset"]
+                            BGLite_equip.options[name] = value
+                            f:SetValue(value)
+                            f.edit:SetText(value)
+                            BG.MapFrame:SetScale(BGLite_equip.options.mapScale)
+                            BG.PlaySound(1)
+                        end
+                    end
+                end)
+            end
+
+            -- 图标缩放
+            do
+                local name = "mapIconScale"
+                BG.options[name .. "reset"] = 1
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                if not tonumber(BGLite_equip.options[name]) then
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+
+                local ontext = {
+                    L["图标缩放"] .. L["|cff808080（右键还原设置）|r"],
+                    L["调整图标的大小。"],
+                }
+                local f = O.CreateSlider(name, "|cffFFFFFF" .. L["图标缩放"] .. "|r", map, 0.3, 1.5, 0.05, 220, height - h, ontext)
+                BG.options["button" .. name] = f
+
+                f:SetScript("OnValueChanged", function(self, value)
+                    f.edit:ClearFocus()
+                    value = tonumber(string.format("%.2f", value))
+                    BGLite_equip.options[name] = value
+                    f.edit:SetText(value)
+                    BG.UpdateMapIconScale()
+                end)
+                f.button:SetScript("OnClick", function(self, enter)
+                    if enter == "RightButton" then
+                        if BG.options[name .. "reset"] then
+                            local value = BG.options[name .. "reset"]
+                            BGLite_equip.options[name] = value
+                            f:SetValue(value)
+                            f.edit:SetText(value)
+                            BG.UpdateMapIconScale()
+                            BG.PlaySound(1)
+                        end
+                    end
+                end)
+            end
+
+            -- UI层级
+            do
+                local name = "mapFrameLevel"
+                BG.options[name .. "reset"] = "MEDIUM"
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+
+                local dropDown = LibBG:Create_UIDropDownMenu(nil, map)
+                dropDown:SetPoint("TOPLEFT", 430, height - h)
+                LibBG:UIDropDownMenu_SetWidth(dropDown, 120)
+                LibBG:UIDropDownMenu_SetText(dropDown, BGLite_equip.options[name])
+                LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+                BG.options["button" .. name] = dropDown
+
+                local t = dropDown:CreateFontString()
+                t:SetPoint("BOTTOM", dropDown, "TOP", 0, 8)
+                t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                t:SetTextColor(1, 1, 1)
+                t:SetText(L["UI层级"])
+
+                LibBG:UIDropDownMenu_Initialize(dropDown, function(self, level)
+                    local info = LibBG:UIDropDownMenu_CreateInfo()
+                    for _, text in ipairs({ "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP", }) do
+                        info.text = text
+                        info.func = function()
+                            BGLite_equip.options[name] = text
+                            LibBG:UIDropDownMenu_SetText(dropDown, BGLite_equip.options[name])
+                            BG.MapFrame:SetFrameStrata(BGLite_equip.options[name])
+                        end
+                        info.checked = BGLite_equip.options[name] == text
+                        LibBG:UIDropDownMenu_AddButton(info)
+                    end
+                end)
+            end
+        end
+
+        -- 减伤链接收器
+        if BG.BoardReceiver then
+            local frameWidth = map.scroll:GetWidth() - 20
+            local frameHeight = 25
+            h = h + 70
+            local receiverMaskTop = height - h + 15
+            local receiverEditBoxes = {}
+            local receiverDependentControls = {}
+
+            local text = map:CreateFontString()
+            text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            text:SetPoint("TOPLEFT", 15, height - h)
+            text:SetText(BG.STC_g1(L["减伤链提醒"]))
+            h = h + height_jiange
+
+            O.CreateLine(map, height - h + line_height)
+            h = h + 0
+
+            -- 判断当前是否处于禁止修改减伤链选项的战斗状态。
+            local function ReceiverOptionsLocked()
+                return InCombatLockdown and InCombatLockdown()
+            end
+
+            -- 应用一项非战斗状态下的减伤链接收端设置。
+            local function UpdateReceiver()
+                if ReceiverOptionsLocked() then return false end
+                if BG.UpdateBoardReceiverSettings then
+                    BG.UpdateBoardReceiverSettings()
+                end
+                return true
+            end
+
+            -- 为减伤链复选框设置带战斗保护的点击逻辑。
+            local function SetReceiverCheckButtonScript(button, name)
+                button:SetScript("OnClick", function(self)
+                    if ReceiverOptionsLocked() then
+                        self:SetChecked(BGLite_equip.options[name] == 1)
+                        return
+                    end
+                    BGLite_equip.options[name] = self:GetChecked() and 1 or 0
+                    if self.child then
+                        for _, child in ipairs(self.child) do
+                            child:SetShown(self:GetChecked())
+                        end
+                    end
+                    if name == "boardReceiverEnabled" and not self:GetChecked() and
+                        BG.boardReceiverMoveOnly and BG.HideMove then
+                        BG.HideMove()
+                    end
+                    UpdateReceiver()
+                    BG.PlaySound(1)
+                end)
+            end
+
+            -- 提交减伤链滑块输入框数值，并在战斗中恢复原值。
+            local function UpdateReceiverSliderEditBox(self)
+                if self.receiverUpdating then return end
+                self.receiverUpdating = true
+                local slider = self.__owner
+                if ReceiverOptionsLocked() then
+                    self:SetText(BGLite_equip.options[slider.name])
+                    self:ClearFocus()
+                    self.receiverUpdating = nil
+                    return
+                end
+                local minValue, maxValue = slider:GetMinMaxValues()
+                local value = tonumber(self:GetText())
+                if value then
+                    value = min(maxValue, value)
+                    value = max(minValue, value)
+                    slider:SetValue(value)
+                    self:SetText(value)
+                    self:ClearFocus()
+                    BG.PlaySound(1)
+                end
+                self.receiverUpdating = nil
+            end
+
+            -- 启用减伤链提醒
+            do
+                local name = "boardReceiverEnabled"
+                local ontext = {
+                    L["启用减伤链提醒"],
+                    L["启用后接收TuanJian团长发送的减伤链；关闭后不显示进度条、不播放语音，也不发送团长密语提醒。"],
+                }
+                local enabled = O.CreateCheckButton(name, L["启用减伤链提醒"], map, 15, height - h, ontext, true)
+                SetReceiverCheckButtonScript(enabled, name)
+                BG.options["button" .. name] = enabled
+            end
+            -- 预览并移动减伤链进度条
+            do
+                local preview = BG.CreateButton(map)
+                preview:SetSize(160, 25)
+                preview:SetPoint("LEFT", BG.options["buttonboardReceiverEnabled"].Text, "RIGHT", 10, 0)
+                preview:SetText(L["预览减伤链进度条"])
+                receiverDependentControls[#receiverDependentControls + 1] = preview
+                preview:SetScript("OnClick", function()
+                    if ReceiverOptionsLocked() then return end
+                    if BG.MoveBoardReceiver then
+                        BG.MoveBoardReceiver()
+                    end
+                end)
+            end
+            h = h + 30
+            -- 减伤链语音提醒
+            do
+                local name = "boardReceiverVoice"
+                local ontext = {
+                    L["减伤链语音提醒"],
+                    L["当减伤链安排到你时，播放技能准备和交减伤技能语音。"],
+                }
+                local voice = O.CreateCheckButton(name, L["减伤链语音提醒"], map, 15, height - h, ontext, true)
+                SetReceiverCheckButtonScript(voice, name)
+                receiverDependentControls[#receiverDependentControls + 1] = voice
+            end
+            h = h + 30
+            -- 团长密语提醒
+            do
+                local name = "boardReceiverWhisper"
+                local ontext = {
+                    L["团长密语提醒"],
+                    L["当你是减伤链发送者时，在倒数5秒时给相应团员发送密语提醒。"],
+                }
+                local whisper = O.CreateCheckButton(name, L["团长密语提醒"], map, 15, height - h, ontext, true)
+                SetReceiverCheckButtonScript(whisper, name)
+                receiverDependentControls[#receiverDependentControls + 1] = whisper
+            end
+            h = h + 30
+            -- 显示谁的减伤
+            h = h + 40
+            do
+                local name = "boardReceiverWhoShow"
+                local frame = CreateFrame("Frame", nil, map, "BackdropTemplate")
+                frame:SetPoint("TOPLEFT", 15, -h)
+                frame:SetSize(frameWidth, frameHeight)
+                receiverDependentControls[#receiverDependentControls + 1] = frame
+                local t = frame:CreateFontString()
+                t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                t:SetPoint("LEFT")
+                t:SetTextColor(1, 1, 1)
+                t:SetText(L["显示谁的减伤："])
+                BG.options["Text" .. name] = t
+
+                local whoShow = {
+                    [1] = L["当我是团长/助理时显示所有人的减伤，否则仅显示我的减伤"],
+                    [2] = L["显示所有人的减伤"],
+                    [3] = L["仅显示我的减伤"],
+                }
+                local dropDown = LibBG:Create_UIDropDownMenu(nil, map)
+                dropDown:SetPoint("LEFT", BG.options["Text" .. name], "RIGHT", 5, 0)
+                LibBG:UIDropDownMenu_SetWidth(dropDown, 350)
+                LibBG:UIDropDownMenu_SetText(dropDown, whoShow[BGLite_equip.options[name]] or whoShow[1])
+                LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+                BG.options["button" .. name] = dropDown
+                receiverDependentControls[#receiverDependentControls + 1] = dropDown
+                LibBG:UIDropDownMenu_Initialize(dropDown, function()
+                    for value = 1, 3 do
+                        local optionValue = value
+                        local info = LibBG:UIDropDownMenu_CreateInfo()
+                        info.text = whoShow[optionValue]
+                        info.func = function()
+                            if ReceiverOptionsLocked() then return end
+                            BGLite_equip.options[name] = optionValue
+                            LibBG:UIDropDownMenu_SetText(dropDown, whoShow[optionValue])
+                            UpdateReceiver()
+                        end
+                        info.checked = BGLite_equip.options[name] == optionValue
+                        LibBG:UIDropDownMenu_AddButton(info)
+                    end
+                end)
+            end
+            h = h + 40
+            -- UI缩放
+            do
+                local name = "boardReceiverScale"
+                BG.options[name .. "reset"] = 1
+                local ontext = {
+                    L["减伤链进度条缩放"] .. L["|cff808080（右键还原设置）|r"],
+                    L["调整减伤链进度条的大小。"],
+                }
+                local f = O.CreateSlider(name, "|cffFFFFFF" .. L["减伤链进度条缩放"] .. "|r", map, 0.5, 1.5, 0.01, 15, height - h, ontext)
+                BG.options["button" .. name] = f
+                receiverDependentControls[#receiverDependentControls + 1] = f
+
+                f:SetScript("OnValueChanged", function(self, value)
+                    if ReceiverOptionsLocked() then
+                        local oldValue = tonumber(BGLite_equip.options[name]) or BG.options[name .. "reset"]
+                        if value ~= oldValue then
+                            f:SetValue(oldValue)
+                        end
+                        f.edit:SetText(oldValue)
+                        return
+                    end
+                    f.edit:ClearFocus()
+                    value = tonumber(string.format("%.2f", value))
+                    BGLite_equip.options[name] = value
+                    f.edit:SetText(value)
+                    UpdateReceiver()
+                end)
+                f.edit:SetScript("OnEnterPressed", UpdateReceiverSliderEditBox)
+                f.edit:SetScript("OnEditFocusLost", UpdateReceiverSliderEditBox)
+                receiverEditBoxes[#receiverEditBoxes + 1] = f.edit
+                f.button:SetScript("OnClick", function(self, enter)
+                    if ReceiverOptionsLocked() then return end
+                    if enter == "RightButton" then
+                        if BG.options[name .. "reset"] then
+                            local value = BG.options[name .. "reset"]
+                            BGLite_equip.options[name] = value
+                            f:SetValue(value)
+                            f.edit:SetText(value)
+                            UpdateReceiver()
+                            BG.PlaySound(1)
+                        end
+                    end
+                end)
+            end
+            -- 减伤链提前显示时间
+            do
+                local name = "boardReceiverRemainingTime"
+                BG.options[name .. "reset"] = 10
+                local ontext = {
+                    L["减伤链提前显示时间"] .. L["|cff808080（右键还原设置）|r"],
+                    L["只在进入设定的最后若干秒时显示减伤链进度条。"],
+                }
+                local f = O.CreateSlider(name, "|cffFFFFFF" .. L["减伤链提前显示时间"] .. "|r", map, 6, 30, 1, 220, height - h, ontext)
+                BG.options["button" .. name] = f
+                receiverDependentControls[#receiverDependentControls + 1] = f
+
+                f:SetScript("OnValueChanged", function(self, value)
+                    if ReceiverOptionsLocked() then
+                        local oldValue = tonumber(BGLite_equip.options[name]) or BG.options[name .. "reset"]
+                        if value ~= oldValue then
+                            f:SetValue(oldValue)
+                        end
+                        f.edit:SetText(oldValue)
+                        return
+                    end
+                    f.edit:ClearFocus()
+                    value = tonumber(string.format("%.2f", value))
+                    BGLite_equip.options[name] = value
+                    f.edit:SetText(value)
+                    UpdateReceiver()
+                end)
+                f.edit:SetScript("OnEnterPressed", UpdateReceiverSliderEditBox)
+                f.edit:SetScript("OnEditFocusLost", UpdateReceiverSliderEditBox)
+                receiverEditBoxes[#receiverEditBoxes + 1] = f.edit
+                f.button:SetScript("OnClick", function(self, enter)
+                    if ReceiverOptionsLocked() then return end
+                    if enter == "RightButton" then
+                        if BG.options[name .. "reset"] then
+                            local value = BG.options[name .. "reset"]
+                            BGLite_equip.options[name] = value
+                            f:SetValue(value)
+                            f.edit:SetText(value)
+                            UpdateReceiver()
+                            BG.PlaySound(1)
+                        end
+                    end
+                end)
+            end
+            -- UI层级
+            do
+                local name = "boardReceiverFrameStrata"
+                BG.options[name .. "reset"] = "MEDIUM"
+
+                local dropDown = LibBG:Create_UIDropDownMenu(nil, map)
+                dropDown:SetPoint("TOPLEFT", 430, height - h)
+                LibBG:UIDropDownMenu_SetWidth(dropDown, 120)
+                LibBG:UIDropDownMenu_SetText(dropDown, BGLite_equip.options[name])
+                LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+                BG.options["button" .. name] = dropDown
+                receiverDependentControls[#receiverDependentControls + 1] = dropDown
+
+                local t = dropDown:CreateFontString()
+                t:SetPoint("BOTTOM", dropDown, "TOP", 0, 8)
+                t:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                t:SetTextColor(1, 1, 1)
+                t:SetText(L["UI层级"])
+
+                LibBG:UIDropDownMenu_Initialize(dropDown, function(self, level)
+                    local info = LibBG:UIDropDownMenu_CreateInfo()
+                    for _, text in ipairs({ "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP", }) do
+                        info.text = text
+                        info.func = function()
+                            if ReceiverOptionsLocked() then return end
+                            BGLite_equip.options[name] = text
+                            LibBG:UIDropDownMenu_SetText(dropDown, BGLite_equip.options[name])
+                            UpdateReceiver()
+                        end
+                        info.checked = BGLite_equip.options[name] == text
+                        LibBG:UIDropDownMenu_AddButton(info)
+                    end
+                end)
+            end
+
+            for _, control in ipairs(receiverDependentControls) do
+                SetParent(control, "boardReceiverEnabled")
+            end
+
+            -- 创建战斗中覆盖减伤链选项区域的红色鼠标拦截遮罩。
+            local receiverCombatMask = CreateFrame("Frame", nil, map, "BackdropTemplate")
+            receiverCombatMask:SetPoint("TOPLEFT", map, "TOPLEFT", 5, receiverMaskTop)
+            receiverCombatMask:SetPoint("BOTTOMRIGHT", map, "TOPLEFT", frameWidth + 20, height - h - 50)
+            receiverCombatMask:SetFrameLevel(map:GetFrameLevel() + 100)
+            receiverCombatMask:SetBackdrop({
+                bgFile = "Interface\\Buttons\\WHITE8x8",
+                edgeFile = "Interface\\Buttons\\WHITE8x8",
+                edgeSize = 1,
+            })
+            receiverCombatMask:SetBackdropColor(1, 0, 0, .18)
+            receiverCombatMask:SetBackdropBorderColor(1, 0, 0, .8)
+            receiverCombatMask:EnableMouse(true)
+            receiverCombatMask:EnableMouseWheel(true)
+            receiverCombatMask:SetScript("OnMouseWheel", function() end)
+
+            local combatText = receiverCombatMask:CreateFontString(nil, "OVERLAY")
+            combatText:SetPoint("CENTER")
+            combatText:SetFont(BIAOGE_TEXT_FONT, 18, "OUTLINE")
+            combatText:SetTextColor(1, .1, .1)
+            combatText:SetText(L["战斗中无法修改减伤链选项"])
+
+            -- 根据战斗状态显示遮罩，并在进入战斗时关闭残留交互。
+            local function UpdateReceiverCombatMask()
+                BG.After(.1, function()
+                    local locked = ReceiverOptionsLocked()
+                    receiverCombatMask:SetShown(locked)
+                    if locked then
+                        LibBG:CloseDropDownMenus()
+                        local focus = GetCurrentKeyBoardFocus()
+                        for _, editBox in ipairs(receiverEditBoxes) do
+                            if focus == editBox then
+                                editBox:ClearFocus()
+                                break
+                            end
+                        end
+                        if BG.boardReceiverMoveOnly and BG.HideMove then
+                            BG.HideMove()
+                        end
+                    end
+                end)
+            end
+            BG.RegisterEvent({ "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED" }, UpdateReceiverCombatMask)
+            map:HookScript("OnShow", UpdateReceiverCombatMask)
+            UpdateReceiverCombatMask()
+        end
+        end)
+        if not __ok then BG.OptionSectionError("战术", __err) end
+    end
+
+    -- 其他功能设置
+    do
+        local __ok, __err = pcall(function()
+        local width = 15
+        local height = -10
+        local height_jiange = 22
+        local line_height = 4
+        local h = 0
+
+        -- 原生功能
+        do
+            local text = others:CreateFontString()
+            text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            text:SetPoint("TOPLEFT", width, height)
+            text:SetText(BG.STC_g1(L["原生功能"]))
+            height = height - height_jiange
+
+            O.CreateLine(others, height + line_height)
+
+            -- 退队/入队玩家上色
+            do
+                local name = "joinorleavePlayercolor"
+                BG.options[name .. "reset"] = 1
+                if not BGLite_equip.options[name] then
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+                local ontext = {
+                    L["退队/入队玩家上色"],
+                    L["在退队/入队的系统消息里，给该玩家名字加上职业色并设置为链接。"],
+                }
+                local f = O.CreateCheckButton(name, L["退队/入队玩家上色"], others, 15, height - h, ontext, true)
+                BG.options["button" .. name] = f
+            end
+            -- 一键指定灵魂烘炉
+            -- 一键自动分配
+            h = h + 30
+            do
+                local name = "allLootToMe"
+                BG.options[name .. "reset"] = 1
+                if not BGLite_equip.options[name] then
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+                local ontext = {
+                    L["队长模式一键分配"],
+                    L["队长分配模式时，在战利品界面增加一键分配按钮。"],
+                    " ",
+                    L["点击按钮后会把全部可交易的物品分配给自己（橙片、任务物品等不会自动分配）。"],
+                }
+
+                local f = O.CreateCheckButton(name, L["队长模式一键分配"], others, 15, height - h, ontext, true)
+                BG.options["button" .. name] = f
+
+                h = h + 30
+                local name = "autoAllLootToMe"
+                BG.options[name .. "reset"] = 0
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                local ontext
+                ontext = {
+                    L["自动点击一键分配"],
+                    L["当你打开战利品界面时，自动点击一键分配按钮（等于自动把符合条件的装备全部分配给你，省去你每次点击按钮的动作）。"],
+                    " ",
+                    L["按下ALT/SHIFT/CTRL时不会自动一键分配。"],
+                }
+                local f = O.CreateCheckButton(name, L["自动点击一键分配"], others, 40, height - h, ontext, true)
+                BG.options["button" .. name] = f
+                SetParent(f, "allLootToMe")
+
+            end
+            -- 一键举报脚本
+            do
+                h = h + 30
+
+                local name = "report"
+                BG.options[name .. "reset"] = 1
+                if not BGLite_equip.options[name] then
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+                local ontext = {
+                    L["举报成功后自动隐藏感谢界面"],
+                    L["正常情况下，当你举报成功后，会显示一个感谢你的举报的界面。现在该感谢界面不会再显示。"],
+                }
+                local f = O.CreateCheckButton(name, L["举报成功后自动隐藏感谢界面"], others, 15, height - h, ontext, true)
+                BG.options["button" .. name] = f
+            end
+            -- 查询名单搜索记录
+            do
+                h = h + 30
+
+                local name = "searchList"
+                BG.options[name .. "reset"] = 1
+                if not BGLite_equip.options[name] then
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+                local ontext = {
+                    L["查询记录"],
+                    L["在查询名单列表中增加查询记录。"],
+                    " ",
+                    L["在查询名单列表中增加导出名单功能（可用于在官网进行批量举报）。"],
+                }
+                local f = O.CreateCheckButton(name, L["查询记录"], others, 15, height - h, ontext, true)
+                BG.options["button" .. name] = f
+            end
+            -- 贸易局
+            -- 血月活动期间自动释放尸体和自动对话复活
+            -- 牌子拾取增强
+            h = h + 30
+            local name = "showCurrencyCount"
+            BG.options[name .. "reset"] = 1
+            if not BGLite_equip.options[name] then
+                BGLite_equip.options[name] = BG.options[name .. "reset"]
+            end
+            local ontext = {
+                L["牌子拾取增强"],
+                L["拾取牌子时，增加显示该牌子的现有数量。"],
+                " ",
+                L["拾取牌子时，如果已经达到该牌子的数量上限，播放语音提醒。"],
+                " ",
+                L["在部分物品的提示文本中，增加显示该牌子的数量。比如在熊猫人之怒的正义奖章里，提示正义点数现有数量。"],
+            }
+            local f = O.CreateCheckButton(name, L["牌子拾取增强"], others, 15, height - h, ontext, true)
+            BG.options["button" .. name] = f
+            -- 屏蔽发送受限的系统消息
+            do
+                h = h + 30
+
+                local name = "ERR_CHAT_THROTTLED"
+                BG.options[name .. "reset"] = 1
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                local ontext = {
+                    L["屏蔽发送受限的系统消息"],
+                    L["自动屏蔽该系统消息\"可发送的信息数量受限，请稍候再发送下一条信息。\"。"],
+                }
+                local f = O.CreateCheckButton(name, L["屏蔽发送受限的系统消息"], others, 15, height - h, ontext, true)
+                BG.options["button" .. name] = f
+            end
+            -- 简化装备提示文本
+            if ns.canUseSimplifyTooltip then
+                h = h + 30
+
+                local name = "simplifyTooltip"
+                BG.options[name .. "reset"] = 0
+                local ontext = {
+                    L["简化装备提示文本"],
+                    L["将装备上的法术伤害、治疗效果和单系法术伤害说明缩短，保留原数值。"],
+                }
+                local f = O.CreateCheckButton(name, AddTexture('QUEST') .. L["简化装备提示文本"], others, 15, height - h, ontext, true, { BG.UpdateSimplifyTooltip })
+                BG.options["button" .. name] = f
+            end
+
+            -- 启用批量邮寄工资
+            do
+                h = h + 30
+
+                local name = "enableSendMail"
+                BG.options[name .. "reset"] = 1
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                local ontext = {
+                    L["启用批量邮寄工资"] .. L["（需重载）"],
+                }
+                local f = O.CreateCheckButton(name, AddTexture('QUEST') .. L["启用批量邮寄工资"] .. L["（需重载）"], others, 15, height - h, ontext, true)
+                BG.options["button" .. name] = f
+            end
+            -- 启用商品总览
+            do
+                h = h + 30
+
+                local name = "enableShopping"
+                BG.options[name .. "reset"] = 1
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                local ontext = {
+                    L["启用商品总览"],
+                }
+                local f = O.CreateCheckButton(name, AddTexture('QUEST') .. L["启用商品总览"], others, 15, height - h, ontext, true)
+                BG.options["button" .. name] = f
+            end
+            h = h + 45
+        end
+
+        -- 交易记录
+        do
+            local text = others:CreateFontString()
+            text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            text:SetPoint("TOPLEFT", width, height - h)
+            text:SetText(BG.STC_g1(L["交易记录"]))
+            h = h + height_jiange
+
+            O.CreateLine(others, height - h + line_height)
+            h = h + 5
+
+            -- 交易成功时语音提醒
+            do
+                local name = "tradeSuccessSound"
+                BG.options[name .. "reset"] = 0
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                local ontext = {
+                    L["交易成功时语音提醒"],
+                }
+                O.CreateCheckButton(name, L["交易成功时语音提醒"], others, 15, height - h, ontext, true)
+            end
+
+            h = h + 30
+
+            -- 交易失败时语音提醒
+            do
+                local name = "tradeFalseSound"
+                BG.options[name .. "reset"] = 0
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                local ontext = {
+                    L["交易失败时语音提醒"],
+                }
+                O.CreateCheckButton(name, L["交易失败时语音提醒"], others, 15, height - h, ontext, true)
+            end
+
+            h = h + 30
+
+            -- 交易通报
+            do
+                local name = "tradeMSG"
+                BG.options[name .. "reset"] = 0
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                local ontext = {
+                    L["交易通报"],
+                    L["交易后把结果通报至指定频道。"],
+                }
+                O.CreateCheckButton(name, L["交易通报"], others, 15, height - h, ontext, true)
+            end
+
+            -- 通报频道
+            do
+                local name = "tradeMSG_channel"
+                BG.options[name .. "reset"] = "WHISPER"
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                if BGLite_equip.options[name] ~= "WHISPER" and BGLite_equip.options[name] ~= "RAID" then
+                    BGLite_equip.options[name] = BG.options[name .. "reset"]
+                end
+                local channelTbl = {
+                    WHISPER = L["密语"],
+                    RAID = RAID,
+                }
+                local dropDown = LibBG:Create_UIDropDownMenu(nil, others)
+                dropDown:SetPoint("LEFT", BG.options["buttontradeMSG"].Text, "RIGHT", 0, 0)
+                LibBG:UIDropDownMenu_SetWidth(dropDown, 120)
+                LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
+                BG.options["button" .. name] = dropDown
+                SetParent(dropDown, "tradeMSG")
+
+                local function SetText(key)
+                    for k, text in pairs(channelTbl) do
+                        if k == key then
+                            return L["通报至："] .. text
+                        end
+                    end
+                end
+                LibBG:UIDropDownMenu_SetText(dropDown, SetText(BGLite_equip.options[name]))
+
+                LibBG:UIDropDownMenu_Initialize(dropDown, function(self, level)
+                    for key, text in pairs(channelTbl) do
+                        local info = LibBG:UIDropDownMenu_CreateInfo()
+                        info.text = L["通报至："] .. text
+                        info.func = function()
+                            BGLite_equip.options[name] = key
+                            LibBG:UIDropDownMenu_SetText(dropDown, SetText(key))
+                        end
+                        info.checked = BGLite_equip.options[name] == key
+                        LibBG:UIDropDownMenu_AddButton(info)
+                    end
+                end)
+            end
+
+            h = h + 30
+
+            -- 交易成功时通报
+            do
+                local name = "tradeMSG_success"
+                BG.options[name .. "reset"] = 1
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                local ontext = {
+                    L["交易成功时通报"],
+                }
+                local f = O.CreateCheckButton(name, L["交易成功时通报"], others, 40, height - h, ontext, true)
+                SetParent(f, "tradeMSG")
+            end
+
+            h = h + 30
+
+            -- 交易失败时通报
+            do
+                local name = "tradeMSG_false"
+                BG.options[name .. "reset"] = 0
+                BGLite_equip.options[name] = BGLite_equip.options[name] or BG.options[name .. "reset"]
+                local ontext = {
+                    L["交易失败时通报"],
+                }
+                local f = O.CreateCheckButton(name, L["交易失败时通报"], others, 40, height - h, ontext, true)
+                SetParent(f, "tradeMSG")
+            end
+            h = h + 45
+        end
+
+        -- AtlasLoot
+        BG.Init2(function()
+            if not BG.canShowAtlasLoot then return end
+            local text = others:CreateFontString()
+            text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            text:SetPoint("TOPLEFT", width, height - h)
+            text:SetText(BG.STC_g1("AtlasLoot"))
+            height = height - height_jiange
+
+            O.CreateLine(others, height - h + line_height)
+
+            local tbl = {}
+            -- 更好的选择
+            tinsert(tbl, {
+                name = "AtlasLoot_betterChoose",
+                name2 = L["更好的选择"],
+                reset = 0,
+                ontext = {
+                    L["更好的选择"],
+                    L["当你点击一个菜单选项时，"],
+                    L["该插件的原本设定：下一级菜单中总是默认显示第一项。"],
+                    -- " ",
+                    L["现在优化为：下一级菜单中会显示更合适的项目。"],
+                    " ",
+                    L["比如："],
+                    L["点击地下城和团队副本时，会自动显示25人奥杜尔；"],
+                    L["点击专业制造时，会自动显示附魔；"],
+                    L["点击专业制造-铭文时，会自动显示你对应的铭文；"],
+                },
+            })
+            -- 快捷按钮
+            tinsert(tbl, {
+                name = "AtlasLoot_fastChoose",
+                name2 = L["快捷按钮"],
+                reset = 0,
+                ontext = {
+                    L["快捷按钮"],
+                    L["在AtlasLoot主界面的右边，增加多个快捷按钮，点击后直接显示相应页面。"],
+                    " ",
+                    L["比如珠宝按钮，点击后直接显示珠宝页面。"],
+                },
+                onClick = BG.AtlasLootUpdateFastButton
+            })
+
+            for i, v in ipairs(tbl) do
+                if not v.notdefault then
+                    BG.options[v.name .. "reset"] = v.reset
+                    BGLite_equip.options[v.name] = BGLite_equip.options[v.name] or BG.options[v.name .. "reset"]
+                end
+                BG.options["button" .. v.name] = O.CreateCheckButton(v.name, v.name2, others, 15, height - h, v.ontext)
+                if v.onClick then
+                    BG.options["button" .. v.name]:HookScript("OnClick", v.onClick)
+                end
+                h = h + 30
+            end
+            height = height - 15
+
+            -- 插件设置
+            local mainFrame = BG.AtlasLootMainFrame
+            if mainFrame and mainFrame.titleFrame then
+                local frameWidth = 300
+                local frameHeight = 100
+                local bt = CreateFrame("Button", nil, mainFrame.titleFrame)
+                do
+                    bt:SetSize(18, 18)
+                    bt:SetPoint("LEFT", 2, 0)
+                    local icon = ns.Interface .. "Media\\icon\\icon"
+                    local tex = bt:CreateTexture()
+                    tex:SetAllPoints()
+                    tex:SetTexture(icon)
+                    bt:SetHighlightTexture(icon)
+                    bt:SetScript("OnClick", function(self)
+                        self.frame:SetShown(not self.frame:IsVisible())
+                    end)
+                    bt:SetScript("OnLeave", GameTooltip_Hide)
+
+                    bt.frame = CreateFrame("Frame", nil, bt, "BackdropTemplate")
+                    bt.frame:SetBackdrop({
+                        bgFile = "Interface/ChatFrame/ChatFrameBackground",
+                        edgeFile = "Interface/ChatFrame/ChatFrameBackground",
+                        edgeSize = 1,
+                    })
+                    bt.frame:SetBackdropColor(0, 0, 0, 0.9)
+                    bt.frame:SetBackdropBorderColor(.3, .3, .3, 1)
+                    bt.frame:SetSize(frameWidth, frameHeight)
+                    bt.frame:EnableMouse(true)
+                    bt.frame:SetPoint("TOP", bt, "BOTTOM", 0, -2)
+                    bt.frame:Hide()
+                    bt.frame:SetScript("OnHide", function(self)
+                        self:Hide()
+                    end)
+                    BG.CreateCloseButton(bt.frame)
+
+                    mainFrame:HookScript("OnHide", function()
+                        bt.frame:Hide()
+                    end)
+
+                    local verText = mainFrame.titleFrame.newVersion
+                    if verText then
+                        verText:SetPoint("LEFT", mainFrame.titleFrame, "LEFT", 30, 0)
+                    end
+                end
+
+                local height = -10
+                local h = 0
+                local h_jiange = 28
+                local text = bt.frame:CreateFontString()
+                text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+                text:SetPoint("TOPLEFT", 20, height - h)
+                text:SetText(BG.STC_g1(L["其他功能|cff808080（由BiaoGe插件提供）|r"]))
+                height = height - height_jiange
+
+                local l = bt.frame:CreateLine()
+                l:SetColorTexture(RGB("808080", 1))
+                l:SetStartPoint("TOPLEFT", 15, height - h + line_height)
+                l:SetEndPoint("TOPLEFT", frameWidth - 30, height - h + line_height)
+                l:SetThickness(1.5)
+                local buttons = {}
+                for i, v in ipairs(tbl) do
+                    if v.notdefault then
+                        v.ontext[1] = v.ontext[1] .. L["（需重载）"]
+                    end
+                    local f = O.CreateCheckButton(v.name, v.name2, bt.frame, 15, height - h, v.ontext)
+                    if v.onClick then
+                        f:HookScript("OnClick", v.onClick)
+                    end
+                    if i == 6 then
+                        f:ClearAllPoints()
+                        f:SetPoint("LEFT", buttons[1], "RIGHT", 190, 0)
+                        f.Text:SetWidth(140)
+                    elseif i > 6 then
+                        f:ClearAllPoints()
+                        f:SetPoint("TOPLEFT", buttons[i - 1], "TOPLEFT", 0, -h_jiange)
+                        f.Text:SetWidth(140)
+                    else
+                        f.Text:SetWidth(180)
+                    end
+                    f.Text:SetWordWrap(false)
+                    tinsert(buttons, f)
+                    h = h + h_jiange
+                end
+            end
+        end)
+
+        -- 集结号
+        BG.Init2(function()
+            if not BG.canShowMeetingHorn then return end
+            local addonName = "MeetingHorn"
+
+            local text = others:CreateFontString()
+            text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            text:SetPoint("TOPLEFT", width, height - h)
+            text:SetText(BG.STC_g1(L["集结号"]))
+            height = height - height_jiange
+
+            O.CreateLine(others, height - h + line_height)
+
+            local tbl = {}
+
+            -- 显示综合频道/鼠标提示工具/目标右键菜单显示星团长
+            -- 自动加入集结号频道
+            tinsert(tbl, {
+                name = "MeetingHorn_always",
+                name2 = L["自动加入集结号频道"],
+                reset = 0,
+                ontext = {
+                    L["自动加入集结号频道"],
+                    L["进入游戏后，自动加入集结号频道，让你提前获取组队消息。"],
+                    " ",
+                    L["而且，关闭集结号界面时不会自动退出该频道，这样可以一直同步组队消息，让你随时打开集结号都能查看全部活动。"],
+                },
+            })
+            -- 历史搜索记录
+            tinsert(tbl, {
+                name = "MeetingHorn_history",
+                name2 = L["历史搜索记录"],
+                reset = 0,
+                ontext = {
+                    L["历史搜索记录"],
+                    L["给集结号的搜索框增加一个历史搜索记录，提高你搜索的效率。"],
+                },
+            })
+            -- 多个关键词搜索
+            tinsert(tbl, {
+                -- notdefault = true,
+                name = "MeetingHorn_search",
+                name2 = L["多个关键词搜索"],
+                reset = 0,
+                ontext = {
+                    L["多个关键词搜索"],
+                    L[ [[搜索框支持多个关键词搜索。]] ],
+                    " ",
+                    L[ [["空格"表示"且"，需同时满足全部关键词。比如你想搜索哪个诺莫瑞根活动里缺少治疗，可以搜索"诺莫瑞根 治疗"。]] ],
+                    " ",
+                    L[ [["/"表示"或"，满足其中一个关键词即可。比如你是双修牧师，可以搜索"牧师/MS/暗牧/AM"。]] ],
+                    " ",
+                    L[ [[如果把"空格"和"/"结合起来，比如搜索"诺莫瑞根/矮子 牧师/MS/暗牧/AM"，表示我想找诺莫瑞根或者矮子的活动，且该活动缺少任意牧师。]] ],
+                },
+                onClick = function(self)
+                    local addonName = "MeetingHorn"
+                    if not IsAddOnLoaded(addonName) then return end
+                    local MeetingHorn = LibStub("AceAddon-3.0"):GetAddon(addonName)
+                    local Activity = MeetingHorn:GetClass('Activity')
+                    if self:GetChecked() then
+                        Activity.Match = BG.MeetingHorn.ActivityMatch_newFuc
+                    else
+                        Activity.Match = BG.MeetingHorn.ActivityMatch_oldFuc
+                    end
+                end
+            })
+            -- 按队伍人数排序
+            tinsert(tbl, {
+                -- notdefault = true,
+                name = "MeetingHorn_members",
+                name2 = L["按队伍人数排序"],
+                reset = 0,
+                ontext = {
+                    L["按队伍人数排序"],
+                    L["集结号活动可以按队伍人数排序。"],
+                },
+                onClick = function(self)
+                    local addonName = "MeetingHorn"
+                    if not IsAddOnLoaded(addonName) then return end
+                    local MeetingHorn = LibStub("AceAddon-3.0"):GetAddon(addonName)
+                    local Browser = MeetingHorn:GetClass('UI.Browser', 'Frame')
+                    local bt = MeetingHorn.MainPanel.Browser.Header3
+                    if self:GetChecked() then
+                        bt:SetEnabled(true)
+                        Browser.Sort = BG.MeetingHorn.BrowserSort_newFuc
+                    else
+                        bt:SetEnabled(false)
+                        Browser.Sort = BG.MeetingHorn.BrowserSort_oldFuc
+                    end
+                end
+            })
+            -- 标记已密语过的活动
+            tinsert(tbl, {
+                name = "MeetingHorn_isSend",
+                name2 = L["标记已密语过的活动"],
+                reset = 0,
+                ontext = {
+                    L["标记已密语过的活动"],
+                    L["如果你在最近15分钟内曾经密语过团长，那么该活动的说明变为灰色。"],
+                },
+            })
+            -- 密语模板
+            tinsert(tbl, {
+                name = "MeetingHorn_whisper",
+                name2 = L["密语模板"] .. L["（需重载）"],
+                reset = 0,
+                ontext = {
+                    L["密语模板"],
+                    L["预设成就、装等、自定义文本，当你点击集结号活动密语时会自动添加该内容。"],
+                    " ",
+                    L["按住SHIFT+点击密语时不会添加。"],
+                    " ",
+                    L["在聊天频道玩家的右键菜单里增加[密语模板]按钮。"],
+                    " ",
+                    L["在聊天输入框的右键菜单里增加[密语模板]按钮。"],
+                    " ",
+                    L["在集结号活动的右键菜单里增加[邀请][复制活动说明]按钮。"],
+                    " ",
+                    L["通过搜索组队频道的活动也会显示[密语]按钮。"],
+                },
+            })
+            tbl[#tbl].ontext[2] = L["预设装等、自定义文本，当你点击集结号活动密语时会自动添加该内容。"]
+            -- 禁用语音开团快人一步
+            -- 简化活动列表
+            tinsert(tbl, {
+                name = "MeetingHorn_ActivityList",
+                name2 = L["简化活动列表"] .. L["（需重载）"],
+                reset = 0,
+                ontext = {
+                    L["简化活动列表"],
+                    L["删除活动列表的星团长标记、活动模式、进语音这些无用信息，使得活动说明的显示空间更大。"],
+                },
+            })
+
+            for i, v in ipairs(tbl) do
+                if not v.notdefault then
+                    BG.options[v.name .. "reset"] = v.reset
+                    BGLite_equip.options[v.name] = BGLite_equip.options[v.name] or BG.options[v.name .. "reset"]
+                end
+                BG.options["button" .. v.name] = O.CreateCheckButton(v.name, v.name2, others, 15, height - h, v.ontext, true)
+                if v.onClick then
+                    BG.options["button" .. v.name]:HookScript("OnClick", v.onClick)
+                end
+                h = h + 30
+            end
+
+            -- 在集结号增加设置按钮
+            local MeetingHorn = LibStub("AceAddon-3.0"):GetAddon(addonName)
+            local others = MeetingHorn.MainPanel.Options.Options
+
+            local height = -150
+            local width = 25
+            local h = 0
+            local h_jiange = 28
+
+            local text = others:CreateFontString()
+            text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            text:SetPoint("TOPLEFT", width, height - h)
+            text:SetText(BG.STC_g1(L["集结号增强|cff808080（该功能由BiaoGe插件提供）|r"]))
+            height = height - height_jiange
+
+            local l = others:CreateLine()
+            l:SetColorTexture(RGB("808080", 1))
+            l:SetStartPoint("TOPLEFT", 15, height - h + line_height)
+            l:SetEndPoint("TOPLEFT", 380, height - h + line_height)
+            l:SetThickness(1.5)
+
+            -- 集结号设置
+            local buttons = {}
+            local width = 160
+            for i, v in ipairs(tbl) do
+                local f = O.CreateCheckButton(v.name, v.name2, others, 15, height - h, v.ontext, true)
+                f.Text:SetWidth(width)
+                if v.onClick then
+                    f:HookScript("OnClick", v.onClick)
+                end
+                if i == 6 then
+                    f:ClearAllPoints()
+                    f:SetPoint("LEFT", buttons[1], "RIGHT", width + 10, 0)
+                elseif i > 6 then
+                    f:ClearAllPoints()
+                    f:SetPoint("TOPLEFT", buttons[i - 1], "TOPLEFT", 0, -h_jiange)
+                end
+                f.Text:SetWordWrap(false)
+                tinsert(buttons, f)
+                h = h + h_jiange
+            end
+        end)
+        end)
+        if not __ok then BG.OptionSectionError("其他功能", __err) end
+    end
+
+    -- 角色配置
+    do
+        local __ok, __err = pcall(function()
+        BGLite_equip.options.configChooseHope = BGLite_equip.options.configChooseHope or 1
+        BGLite_equip.options.configChooseFilter = BGLite_equip.options.configChooseFilter or 1
+        BGLite_equip.options.configChooseMeetingHornHistory = BGLite_equip.options.configChooseMeetingHornHistory or 1
+        BGLite_equip.options.configChooseMeetingHornWhisper = BGLite_equip.options.configChooseMeetingHornWhisper or 1
+
+        local width = 15
+        local height = -15
+        local width2 = 200
+        local width3 = 160
+        local height2 = 350
+
+        do
+            local text = config:CreateFontString()
+            text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            text:SetPoint("TOPLEFT", width, height)
+            text:SetText(L["本插件的配置里，大部分是账号互通的，比如当前表格、历史表格、设置。但也有一些是按角色保存的，比如心愿清单、装备过滤方案、集结号的搜索记录和密语模板，以及角色总览里的装备、副本进度、货币与声望。\n\n当一个角色改名或者转服时，这些数据就会丢失。改名后用下面的“确定复制”把原角色的数据搬到新角色上；不再需要的角色用“删除角色”清掉，金团表格与角色总览的数据会一起删除。"])
+            text:SetTextColor(1, 1, 1)
+            text:SetJustifyH("LEFT")
+            text:SetWidth(SettingsPanel.Container:GetWidth() - 70)
+
+            height = height - text:GetHeight()
+
+            local text = config:CreateFontString()
+            text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            text:SetPoint("TOPLEFT", width, height - 15)
+            text:SetText(L["选择一个目标角色"])
+            text:SetTextColor(0, 1, 0)
+            text:SetWidth(width2)
+
+            local text = config:CreateFontString()
+            text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            text:SetPoint("TOPLEFT", width + width2 + 15, height - 15)
+            text:SetText(L["要复制的内容"])
+            text:SetTextColor(0, 1, 0)
+            text:SetWidth(width2)
+
+            local text = config:CreateFontString()
+            text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            text:SetPoint("TOPLEFT", width + width2 + 15 + width2 + 15, height - 15)
+            text:SetText(L["操作"])
+            text:SetTextColor(0, 1, 0)
+            text:SetWidth(width3)
+        end
+
+        height = height - 15
+
+        local f, child = BG.CreateScrollFrame(config, width2, height2)
+        f:SetBackdrop({
+            bgFile = "Interface/ChatFrame/ChatFrameBackground",
+            edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+            edgeSize = 16,
+            insets = { left = 3, right = 3, top = 3, bottom = 3 }
+        })
+        f:SetBackdropColor(0, 0, 0, 0.3)
+        f:SetPoint("TOPLEFT", width, height - 15)
+
+        local choose = { realmID = nil, player = nil }
+        local buttons = {}
+        local button2s = {}
+
+        local function UpdateCopyButton()
+            BG.options.configCopyButton:Disable()
+            BG.options.configDeleteButton:Disable()
+            if choose.realmID and choose.player then
+                local yes
+                for i, bt in ipairs(button2s) do
+                    if bt:GetChecked() then
+                        yes = true
+                        break
+                    end
+                end
+                if yes then
+                    BG.options.configCopyButton:Enable()
+                end
+                BG.options.configDeleteButton:Enable()
+            end
+        end
+
+        -- 角色信息来源：金团表格与角色总览各记一份，取并集，免得只在一边记录的角色看不到
+        local function PickPlayerInfo(realmID, player)
+            local a = BGLite_equip.playerInfo and BGLite_equip.playerInfo[realmID] and BGLite_equip.playerInfo[realmID][player]
+            if a then
+                return a
+            end
+            local zl = BGLite_equip.ZL and BGLite_equip.ZL.playerInfo
+            return zl and zl[realmID] and zl[realmID][player]
+        end
+
+        local function GetPlayerPool()
+            local pool = {}
+            local function merge(src)
+                if type(src) ~= "table" then return end
+                for realmID, players in pairs(src) do
+                    if type(players) == "table" and next(players) then
+                        pool[realmID] = pool[realmID] or {}
+                        for player in pairs(players) do
+                            pool[realmID][player] = true
+                        end
+                    end
+                end
+            end
+            merge(BGLite_equip.playerInfo)
+            merge(BGLite_equip.ZL and BGLite_equip.ZL.playerInfo)
+            return pool
+        end
+
+        -- 创建角色列表
+        local function UpdateAllButtons()
+            for i, bt in ipairs(buttons) do
+                bt:Hide()
+            end
+            wipe(buttons)
+
+            -- 无限服「大服务」：服务端把若干同规则集的子服并成一个大服，
+            -- 但 GetRealmName() 返回的是 realmlist 原文（CN1Realm9RPPvP 这类）。
+            -- 这里按规则集归组，同一规则集的角色合到一组显示。
+            local pool = GetPlayerPool()
+            local groups, groupOrder = {}, {}
+            for realmID, v in pairs(pool) do
+                if next(v) then
+                    local set = BG.GetRealmRuleSet and BG.GetRealmRuleSet(realmID)
+                    local key = set or ("realm:" .. tostring(realmID))
+                    local g = groups[key]
+                    if not g then
+                        g = {
+                            text = set or (BG.GetRealmDisplay and BG.GetRealmDisplay(realmID)) or tostring(realmID),
+                            realms = {},
+                        }
+                        groups[key] = g
+                        tinsert(groupOrder, key)
+                    end
+                    tinsert(g.realms, realmID)
+                end
+            end
+
+            -- 固定顺序，免得每次打开面板顺序都在跳
+            local setOrder = { PVP = 1, PVE = 2, ["RP-PVP"] = 3, ["RP-PVE"] = 4 }
+            table.sort(groupOrder, function(a, b)
+                local ga, gb = groups[a], groups[b]
+                local oa, ob = setOrder[ga.text] or 99, setOrder[gb.text] or 99
+                if oa ~= ob then
+                    return oa < ob
+                end
+                return ga.text < gb.text
+            end)
+
+            for _, key in ipairs(groupOrder) do
+                local g = groups[key]
+
+                -- 规则集标题行
+                local bt = CreateFrame("Button", nil, child)
+                if not buttons[1] then
+                    bt:SetPoint("TOPLEFT", child, 0, 0)
+                else
+                    bt:SetPoint("TOPLEFT", buttons[#buttons], "BOTTOMLEFT", 0, 0)
+                end
+                bt:SetNormalFontObject(BG.FontWhite15)
+                bt:SetText(g.text)
+                bt:SetSize(child:GetWidth(), 20)
+                BG.SetTextHighlightTexture(bt)
+                tinsert(buttons, bt)
+                local t = bt:GetFontString()
+                t:SetPoint("LEFT")
+                t:SetTextColor(1, 0.82, 0)
+                bt:Disable()
+
+                for _, realmID in ipairs(g.realms) do
+
+                    for player in pairs(pool[realmID]) do
+                        local bt = CreateFrame("Button", nil, child)
+                        if not buttons[1] then
+                            bt:SetPoint("TOPLEFT", child, 0, 0)
+                        else
+                            bt:SetPoint("TOPLEFT", buttons[#buttons], "BOTTOMLEFT", 0, 0)
+                        end
+                        bt:SetNormalFontObject(BG.FontWhite15)
+                        bt:SetText("   " .. player)
+                        bt:SetSize(child:GetWidth(), 20)
+                        bt.realmID = realmID
+                        bt.player = player
+                        tinsert(buttons, bt)
+
+                        local tex = bt:CreateTexture()
+                        tex:SetAllPoints()
+                        tex:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
+                        bt:SetHighlightTexture(tex)
+
+                        bt.chooseTex = bt:CreateTexture()
+                        bt.chooseTex:SetAllPoints()
+                        bt.chooseTex:SetTexture("Interface\\QuestFrame\\UI-QuestLogTitleHighlight")
+                        bt.chooseTex:SetVertexColor(0, 1, 0)
+                        bt.chooseTex:Hide()
+
+                        local t = bt:GetFontString()
+                        t:SetPoint("LEFT")
+                        local pInfo = PickPlayerInfo(realmID, player)
+                        if pInfo and pInfo.class then
+                            local r, g, b = GetClassColor(pInfo.class)
+                            t:SetTextColor(r, g, b)
+                            tex:SetVertexColor(r, g, b)
+                            bt:SetText("   " .. player .. " (" .. (pInfo.level or "?") .. ")")
+                        else
+                            t:SetTextColor(.5, .5, .5)
+                            tex:SetVertexColor(.5, .5, .5)
+                        end
+
+                        bt:SetScript("OnClick", function(self)
+                            BG.PlaySound(1)
+                            if self.isChoose then
+                                choose.realmID = nil
+                                choose.player = nil
+                                self.isChoose = false
+                                self.chooseTex:Hide()
+                            else
+                                for i, bt in ipairs(buttons) do
+                                    bt.isChoose = false
+                                    if bt.chooseTex then
+                                        bt.chooseTex:Hide()
+                                    end
+                                end
+                                choose.realmID = self.realmID
+                                choose.player = self.player
+                                self.isChoose = true
+                                self.chooseTex:Show()
+                            end
+                            UpdateCopyButton()
+                        end)
+                    end
+                end
+            end
+        end
+        UpdateAllButtons()
+
+
+        local f = CreateFrame("Frame", nil, config, "BackdropTemplate")
+        f:SetBackdrop({
+            bgFile = "Interface/ChatFrame/ChatFrameBackground",
+            edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+            edgeSize = 16,
+            insets = { left = 3, right = 3, top = 3, bottom = 3 }
+        })
+        f:SetBackdropColor(0, 0, 0, 0.3)
+        f:SetSize(width2, height2)
+        f:EnableMouse(true)
+        f:SetPoint("TOPLEFT", width + width2 + 15, height - 15)
+
+        -- 创建选项
+        local function CreateButton(text, configName)
+            local bt = CreateFrame("CheckButton", nil, f, "ChatConfigCheckButtonTemplate")
+            bt:SetSize(30, 30)
+            if not button2s[1] then
+                bt:SetPoint("TOPLEFT", 10, -10)
+            else
+                bt:SetPoint("TOPLEFT", button2s[#button2s], "BOTTOMLEFT", 0, 0)
+            end
+            bt.Text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            bt.Text:SetText(text)
+            bt.Text:SetWidth(width2 - 30 - 20)
+            bt:SetHitRectInsets(0, -bt.Text:GetWidth(), 0, 0)
+            bt.text = text
+            tinsert(button2s, bt)
+            if BGLite_equip.options[configName] == 1 then
+                bt:SetChecked(true)
+            end
+            bt:SetScript("OnClick", function(self)
+                BG.PlaySound(1)
+                if self:GetChecked() then
+                    BGLite_equip.options[configName] = 1
+                else
+                    BGLite_equip.options[configName] = 0
+                end
+                UpdateCopyButton()
+            end)
+        end
+        CreateButton(L["心愿清单"], "configChooseHope")
+        CreateButton(L["装备过滤方案"], "configChooseFilter")
+        CreateButton(L["集结号历史搜索记录"], "configChooseMeetingHornHistory")
+        CreateButton(L["集结号密语模板"], "configChooseMeetingHornWhisper")
+
+        local f = CreateFrame("Frame", nil, config, "BackdropTemplate")
+        f:SetBackdrop({
+            bgFile = "Interface/ChatFrame/ChatFrameBackground",
+            edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+            edgeSize = 16,
+            insets = { left = 3, right = 3, top = 3, bottom = 3 }
+        })
+        f:SetBackdropColor(0, 0, 0, 0.3)
+        f:SetSize(width3, height2)
+        f:EnableMouse(true)
+        f:SetPoint("TOPLEFT", width + width2 + 15 + width2 + 15, height - 15)
+
+        -- 确定复制
+        local bt = BG.CreateButton(f)
+        do
+            bt:SetSize(100, 25)
+            bt:SetPoint("TOP", 0, -15)
+            bt:SetText(L["确定复制"])
+            bt:Disable()
+            BG.options.configCopyButton = bt
+            bt:SetScript("OnEnter", function(self)
+                local chooseText = ""
+                for i, bt in ipairs(button2s) do
+                    if bt:GetChecked() then
+                        if chooseText ~= "" then
+                            chooseText = chooseText .. "|cffFFD100/|r" .. bt.text
+                        else
+                            chooseText = bt.text
+                        end
+                    end
+                end
+                local c2 = "ffFFFFFF"
+                local pInfo = PickPlayerInfo(choose.realmID, choose.player)
+                if pInfo and pInfo.class then
+                    c2 = select(4, GetClassColor(pInfo.class))
+                end
+                GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT", 0, 0)
+                GameTooltip:ClearLines()
+                GameTooltip:AddLine(L["提醒"], 1, 1, 1, true)
+                GameTooltip:AddLine(format(L["你当前角色%s的%s将会被%s的|cffff0000替换|r。"],
+                        SetClassCFF(BG.myName, "player"),
+                        "|cff00FF00" .. chooseText .. RR,
+                        "|c" .. c2 .. BG.GetRealmDisplay(choose.realmID) .. "-" .. choose.player .. RR),
+                    1, 0.82, 0, true)
+                GameTooltip:Show()
+            end)
+            bt:SetScript("OnLeave", GameTooltip_Hide)
+            bt:SetScript("OnClick", function(self)
+                local chooseText = ""
+                for i, bt in ipairs(button2s) do
+                    if bt:GetChecked() then
+                        if chooseText ~= "" then
+                            chooseText = chooseText .. "|cffffffff/|r" .. bt.text
+                        else
+                            chooseText = bt.text
+                        end
+                    end
+                end
+                local c2 = "ffFFFFFF"
+                local pInfo = PickPlayerInfo(choose.realmID, choose.player)
+                if pInfo and pInfo.class then
+                    c2 = select(4, GetClassColor(pInfo.class))
+                end
+                StaticPopup_Show("BIAOGE_QUEDINGFUZHI",
+                    format(L["你当前角色%s的%s将会被%s的|cffff0000替换|r。"],
+                        SetClassCFF(BG.myName, "player"),
+                        "|cff00FF00" .. chooseText .. RR,
+                        "|c" .. c2 .. BG.GetRealmDisplay(choose.realmID) .. "-" .. choose.player .. RR))
+            end)
+
+            StaticPopupDialogs["BIAOGE_QUEDINGFUZHI"] = {
+                text = L["确定复制？\n%s"],
+                button1 = L["是"],
+                button2 = L["否"],
+                OnAccept = function()
+                    BG.PlaySound(2)
+                    local realmID = GetRealmID()
+                    local player = BG.myName
+                    if BGLite_equip.options.configChooseHope == 1 then
+                        if BGLite_equip.Hope[choose.realmID][choose.player] then
+                            BGLite_equip.Hope[realmID][player] = BG.Copy(BGLite_equip.Hope[choose.realmID][choose.player])
+                        end
+                    end
+                    if BGLite_equip.options.configChooseFilter == 1 then
+                        if BGLite_equip.FilterClassItemDB[choose.realmID][choose.player] then
+                            BGLite_equip.FilterClassItemDB[realmID][player] = BG.Copy(BGLite_equip.FilterClassItemDB[choose.realmID][choose.player])
+                            BGLite_equip.filterClassNum[realmID][player] = 0
+                        end
+                    end
+                    if BGLite_equip.options.configChooseMeetingHornHistory == 1 then
+                        if BGLite_equip.MeetingHorn[choose.realmID] and BGLite_equip.MeetingHorn[choose.realmID][choose.player] then
+                            BGLite_equip.MeetingHorn[realmID][player] = BG.Copy(BGLite_equip.MeetingHorn[choose.realmID][choose.player])
+                        end
+                    end
+                    if BGLite_equip.options.configChooseMeetingHornWhisper == 1 then
+                        if BGLite_equip.MeetingHornWhisper[choose.realmID] and BGLite_equip.MeetingHornWhisper[choose.realmID][choose.player] then
+                            BGLite_equip.MeetingHornWhisper[realmID][player] = BG.Copy(BGLite_equip.MeetingHornWhisper[choose.realmID][choose.player])
+                        end
+                    end
+                    ReloadUI()
+                end,
+                OnCancel = function()
+                end,
+                timeout = 0,
+                whileDead = true,
+                hideOnEscape = true,
+                showAlert = true,
+            }
+        end
+
+        -- 删除角色
+        local function DeletePlayerData()
+            local realmID = GetRealmID()
+            local player = BG.myName
+            BG.DeletePlayerData(choose.realmID, choose.player)
+            if realmID == choose.realmID and player == choose.player then
+                ReloadUI()
+            else
+                UpdateAllButtons()
+            end
+        end
+        local bt = BG.CreateButton(f)
+        bt:SetSize(100, 25)
+        bt:SetPoint("TOP", BG.options.configCopyButton, "BOTTOM", 0, -15)
+        bt:SetText(L["删除角色"])
+        bt:Disable()
+        BG.options.configDeleteButton = bt
+        bt:SetScript("OnEnter", function(self)
+            local c2 = "ffFFFFFF"
+            local pInfo = PickPlayerInfo(choose.realmID, choose.player)
+            if pInfo and pInfo.class then
+                c2 = select(4, GetClassColor(pInfo.class))
+            end
+            GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT", 0, 0)
+            GameTooltip:ClearLines()
+            GameTooltip:AddLine(self:GetText(), 1, 1, 1, true)
+            GameTooltip:AddLine(format(L["删除%s的全部配置文件。"],
+                    "|c" .. c2 .. choose.player .. RR),
+                1, 0.82, 0, true)
+            GameTooltip:Show()
+        end)
+        bt:SetScript("OnLeave", GameTooltip_Hide)
+        bt:SetScript("OnClick", function(self)
+            DeletePlayerData()
+            BG.PlaySound(1)
+            -- local c2 = "ffFFFFFF"
+            -- if BiaoGe.playerInfo[choose.realmID] and BiaoGe.playerInfo[choose.realmID][choose.player]
+            --     and BiaoGe.playerInfo[choose.realmID][choose.player].class then
+            --     c2 = select(4, GetClassColor(BiaoGe.playerInfo[choose.realmID][choose.player].class))
+            -- end
+            -- StaticPopup_Show("BIAOGE_SHANCHUJUESE", "|c" .. c2 .. choose.player .. RR)
+        end)
+
+        -- StaticPopupDialogs["BIAOGE_SHANCHUJUESE"] = {
+        --     text = L["确定删除%s的全部配置文件？"],
+        --     button1 = L["是"],
+        --     button2 = L["否"],
+        --     OnAccept = function()
+        --         local realmID = GetRealmID()
+        --         local player = BG.myName
+        --         BG.DeletePlayerData(choose.realmID, choose.player)
+        --         if realmID == choose.realmID and player == choose.player then
+        --             ReloadUI()
+        --         else
+        --             UpdateAllButtons()
+        --         end
+        --     end,
+        --     OnCancel = function()
+        --     end,
+        --     timeout = 0,
+        --     whileDead = true,
+        --     hideOnEscape = true,
+        --     showAlert = true,
+        -- }
+        end)
+        if not __ok then BG.OptionSectionError("角色配置", __err) end
+    end
+end)
+
+-- debug
+-- BG.Init2(function(self, event, ...)
+--     BG.OpenOption()
+-- end)

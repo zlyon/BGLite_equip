@@ -6,7 +6,7 @@
 ## Dependencies: BGLite
 ## LoadOnDemand: 0
 ## SavedVariables: BGLite_equip
-## Version: 1.0.51
+## Version: 1.0.53
 
 Libs\LibBase64\LibBase64.lua
 Init.lua
@@ -40,6 +40,7 @@ Core\ChannelHistory.lua
 Core\Welcome.lua
 Core\LFDFastQueue.lua
 Core\History.lua
+Core\FBUI\HistoryUIfunction.lua
 Core\HistorySummary.lua
 Core\RoleOverviewDB.lua
 Core\RoleOverviewMigration.lua
