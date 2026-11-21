@@ -3241,4 +3241,6 @@ do
     L["禁用BGLite系列插件"] = true
     L["你已安装最新版BiaoGeX插件，需要禁用BiaoGe插件，否则会造成冲突！"] = true
     L["禁用"] = true
+    L["右键设置规则集"] = true
+    L["跟随服务器自动识别"] = true
 end

@@ -236,9 +236,25 @@ function ZL.PlaySound(id)
     end
 end
 
+-- 12.x 匿名按钮（CreateFrame("Button", nil, ...)）的 GetFontString() 会返回 nil，
+-- 这里补一个自建 FontString 的兜底，避免按钮文字相关操作报错。
+function ZL.EnsureButtonFontString(bt, fontObject)
+    if not bt then return nil end
+    local t = ZL.EnsureButtonFontString(bt)
+    if t then return t end
+    t = bt:CreateFontString(nil, "OVERLAY")
+    t:SetFontObject(fontObject or GameFontNormal)
+    t:SetJustifyH("LEFT")
+    t:SetPoint("LEFT")
+    if bt.SetFontString then bt:SetFontString(t) end
+    local text = bt:GetText()
+    if text then t:SetText(text) end
+    return t
+end
+
 ------------------按钮的文本截断------------------
 function ZL.ButtonTextSetWordWrap(bt)
-    local t = bt:GetFontString()
+    local t = ZL.EnsureButtonFontString(bt)
     t:SetWidth(bt:GetWidth())
     t:SetWordWrap(false)
 end
@@ -430,11 +446,11 @@ function ZL.DeletePlayerData(realmID, player)
         return
     end
     for _, key in pairs(info) do
-        if ZLDb[key] and ZLDb[key][realmID] then
-            ZLDb[key][realmID][player] = nil
+        if BGLite_equip.ZL[key] and BGLite_equip.ZL[key][realmID] then
+            BGLite_equip.ZL[key][realmID][player] = nil
         end
     end
-    local sortDB = ZLDb.RoleOverviewSort and ZLDb.RoleOverviewSort[realmID]
+    local sortDB = BGLite_equip.ZL.RoleOverviewSort and BGLite_equip.ZL.RoleOverviewSort[realmID]
     if sortDB then
         for i = #sortDB, 1, -1 do
             if sortDB[i].player == player then
@@ -594,7 +610,7 @@ do
     -- 缩放与主插件（金团表格）共用同一个设置项
     local function OptTable(optionName)
         if optionName == "scale" then return BGLite_equip.options end
-        return ZLDb.options
+        return BGLite_equip.ZL.options
     end
     local function OptReset(optionName)
         if optionName == "scale" then return (BG.options and BG.options.scalereset) or 1 end
@@ -667,10 +683,10 @@ end
 
 ------------------复原一个设置------------------
 function ZL.Once(name, dt, func)
-    if ZLDb and ZLDb.options and ZLDb.options.SearchHistory then
-        if not ZLDb.options.SearchHistory[name .. dt] then
+    if BGLite_equip.ZL and BGLite_equip.ZL.options and BGLite_equip.ZL.options.SearchHistory then
+        if not BGLite_equip.ZL.options.SearchHistory[name .. dt] then
             func()
-            ZLDb.options.SearchHistory[name .. dt] = true
+            BGLite_equip.ZL.options.SearchHistory[name .. dt] = true
         end
     end
 end
@@ -1347,24 +1363,24 @@ function ZL.CreateButton(parent)
             bt:HookScript("OnEnter", function()
                 bt.bg:SetGradient("VERTICAL", classColordown, classColorup)
                 bt:SetBackdropBorderColor(r, g, b, borderAlpha)
-                bt:GetFontString():SetTextColor(1, 1, 1)
+                ZL.EnsureButtonFontString(bt):SetTextColor(1, 1, 1)
             end)
         elseif arg2 == "OnLeave" then
             bt:HookScript("OnLeave", function()
                 GameTooltip:Hide()
                 bt.bg:SetGradient("VERTICAL", blackdown, blackup)
                 bt:SetBackdropBorderColor(0, 0, 0, borderAlpha)
-                bt:GetFontString():SetTextColor(1, .82, 0)
+                ZL.EnsureButtonFontString(bt):SetTextColor(1, .82, 0)
             end)
         end
     end)
     hooksecurefunc(bt, "SetEnabled", function(arg1, arg2, ...)
         if arg2 == true then
             bt.bg:SetGradient("VERTICAL", blackdown, blackup)
-            bt:GetFontString():SetTextColor(1, .82, 0)
+            ZL.EnsureButtonFontString(bt):SetTextColor(1, .82, 0)
         elseif arg2 == false then
             bt.bg:SetGradient("VERTICAL", disColordown, disColorup)
-            bt:GetFontString():SetTextColor(.5, .5, .5)
+            ZL.EnsureButtonFontString(bt):SetTextColor(.5, .5, .5)
         end
     end)
     function bt:Disable()

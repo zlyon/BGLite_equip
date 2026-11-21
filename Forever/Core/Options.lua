@@ -173,7 +173,9 @@ BG.Init(function()
             end
             bt:SetText(text)
             local t = bt:GetFontString()
-            bt:SetWidth(t:GetStringWidth() + 20)
+            if t then -- 12.0：匿名按钮可能还没有内建字体
+                bt:SetWidth(t:GetStringWidth() + 20)
+            end
             BG["Button" .. name] = bt
             last = bt
             bt:SetScript("OnClick", function(self)
@@ -877,7 +879,8 @@ BG.Init(function()
             more:SetNormalFontObject(BG.FontGold15)
             more:SetHighlightFontObject(BG.FontWhite15)
             more:SetText(L["更多选项"])
-            more:SetSize(more:GetFontString():GetStringWidth() + 10, 25)
+            local moreText = BG.EnsureButtonFontString(more, BG.FontGold15)
+            more:SetSize(moreText:GetStringWidth() + 10, 25)
             more:SetPoint("LEFT", f.Text, "RIGHT", 0, 0)
             SetParent(more, "mainIcon")
 
@@ -4179,6 +4182,12 @@ BG.Init(function()
             -- 无限服「大服务」：服务端把若干同规则集的子服并成一个大服，
             -- 但 GetRealmName() 返回的是 realmlist 原文（CN1Realm9RPPvP 这类）。
             -- 这里按规则集归组，同一规则集的角色合到一组显示。
+            -- 老存档遗留：0 号键里与真键重复的角色记录
+            -- 登录时已清过一次，这里再兜一次（幂等）：万一那次登录 Init 被静默吞掉，
+            -- 面板里就会同一个角色出现两组。
+            if BG.CleanZeroDuplicates then BG.CleanZeroDuplicates() end
+            if BG.SyncRealmOrder then BG.SyncRealmOrder(BG.realmID) end
+
             local pool = GetPlayerPool()
             local groups, groupOrder = {}, {}
             for realmID, v in pairs(pool) do
@@ -4198,21 +4207,27 @@ BG.Init(function()
                 end
             end
 
-            -- 固定顺序，免得每次打开面板顺序都在跳
-            local setOrder = { PVP = 1, PVE = 2, ["RP-PVP"] = 3, ["RP-PVE"] = 4 }
+            -- 固定顺序，免得每次打开面板顺序都在跳。
+            -- 按「服务器位次」排（无限服 → 无限服二 → 无限服三），别按文字排：
+            -- 中文数字的字节序不是 二<三<四，按文字排会排成 无限服、无限服三、无限服二、无限服四。
+            local function GroupSeq(g)
+                local id = g.realms and g.realms[1]
+                return (id and BG.RealmSeq and BG.RealmSeq(id)) or 99
+            end
             table.sort(groupOrder, function(a, b)
                 local ga, gb = groups[a], groups[b]
-                local oa, ob = setOrder[ga.text] or 99, setOrder[gb.text] or 99
-                if oa ~= ob then
-                    return oa < ob
+                local sa, sb = GroupSeq(ga), GroupSeq(gb)
+                if sa ~= sb then
+                    return sa < sb
                 end
-                return ga.text < gb.text
+                return tostring(ga.text) < tostring(gb.text)
             end)
 
             for _, key in ipairs(groupOrder) do
                 local g = groups[key]
 
-                -- 规则集标题行
+                -- 规则集标题行。这个客户端不再下发规则集（服名统一是「无限服」），
+                -- 右键可以手工指定这组服务器的规则集，选完即写进存档并重建列表。
                 local bt = CreateFrame("Button", nil, child)
                 if not buttons[1] then
                     bt:SetPoint("TOPLEFT", child, 0, 0)
@@ -4224,10 +4239,48 @@ BG.Init(function()
                 bt:SetSize(child:GetWidth(), 20)
                 BG.SetTextHighlightTexture(bt)
                 tinsert(buttons, bt)
-                local t = bt:GetFontString()
+                local t = BG.EnsureButtonFontString(bt, BG.FontWhite15)
                 t:SetPoint("LEFT")
                 t:SetTextColor(1, 0.82, 0)
-                bt:Disable()
+                bt:RegisterForClicks("RightButtonUp")
+                bt:SetScript("OnEnter", function(self)
+                    GameTooltip:SetOwner(self, "ANCHOR_TOPLEFT", 0, 0)
+                    GameTooltip:ClearLines()
+                    GameTooltip:AddLine(g.text, 1, 1, 1, true)
+                    GameTooltip:AddLine(L["右键设置规则集"], 1, 0.82, 0, true)
+                    GameTooltip:Show()
+                end)
+                bt:SetScript("OnLeave", function() GameTooltip:Hide() end)
+                bt:SetScript("OnMouseUp", function(self, button)
+                    if button ~= "RightButton" then return end
+                    -- 整组一起改：这一组本来就是「同一规则集」归到一起的
+                    local cur = g.realms[1] and BG.GetCustomRealmRule and BG.GetCustomRealmRule(g.realms[1])
+                    local function Apply(rule)
+                        for _, rid in ipairs(g.realms) do
+                            if BG.SetRealmRule then BG.SetRealmRule(rid, rule) end
+                        end
+                        UpdateAllButtons()
+                    end
+                    local menu = {
+                        { text = g.text, isTitle = true, notCheckable = true },
+                        { text = "   ", isTitle = true, notCheckable = true },
+                    }
+                    for _, rule in ipairs(BG.REALM_RULES or {}) do
+                        tinsert(menu, {
+                            text = rule,
+                            checked = (cur == rule),
+                            func = function() Apply(rule) end,
+                        })
+                    end
+                    tinsert(menu, { text = "   ", isTitle = true, notCheckable = true })
+                    tinsert(menu, {
+                        text = L["跟随服务器自动识别"],
+                        notCheckable = true,
+                        func = function() Apply(nil) end,
+                    })
+                    LibBG:EasyMenu(menu, self, "cursor", 0, 0, "MENU", 2)
+                    BG.PlaySound(1)
+                end)
 
                 for _, realmID in ipairs(g.realms) do
 
@@ -4256,7 +4309,7 @@ BG.Init(function()
                         bt.chooseTex:SetVertexColor(0, 1, 0)
                         bt.chooseTex:Hide()
 
-                        local t = bt:GetFontString()
+                        local t = BG.EnsureButtonFontString(bt, BG.FontWhite15)
                         t:SetPoint("LEFT")
                         local pInfo = PickPlayerInfo(realmID, player)
                         if pInfo and pInfo.class then
@@ -4290,6 +4343,11 @@ BG.Init(function()
                             end
                             UpdateCopyButton()
                         end)
+                        -- 重建列表后恢复之前选中的角色（右键改规则集就会重建）
+                        if choose.realmID == realmID and choose.player == player then
+                            bt.isChoose = true
+                            bt.chooseTex:Show()
+                        end
                     end
                 end
             end

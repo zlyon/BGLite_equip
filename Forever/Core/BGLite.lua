@@ -781,7 +781,10 @@ BG.Init(function()
             bt:SetDisabledFontObject(BG.FontDis15)
             bt:SetHighlightFontObject(BG.FontWhite15)
             bt:SetText(L["设置"])
-            bt:SetSize(bt:GetFontString():GetWidth(), 20)
+            do
+                local fs = BG.EnsureButtonFontString(bt)
+                bt:SetSize(math.max(fs:GetWidth() or 0, 20), 20)
+            end
             BG.SetTextHighlightTexture(bt)
             BG.ButtonSheZhi = bt
             bt:SetScript("OnClick", function(self)
@@ -950,7 +953,10 @@ BG.Init(function()
             bt:SetDisabledFontObject(BG.FontDis15)
             bt:SetHighlightFontObject(BG.FontWhite15)
             bt:SetText(L["通知移动"])
-            bt:SetSize(bt:GetFontString():GetWidth(), 20)
+            do
+                local fs = BG.EnsureButtonFontString(bt)
+                bt:SetSize(math.max(fs:GetWidth() or 0, 20), 20)
+            end
             BG.SetTextHighlightTexture(bt)
             BG.ButtonMove = bt
             bt:SetScript("OnClick", BG.Move)
@@ -1000,14 +1006,15 @@ BG.Init(function()
 
             local bt = CreateFrame("CheckButton", nil, BG["Frame" .. FB]["scrollFrame" .. Maxb[FB] + 2].owner, "ChatConfigCheckButtonTemplate")
             bt:SetSize(25, 25)
-            bt.Text:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
-            bt.Text:SetText(L["工资抹零"])
-            bt.Text:SetTextColor(RGB(BG.b1))
-            bt.Text:ClearAllPoints()
-            bt.Text:SetHeight(20)
-            bt.Text:SetPoint("TOPLEFT", bt:GetParent(), "BOTTOMLEFT", 3, 0)
-            bt:SetPoint("LEFT", bt.Text, "RIGHT", 0, -1)
-            bt:SetHitRectInsets(-bt.Text:GetWidth(), 0, 0, 0)
+            local fs = BG.EnsureButtonFontString(bt)
+            fs:SetFont(BIAOGE_TEXT_FONT, 15, "OUTLINE")
+            fs:SetText(L["工资抹零"])
+            fs:SetTextColor(RGB(BG.b1))
+            fs:ClearAllPoints()
+            fs:SetHeight(20)
+            fs:SetPoint("TOPLEFT", bt:GetParent(), "BOTTOMLEFT", 3, 0)
+            bt:SetPoint("LEFT", fs, "RIGHT", 0, -1)
+            bt:SetHitRectInsets(-fs:GetWidth(), 0, 0, 0)
             bt.name = name
             if BGLite_equip.options[name] == 1 then
                 bt:SetChecked(true)
@@ -1021,8 +1028,11 @@ BG.Init(function()
             function BG.UpdateMoLingButton()
                 local FB = BG.FB1
                 bt:SetParent(BG["Frame" .. FB]["scrollFrame" .. Maxb[FB] + 2].owner)
-                bt.Text:ClearAllPoints()
-                bt.Text:SetPoint("TOPLEFT", bt:GetParent(), "BOTTOMLEFT", 3, -1)
+                local t = bt:GetFontString()
+                if t then
+                    t:ClearAllPoints()
+                    t:SetPoint("TOPLEFT", bt:GetParent(), "BOTTOMLEFT", 3, -1)
+                end
             end
         end
     end
@@ -1126,7 +1136,7 @@ BG.Init(function()
                 bt:SetPoint("LEFT", last, "RIGHT", 0, 0)
             end
             bt:SetText(BG.GetFBinfo(FB, "shortName"))
-            local t = bt:GetFontString()
+            local t = BG.EnsureButtonFontString(bt)
             bt:SetWidth(t:GetStringWidth() + (smallWidth and 10 or 20))
             parent:SetWidth(parent:GetWidth() + bt:GetWidth())
             bt:SetHighlightTexture("Interface/PaperDollInfoFrame/UI-Character-Tab-Highlight")
@@ -1353,12 +1363,18 @@ BG.Init(function()
                 if v.num == num then
                     bt:Disable()
                     SetColor(bt, true, 1)
-                    bt:GetFontString():SetTextColor(1, 1, 1)
+                    do -- 12.0：匿名按钮可能还没有内建字体
+                        local fs = BG.EnsureButtonFontString(bt)
+                        if fs then fs:SetTextColor(1, 1, 1) end
+                    end
                     v.frame:Show()
                 else
                     bt:Enable()
                     SetColor(bt, false)
-                    bt:GetFontString():SetTextColor(1, .82, 0)
+                    do
+                        local fs = BG.EnsureButtonFontString(bt)
+                        if fs then fs:SetTextColor(1, .82, 0) end
+                    end
                     v.frame:Hide()
                 end
             end

@@ -38,51 +38,51 @@ local FBCD = "RaidCD"
 local MONEY = "MONEY"
 
 ZL.Init(function()
-    ZLDb[FBCD] = ZLDb[FBCD] or {}
-    ZLDb[FBCD][realmID] = ZLDb[FBCD][realmID] or {}
+    BGLite_equip.ZL[FBCD] = BGLite_equip.ZL[FBCD] or {}
+    BGLite_equip.ZL[FBCD][realmID] = BGLite_equip.ZL[FBCD][realmID] or {}
 
-    ZLDb[MONEY] = ZLDb[MONEY] or {}
-    ZLDb[MONEY][realmID] = ZLDb[MONEY][realmID] or {}
-    ZLDb[MONEY][realmID][ZL.myName] = ZLDb[MONEY][realmID][ZL.myName] or {}
+    BGLite_equip.ZL[MONEY] = BGLite_equip.ZL[MONEY] or {}
+    BGLite_equip.ZL[MONEY][realmID] = BGLite_equip.ZL[MONEY][realmID] or {}
+    BGLite_equip.ZL[MONEY][realmID][ZL.myName] = BGLite_equip.ZL[MONEY][realmID][ZL.myName] or {}
 
-    ZLDb.roleOverviewNote = ZLDb.roleOverviewNote or {}
-    ZLDb.roleOverviewNote[realmID] = ZLDb.roleOverviewNote[realmID] or {}
+    BGLite_equip.ZL.roleOverviewNote = BGLite_equip.ZL.roleOverviewNote or {}
+    BGLite_equip.ZL.roleOverviewNote[realmID] = BGLite_equip.ZL.roleOverviewNote[realmID] or {}
 
     -- 选择初始化
-    if not ZLDb.FBCDchoice then
-        ZLDb.FBCDchoice = {}
+    if not BGLite_equip.ZL.FBCDchoice then
+        BGLite_equip.ZL.FBCDchoice = {}
         ZL.Once("FBCDchoice", 260918, function()
-            ZLDb.FBCDchoice.OLforever = 1
-            ZLDb.FBCDchoice.HSforever = 1
-            ZLDb.FBCDchoice.BDforever = 1
+            BGLite_equip.ZL.FBCDchoice.OLforever = 1
+            BGLite_equip.ZL.FBCDchoice.HSforever = 1
+            BGLite_equip.ZL.FBCDchoice.BDforever = 1
             for i, id in ipairs({ 2586, 2587, 2740, }) do
-                ZLDb.FBCDchoice["faction" .. id] = 1
+                BGLite_equip.ZL.FBCDchoice["faction" .. id] = 1
             end
         end)
     end
-    if not ZLDb.MONEYchoice then
-        ZLDb.MONEYchoice = {}
-        ZLDb.MONEYchoice["money"] = 1
+    if not BGLite_equip.ZL.MONEYchoice then
+        BGLite_equip.ZL.MONEYchoice = {}
+        BGLite_equip.ZL.MONEYchoice["money"] = 1
     end
-    if not ZLDb.SKILLchoice then
-        ZLDb.SKILLchoice = {}
-        ZLDb.SKILLchoice[0] = true
+    if not BGLite_equip.ZL.SKILLchoice then
+        BGLite_equip.ZL.SKILLchoice = {}
+        BGLite_equip.ZL.SKILLchoice[0] = true
     end
 
     -- 更新
     do
         ZL.Once("MONEYchoice", 260918, function()
             for i, id in ipairs({ 3469, 3402, 1792, }) do
-                ZLDb.MONEYchoice[id] = 1
+                BGLite_equip.ZL.MONEYchoice[id] = 1
             end
         end)
 
         -- 默认勾选饰品和武器
         ZL.Once("MONEYchoice", 260731, function()
-            ZLDb.MONEYchoice.trinkets = 1
+            BGLite_equip.ZL.MONEYchoice.trinkets = 1
         end)
         ZL.Once("MONEYchoice", 260818, function()
-            ZLDb.MONEYchoice.weapons = 1
+            BGLite_equip.ZL.MONEYchoice.weapons = 1
         end)
     end
 

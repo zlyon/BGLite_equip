@@ -21,6 +21,8 @@ local pt                                    = print
 local LibBG                                 = ns.Menu -- 调用库菜单UI
 ns.LibBG                                    = LibBG
 
+-- ⚠ 这两个是加载期快照：冷启动时服务器名还没下发（可能是空串）。所以只作初值，
+-- ZL.Init（登录后）里会重新取一次；别在别处再拍快照。
 local realmID                               = GetRealmID()
 local realmName                             = ZL.realmName
 local GetAddOnMetadata                      = GetAddOnMetadata or C_AddOns.GetAddOnMetadata
@@ -179,52 +181,80 @@ end
 
 -- 本地配置数据库
 ZL.Init(function()
-    if type(ZLDb) ~= "table" then
-        ZLDb = {}
+    -- 登录后重新取服ID和服名（加载期那两行可能拿到的是空值/旧值）
+    -- ⚠ 必须走 ns.CurRealmID（现取 GUID 段）：加载期算出来的 0 一旦拿来写存档，
+    -- 记录就落到没人读的 0 号键里，界面上等于没记。
+    realmID = (ns.CurRealmID and ns.CurRealmID()) or GetRealmID()
+    -- 老存档把四个规则集全记在 0 号键下：把这个角色在其它键里的记录搬到本规则集键，
+    -- 否则同一个角色会同时存在于旧键和新键，总览里出现两条。
+    if type(BG) == "table" and BG.MigrateCharRealm and type(ZL.myName) == "string" and ZL.myName ~= "" then
+        BG.MigrateCharRealm(ZL.myName, realmID)
     end
-    if not ZLDb.point then
-        ZLDb.point = {}
+    realmName = ns.ProbeRealmName()
+        or (type(ZL.realmName) == "string" and ZL.realmName ~= "" and ZL.realmName)
+        or ""
+    if type(BGLite_equip.ZL) ~= "table" then
+        BGLite_equip.ZL = {}
     end
-    if not ZLDb.options then
-        ZLDb.options = {}
+    if not BGLite_equip.ZL.point then
+        BGLite_equip.ZL.point = {}
+    end
+    if not BGLite_equip.ZL.options then
+        BGLite_equip.ZL.options = {}
     end
 
-    if ZLDb.options.bagViewerShowBag == nil then
-        ZLDb.options.bagViewerShowBag = true
+    if BGLite_equip.ZL.options.bagViewerShowBag == nil then
+        BGLite_equip.ZL.options.bagViewerShowBag = true
     end
-    if ZLDb.options.bagViewerShowBank == nil then
-        ZLDb.options.bagViewerShowBank = true
+    if BGLite_equip.ZL.options.bagViewerShowBank == nil then
+        BGLite_equip.ZL.options.bagViewerShowBank = true
     end
 
-    if not ZLDb.options.SearchHistory then
-        ZLDb.options.SearchHistory = {}
+    if not BGLite_equip.ZL.options.SearchHistory then
+        BGLite_equip.ZL.options.SearchHistory = {}
     end
 
     -- 记录服务器名称
     do
-        ZLDb.realmName = ZLDb.realmName or {}
-        ZLDb.realmName[realmID] = realmName
+        BGLite_equip.ZL.realmName = BGLite_equip.ZL.realmName or {}
+        -- 空串不覆盖存档里已记好的真服名；拿到真名时两张存档表一起补（本服根 + ZL）
+        if type(realmName) == "string" and realmName ~= "" then
+            ns.SaveRealmName(realmName)
+        end
     end
 
     -- 记录每个角色的职业、等级、天赋
     do
-        ZLDb.playerInfo = ZLDb.playerInfo or {}
-        ZLDb.playerInfo[realmID] = ZLDb.playerInfo[realmID] or {}
-        ZLDb.playerInfo[realmID][ZL.myName] = ZLDb.playerInfo[realmID][ZL.myName] or {}
-        ZLDb.playerInfo[realmID][ZL.myName].class = select(2, UnitClass("player"))
-        ZLDb.playerInfo[realmID][ZL.myName].raceID = select(3, UnitRace("player"))
-        ZLDb.playerInfo[realmID][ZL.myName].faction = UnitFactionGroup("player")
-        ZLDb.playerInfo[realmID][ZL.myName].iLevel = select(2, GetAverageItemLevel()) or 0
+        BGLite_equip.ZL.playerInfo = BGLite_equip.ZL.playerInfo or {}
+        BGLite_equip.ZL.playerInfo[realmID] = BGLite_equip.ZL.playerInfo[realmID] or {}
+        BGLite_equip.ZL.playerInfo[realmID][ZL.myName] = BGLite_equip.ZL.playerInfo[realmID][ZL.myName] or {}
+        -- 记下这个角色属于哪个规则集（GUID 第 2 段）。老存档没有该字段，靠每次登录补上；
+        -- 同名角色换规则集会互相覆盖 —— 这是「按角色名建键」的固有限制，检测到就红字提示一次。
+        do
+            local rec = BGLite_equip.ZL.playerInfo[realmID][ZL.myName]
+            local rk = ns.GuidRealmKey and ns.GuidRealmKey()
+            if rk then
+                if rec.realmKey and rec.realmKey ~= rk then
+                    print("|cffff4040[角色总览]|r 同名角色「" .. tostring(ZL.myName) .. "」出现在另一个规则集（#"
+                        .. tostring(rec.realmKey) .. " → #" .. tostring(rk) .. "），该角色的数据会互相覆盖。")
+                end
+                rec.realmKey = rk
+            end
+        end
+        BGLite_equip.ZL.playerInfo[realmID][ZL.myName].class = select(2, UnitClass("player"))
+        BGLite_equip.ZL.playerInfo[realmID][ZL.myName].raceID = select(3, UnitRace("player"))
+        BGLite_equip.ZL.playerInfo[realmID][ZL.myName].faction = UnitFactionGroup("player")
+        BGLite_equip.ZL.playerInfo[realmID][ZL.myName].iLevel = select(2, GetAverageItemLevel()) or 0
 
         -- 登录和登出时记录当前角色的最后更新时间
         local function UpdateLastUpdate()
-            ZLDb.playerInfo[realmID][ZL.myName].lastUpdate = GetServerTime()
+            BGLite_equip.ZL.playerInfo[realmID][ZL.myName].lastUpdate = GetServerTime()
         end
         UpdateLastUpdate()
         ZL.RegisterEvent("PLAYER_LOGOUT", UpdateLastUpdate)
 
         local function UpdateLevel(level)
-            ZLDb.playerInfo[realmID][ZL.myName].level = level
+            BGLite_equip.ZL.playerInfo[realmID][ZL.myName].level = level
             ZL.isFullLevel = level >= ZL.fullLevel
         end
         UpdateLevel(UnitLevel("player"))
@@ -241,7 +271,7 @@ ZL.Init(function()
         local GetTalent
         GetTalent = function(_, event)
             if not (C_Traits and C_Traits.GetConfigInfo and C_Traits.GetGroupDisplayInfoByTreeID and C_Traits.GetGroupCurrencyInfo) then
-                ZLDb.playerInfo[realmID][ZL.myName].talent = nil
+                BGLite_equip.ZL.playerInfo[realmID][ZL.myName].talent = nil
                 return
             end
 
@@ -252,7 +282,7 @@ ZL.Init(function()
 
             local configInfo = configID and C_Traits.GetConfigInfo(configID)
             if not configInfo or not configInfo.treeIDs then
-                ZLDb.playerInfo[realmID][ZL.myName].talent = nil
+                BGLite_equip.ZL.playerInfo[realmID][ZL.myName].talent = nil
                 return
             end
 
@@ -293,7 +323,7 @@ ZL.Init(function()
             if not maxPoints or maxPoints == 0 then
                 specIndex = nil
             end
-            ZLDb.playerInfo[realmID][ZL.myName].talent = specIndex
+            BGLite_equip.ZL.playerInfo[realmID][ZL.myName].talent = specIndex
         end
 
         local f = CreateFrame("Frame")
@@ -439,8 +469,8 @@ ZL.Init(function()
             }
         end
         -- 字体统一使用主插件（金团表格）的设置，两处不再各存一份
-        ZLDb.font = BGLite_equip.font or default
-        ns.Font = BIAOGE_TEXT_FONT or format("Fonts\\%s", ZLDb.font)
+        BGLite_equip.ZL.font = BGLite_equip.font or default
+        ns.Font = BIAOGE_TEXT_FONT or format("Fonts\\%s", BGLite_equip.ZL.font)
         ZL.fontList = BG.fontList or list
 
         BGLite_equip.options.editFontSize = BGLite_equip.options.editFontSize or 14

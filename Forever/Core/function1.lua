@@ -421,6 +421,7 @@ end)
 ------------------设置按钮文本的宽度------------------
 function BG.SetButtonStringWidth(bt)
     local t = bt:GetFontString()
+    if not t then return end -- 12.0：匿名按钮可能还没有内建字体
     t:SetWidth(bt:GetWidth())
     t:SetWordWrap(false)
 end
@@ -428,6 +429,7 @@ end
 ------------------按钮适应文本的宽度------------------
 function BG.SetButtonWidthForString(bt)
     local t = bt:GetFontString()
+    if not t then return end
     bt:SetWidth(t:GetWidth())
 end
 
@@ -466,6 +468,7 @@ end
 ------------------按钮的文本截断------------------
 function BG.ButtonTextSetWordWrap(bt)
     local t = bt:GetFontString()
+    if not t then return end
     t:SetWidth(bt:GetWidth())
     t:SetWordWrap(false)
 end
@@ -473,6 +476,7 @@ end
 ------------------按钮的文本颜色------------------
 function BG.ButtonTextColor(bt, color)
     local t = bt:GetFontString()
+    if not t then return end
     t:SetTextColor(RGB(color))
 end
 
@@ -1171,12 +1175,200 @@ function BG.FormatRealmName(raw)
     return set
 end
 
+-- 自定义规则集 -------------------------------------------------------------
+-- 这个客户端不再下发规则集（GetRealmName 只回「无限服」这种统一串），玩家自己知道
+-- 哪台是 PVP、哪台是 RP，于是允许在「角色配置」里右键服名手工指定。
+-- 存在存档 BGLite_equip.ZL.realmRule[realmID]（字符串），nil = 跟随客户端自动识别。
+BG.REALM_RULES = { "PVP", "PVE", "RP", "RP-PVP" }
+
+function BG.IsRealmRule(v)
+    for _, x in ipairs(BG.REALM_RULES) do
+        if x == v then return true end
+    end
+    return false
+end
+
+local function RealmRuleTable(create)
+    local db = type(BGLite_equip) == "table" and BGLite_equip
+    if not db then return nil end
+    local zl = db.ZL
+    if type(zl) ~= "table" then
+        if not create then return nil end
+        zl = {}
+        db.ZL = zl
+    end
+    local t = zl.realmRule
+    if type(t) ~= "table" then
+        if not create then return nil end
+        t = {}
+        zl.realmRule = t
+    end
+    return t
+end
+
+function BG.GetCustomRealmRule(realmID)
+    local id = tonumber(realmID)
+    if not id or id == 0 then return nil end
+    local t = RealmRuleTable()
+    local v = t and t[id]
+    if BG.IsRealmRule(v) then return v end
+end
+
+-- rule 传 nil = 清除（恢复自动识别）。返回 true 表示已写进存档。
+function BG.SetRealmRule(realmID, rule)
+    local id = tonumber(realmID)
+    if not id or id == 0 then return false end
+    if rule ~= nil and not BG.IsRealmRule(rule) then return false end
+    local t = RealmRuleTable(true)
+    if not t then return false end
+    t[id] = rule
+    return true
+end
 function BG.GetRealmRuleSet(realmID)
+    local custom = BG.GetCustomRealmRule(realmID)
+    if custom then return custom end
     return BG.ParseRealmRuleSet(BG.GetRawRealmName(realmID))
 end
 
--- 需要区分同一规则集下不同子服的地方用这个（邮件记录、交易记录的服务器筛选等）
+-- 服务器位次命名 -------------------------------------------------------------
+-- 这个客户端某次更新后不再下发真服名（GetRealmName 只返回「无限服」这种统一串），
+-- 于是同一玩家名下的多台服务器在界面上全叫一个名字，分组也分不开。
+-- 规则：第一台遇到的用原名，第二台叫「原名二」，第三台「原名三」……
+-- 位次记在存档 BGLite_equip.ZL.realmOrder 里（数组），跨角色、跨会话都稳定。
+local CN_NUM = { "一", "二", "三", "四", "五", "六", "七", "八", "九" }
+local function CnNum(n)
+    n = tonumber(n) or 0
+    if n <= 0 then return "" end
+    if n < 10 then return CN_NUM[n] end
+    if n < 20 then return "十" .. (n % 10 == 0 and "" or CN_NUM[n % 10]) end
+    local t, r = math.floor(n / 10), n % 10
+    if t > 9 then return tostring(n) end
+    return CN_NUM[t] .. "十" .. (r == 0 and "" or CN_NUM[r])
+end
+BG.CnNum = CnNum
+
+local function RealmOrder()
+    if type(BGLite_equip) ~= "table" then return nil end
+    if type(BGLite_equip.ZL) ~= "table" then BGLite_equip.ZL = {} end
+    if type(BGLite_equip.ZL.realmOrder) ~= "table" then BGLite_equip.ZL.realmOrder = {} end
+    return BGLite_equip.ZL.realmOrder
+end
+
+-- 服务器编号 → 第几台（1 起）。没记过就追加到末尾。
+function BG.RealmSeq(realmID)
+    realmID = tonumber(realmID)
+    if not realmID or realmID == 0 then return nil end
+    local list = RealmOrder()
+    if not list then return nil end
+    for i = 1, #list do
+        if list[i] == realmID then return i end
+    end
+    list[#list + 1] = realmID
+    return #list
+end
+
+-- 登录时调一次：当前服务器排第一（先玩到的叫原名），其余按编号升序补齐。
+-- 用排序而不是 pairs，名字才不会每次进游戏都跳。
+function BG.SyncRealmOrder(cur)
+    local list = RealmOrder()
+    if not list then return end
+    local seen = {}
+    for _, v in ipairs(list) do
+        if type(v) == "number" then seen[v] = true end
+    end
+    cur = tonumber(cur) or tonumber(BG.realmID)
+    if cur and cur ~= 0 and not seen[cur] then
+        list[#list + 1] = cur
+        seen[cur] = true
+    end
+    local extra = {}
+    for _, src in ipairs({ BGLite_equip.playerInfo, BGLite_equip.ZL and BGLite_equip.ZL.playerInfo }) do
+        if type(src) == "table" then
+            for k in pairs(src) do
+                local n = tonumber(k)
+                if n and n ~= 0 and not seen[n] then extra[#extra + 1] = n end
+            end
+        end
+    end
+    table.sort(extra)
+    for _, n in ipairs(extra) do
+        list[#list + 1] = n
+        seen[n] = true
+    end
+end
+
+-- 不带位次的原名（保密值/拼接异常一律放弃，交给调用方兜底）
+local function RealmBaseName(realmID)
+    local raw = BG.GetRawRealmName(realmID)
+    if type(raw) ~= "string" or raw == "" then return nil end
+    local ok, name = pcall(BG.FormatRealmName, raw)
+    if not ok or type(name) ~= "string" or name == "" then return nil end
+    return name
+end
+
+-- 需要区分同一规则集下不同子服的地方用这个（邮件记录、交易记录、角色配置的服务器分组等）
+-- 能解析出规则集的（PVP · 3区）天然唯一，直接用；否则一律「无限服」的按位次加 二/三/四。
+-- 0 号键 = 老存档里认不出属于哪台服务器的数据。
 function BG.GetRealmDisplay(realmID)
-    local raw = BG.GetRawRealmName(realmID) or tostring(realmID)
-    return BG.FormatRealmName(raw)
+    local id = tonumber(realmID)
+    if not id then
+        local raw = BG.GetRawRealmName(realmID) or tostring(realmID)
+        return BG.FormatRealmName(raw)
+    end
+    local unknown = (L and L["未知服务器"]) or "未知服务器"
+    if id == 0 then return unknown end
+
+    -- 玩家手工指定的规则集优先：分组名直接用它（这个客户端不给子服编号，拼不出「3区」）
+    local custom = BG.GetCustomRealmRule(id)
+    if custom then return custom end
+
+    local raw = BG.GetRawRealmName(id)
+    if type(raw) == "string" and BG.ParseRealmRuleSet(raw) then
+        return BG.FormatRealmName(raw)
+    end
+    local base = RealmBaseName(id)
+    if not base then
+        -- 这台服务器还没记到名字：沿用第一台的名字（无限服 → 无限服二），顺手记进存档，下次不用再推
+        local list0 = RealmOrder()
+        local first = list0 and list0[1]
+        if first and first ~= id then base = RealmBaseName(first) end
+        if base then
+            if type(BGLite_equip.realmName) == "table" then BGLite_equip.realmName[id] = base end
+            if type(BGLite_equip.ZL.realmName) == "table" then BGLite_equip.ZL.realmName[id] = base end
+        end
+    end
+    base = base or unknown
+    -- 确保它在位次表里（RealmSeq 没记过会追加），再按「同名的一共几台、我排第几」编号。
+    -- 已经手工指定规则集的不占号，免得剩下的人变成「无限服、无限服三」这种跳号。
+    BG.RealmSeq(id)
+    local list = RealmOrder()
+    local total, seq = 0, 0
+    if list then
+        for _, k in ipairs(list) do
+            if not BG.GetCustomRealmRule(k) and (RealmBaseName(k) or unknown) == base then
+                total = total + 1
+                if k == id then seq = total end
+            end
+        end
+    end
+    if total <= 1 or seq <= 1 then return base end
+    return base .. CnNum(seq)
+end
+
+----------12.0 兼容：匿名按钮的字体对象----------
+-- 12.0/Midnight 客户端里，CreateFrame("Button", nil, parent) 建的匿名按钮在尚未显示过时
+-- 不会生成内建 $parentText，SetText 之后 GetFontString() 仍返回 nil（老客户端会立即创建）。
+-- 缺字体时自建一个交给按钮，已有内建字体时原样返回，不影响老客户端。
+function BG.EnsureButtonFontString(bt, fontObject)
+    if not bt then return nil end
+    local t = bt:GetFontString()
+    if t then return t end
+    t = bt:CreateFontString(nil, "OVERLAY")
+    t:SetFontObject(fontObject or _G.GameFontNormal)
+    t:SetJustifyH("LEFT")
+    t:SetPoint("LEFT")
+    if bt.SetFontString then bt:SetFontString(t) end
+    local text = bt:GetText()
+    if text then t:SetText(text) end
+    return t
 end

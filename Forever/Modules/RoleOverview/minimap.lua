@@ -38,21 +38,21 @@ local function CreateMainIcon()
     frame:SetBackdropColor(0, 0, 0, 0)
     frame:SetBackdropBorderColor(0, 0, 0, 0)
     frame:SetSize(100, 22)
-    frame:SetFrameStrata(ZLDb.options.mainIconFrameLevel)
-    frame:SetScale(ZLDb.options.mainIconScale)
+    frame:SetFrameStrata(BGLite_equip.ZL.options.mainIconFrameLevel)
+    frame:SetScale(BGLite_equip.ZL.options.mainIconScale)
     frame:SetClampedToScreen(true)
     frame:SetMovable(true)
     frame:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     frame:RegisterForDrag("LeftButton")
 
-    ZLDb.point = ZLDb.point or {}
-    local point = ZLDb.point[frameName]
+    BGLite_equip.ZL.point = BGLite_equip.ZL.point or {}
+    local point = BGLite_equip.ZL.point[frameName]
     if point then
         frame:SetPoint(point[1], UIParent, point[2], point[3], point[4])
     else
         frame:SetPoint("TOP", UIParent, "TOP", 0, 0)
     end
-    frame:SetShown(ZLDb.options.mainIcon == 1)
+    frame:SetShown(BGLite_equip.ZL.options.mainIcon == 1)
     ZL.MainIcon = frame
 
     frame:SetScript("OnDragStart", function(self)
@@ -65,7 +65,7 @@ local function CreateMainIcon()
     frame:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
         local anchor, _, relativeAnchor, x, y = self:GetPoint(1)
-        ZLDb.point[frameName] = { anchor, relativeAnchor, x, y }
+        BGLite_equip.ZL.point[frameName] = { anchor, relativeAnchor, x, y }
         C_Timer.After(0, function()
             self.moved = nil
         end)
@@ -106,8 +106,8 @@ local function CreateMainIcon()
 end
 
 ZL.Init(function()
-    ZLDb.options.mainIcon = ZLDb.options.mainIcon or 0
-    ZLDb.options.mainIconScale = tonumber(ZLDb.options.mainIconScale) or 1
-    ZLDb.options.mainIconFrameLevel = ZLDb.options.mainIconFrameLevel or "HIGH"
+    BGLite_equip.ZL.options.mainIcon = BGLite_equip.ZL.options.mainIcon or 0
+    BGLite_equip.ZL.options.mainIconScale = tonumber(BGLite_equip.ZL.options.mainIconScale) or 1
+    BGLite_equip.ZL.options.mainIconFrameLevel = BGLite_equip.ZL.options.mainIconFrameLevel or "HIGH"
     CreateMainIcon()
 end)

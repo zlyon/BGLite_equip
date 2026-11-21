@@ -5,7 +5,7 @@
 ## Author: zlyon
 ## LoadOnDemand: 0
 ## SavedVariables: BGLite_equip
-## Version: 1.0.53
+## Version: 1.0.54
 
 Forever\Locales\zhCN.lua
 Forever\Templates.xml

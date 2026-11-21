@@ -581,11 +581,11 @@ ZL.Init(function()
             if isAccounts then
                 db = MultiAccountDB
             else
-                db = ZLDb
+                db = BGLite_equip.ZL
             end
             if not (db.equip and db.equip[realmID] and db.equip[realmID][player]) then
                 GameTooltip:SetOwner(bt, "ANCHOR_NONE", 0, 0)
-                if bt.isFBCD or ZLDb.options.roleOverviewLayout == "left_right" then
+                if bt.isFBCD or BGLite_equip.ZL.options.roleOverviewLayout == "left_right" then
                     GameTooltip:SetPoint("TOPRIGHT", bt, "TOPLEFT", -12, 0)
                 else
                     GameTooltip:SetPoint("BOTTOMRIGHT", bt, "BOTTOMLEFT", -12, 0)
@@ -653,7 +653,7 @@ ZL.Init(function()
             mainFrame:SetPoint(unpack(points))
         elseif BiaoGeAIdb then
             mainFrame:SetPoint("TOPLEFT", bt, "TOPRIGHT", 1, 0)
-        elseif bt.isFBCD or ZLDb.options.roleOverviewLayout == "left_right" then
+        elseif bt.isFBCD or BGLite_equip.ZL.options.roleOverviewLayout == "left_right" then
             mainFrame:SetPoint("TOPRIGHT", bt, "TOPLEFT", -10, 0)
         else
             mainFrame:SetPoint("BOTTOMRIGHT", bt, "BOTTOMLEFT", -10, 0)
@@ -679,9 +679,8 @@ ZL.Init(function()
         end
         local realmName = ""
         if showRealmName then
-            local name = BG.FormatRealmName((db and db.realmName and db.realmName[realmID])
-                or (ZLDb.realmName and ZLDb.realmName[realmID]) or realmID)
-            realmName = format("|c%s%s-|r", color, name)
+            local name = ns.RealmDisplayName(realmID, db)
+            realmName = format("|c%s%s-|r", color, tostring(name))
         end
         leftFrame.NameText:SetText(talentText .. realmName .. colorplayer)
         local raceText = ""

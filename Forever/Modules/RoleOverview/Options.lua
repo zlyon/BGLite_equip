@@ -109,7 +109,7 @@ ZL.Init(function()
         do
             local function OnValueChanged(self, value)
                 value = Round(tonumber(value), 2)
-                ZLDb.options[self.name] = value
+                BGLite_equip.ZL.options[self.name] = value
                 self.Text:SetText(value)
                 local minValue, maxValue = self:GetMinMaxValues()
                 if value == minValue then
@@ -159,8 +159,8 @@ ZL.Init(function()
                 end)
                 f:SetScript("OnLeave", GameTooltip_Hide)
                 f:SetScript("OnMouseDown", function(self, button)
-                    if button == "RightButton" and ZLDb.options[name .. "reset"] then
-                        self.slider:SetValue(ZLDb.options[name .. "reset"])
+                    if button == "RightButton" and BGLite_equip.ZL.options[name .. "reset"] then
+                        self.slider:SetValue(BGLite_equip.ZL.options[name .. "reset"])
                     end
                 end)
 
@@ -171,7 +171,7 @@ ZL.Init(function()
                 slider:SetValueStep(step)
                 slider:SetObeyStepOnDrag(true)
                 slider:SetHitRectInsets(0, 0, 0, 0)
-                slider:SetValue(ZLDb.options[name])
+                slider:SetValue(BGLite_equip.ZL.options[name])
                 slider.name = name
                 slider.step = step
                 f.slider = slider
@@ -200,7 +200,7 @@ ZL.Init(function()
                 t:SetFont(ns.Font, 15, "OUTLINE")
                 t:SetPoint("LEFT", slider, "RIGHT", isSmall and 20 or 30, 0)
                 t:SetTextColor(1, .82, 0)
-                t:SetText(ZLDb.options[name])
+                t:SetText(BGLite_equip.ZL.options[name])
                 slider.Text = t
 
                 return slider, f
@@ -210,9 +210,9 @@ ZL.Init(function()
         do
             local function OnClick(self)
                 if self:GetChecked() then
-                    ZLDb.options[self.name] = 1
+                    BGLite_equip.ZL.options[self.name] = 1
                 else
-                    ZLDb.options[self.name] = 0
+                    BGLite_equip.ZL.options[self.name] = 0
                 end
                 if self.child then
                     for _, f in pairs(self.child) do
@@ -245,7 +245,7 @@ ZL.Init(function()
                 GameTooltip:Hide()
             end
             local function OnShow(self)
-                self:SetChecked(ZLDb.options[self.name] == 1)
+                self:SetChecked(BGLite_equip.ZL.options[self.name] == 1)
             end
             function O.CreateCheckButton(name, text, parent, x, y, ontext, long, callback)
                 local bt = CreateFrame("CheckButton", nil, parent, "ChatConfigCheckButtonTemplate")
@@ -260,7 +260,7 @@ ZL.Init(function()
                 bt.ontext = ontext
                 bt.callback = callback
                 ZL.options["button" .. name] = bt
-                bt:SetChecked(ZLDb.options[name] == 1)
+                bt:SetChecked(BGLite_equip.ZL.options[name] == 1)
                 bt:SetScript("OnClick", OnClick)
                 bt:SetScript("OnEnter", OnEnter)
                 bt:SetScript("OnLeave", OnLeave)
@@ -281,7 +281,7 @@ ZL.Init(function()
                 local edit = CreateFrame("EditBox", nil, parent, ZL.editTemplate)
                 edit:SetSize(width or 50, 20)
                 edit:SetPoint("LEFT", t, "RIGHT", 10, 0)
-                edit:SetText(ZLDb.options[name] or (isNumeric and 0 or ""))
+                edit:SetText(BGLite_equip.ZL.options[name] or (isNumeric and 0 or ""))
                 edit:SetAutoFocus(false)
                 edit:SetNumeric(isNumeric)
                 ZL.SetEditBaseClass(edit)
@@ -291,7 +291,7 @@ ZL.Init(function()
                     if isNumeric then
                         value = tonumber(value) or 0
                     end
-                    ZLDb.options[name] = value
+                    BGLite_equip.ZL.options[name] = value
                     if callback then
                         callback(self, value)
                     end
@@ -381,7 +381,7 @@ ZL.Init(function()
                 local dropDown = LibBG:Create_UIDropDownMenu(nil, parent)
                 dropDown:SetPoint("LEFT", t, "RIGHT", 5, 0)
                 LibBG:UIDropDownMenu_SetWidth(dropDown, width or 150)
-                LibBG:UIDropDownMenu_SetText(dropDown, GetText(ZLDb.options[name]))
+                LibBG:UIDropDownMenu_SetText(dropDown, GetText(BGLite_equip.ZL.options[name]))
                 LibBG:UIDropDownMenu_SetAnchor(dropDown, 0, 0, "TOP", dropDown, "BOTTOM")
                 ZL.options["button" .. name] = dropDown
 
@@ -392,13 +392,13 @@ ZL.Init(function()
                         info.text = option.text
                         info.arg1 = option.key
                         info.func = function()
-                            ZLDb.options[name] = option.key
+                            BGLite_equip.ZL.options[name] = option.key
                             LibBG:UIDropDownMenu_SetText(dropDown, GetText(option.key))
                             if callback then
                                 callback(dropDown, option.key, option)
                             end
                         end
-                        info.checked = ZLDb.options[name] == option.key
+                        info.checked = BGLite_equip.ZL.options[name] == option.key
                         LibBG:UIDropDownMenu_AddButton(info)
                     end
                 end)
@@ -409,7 +409,7 @@ ZL.Init(function()
     end
 
     local function SetParent(self, key)
-        if ZLDb.options[key] ~= 1 then
+        if BGLite_equip.ZL.options[key] ~= 1 then
             self:Hide()
         end
         local parent = ZL.options["button" .. key]
@@ -441,7 +441,7 @@ ZL.Init(function()
         do
             local name = "roleOverviewSort1"
             ZL.options[name .. "reset"] = "iLevel-class-player"
-            ZLDb.options[name] = ZLDb.options[name] or ZL.options[name .. "reset"]
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or ZL.options[name .. "reset"]
             local tbl = {
                 { key = "iLevel-class-player", text = L["装等-职业-名字"] },
                 { key = "class-iLevel-player", text = L["职业-装等-名字"] },
@@ -466,7 +466,7 @@ ZL.Init(function()
             dropDown.bt:SetSize(100, 25)
             dropDown.bt:SetPoint("LEFT", dropDown, "RIGHT", 5, 0)
             dropDown.bt:SetText(L["修改排序"])
-            dropDown.bt:SetShown(ZLDb.options[name] == "custom")
+            dropDown.bt:SetShown(BGLite_equip.ZL.options[name] == "custom")
             dropDown.bt:SetScript("OnClick", function(self)
                 ZL.PlaySound(1)
                 if ZL.RoleOverviewSortFrame and ZL.RoleOverviewSortFrame:IsVisible() then
@@ -482,7 +482,7 @@ ZL.Init(function()
         do
             local name = "roleOverviewDefaultShow"
             ZL.options[name .. "reset"] = "one"
-            ZLDb.options[name] = ZLDb.options[name] or ZL.options[name .. "reset"]
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or ZL.options[name .. "reset"]
             local tbl = {
                 { key = "one", text = L["当前服务器角色"] },
                 { key = "all", text = L["全部服务器角色"] },
@@ -499,7 +499,7 @@ ZL.Init(function()
         do
             local name = "roleOverviewLayout"
             ZL.options[name .. "reset"] = "up_down"
-            ZLDb.options[name] = ZLDb.options[name] or ZL.options[name .. "reset"]
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or ZL.options[name .. "reset"]
             local tbl = {
                 { key = "up_down", text = L["横向布局1"] },
                 { key = "left_right", text = L["横向布局2"] },
@@ -517,7 +517,7 @@ ZL.Init(function()
         do
             local name = "roleOverviewNotShowLevel"
             ZL.options[name .. "reset"] = 0
-            ZLDb.options[name] = ZLDb.options[name] or ZL.options[name .. "reset"]
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or ZL.options[name .. "reset"]
 
             O.CreateEditBox(name, L["仅显示高于该等级的角色："], parent, 15, -h, true)
         end
@@ -527,7 +527,7 @@ ZL.Init(function()
         do
             local name = "roleOverviewNotShowiLevel"
             ZL.options[name .. "reset"] = 0
-            ZLDb.options[name] = ZLDb.options[name] or ZL.options[name .. "reset"]
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or ZL.options[name .. "reset"]
 
             O.CreateEditBox(name, L["仅显示高于该装等的角色："], parent, 15, -h, true)
         end
@@ -537,14 +537,14 @@ ZL.Init(function()
         do
             local name = "mainIcon"
             ZL.options[name .. "reset"] = 0
-            ZLDb.options[name] = ZLDb.options[name] or ZL.options[name .. "reset"]
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or ZL.options[name .. "reset"]
             local ontext = {
                 L["显示悬浮框"],
             }
             O.CreateCheckButton(name, L["显示悬浮框"], parent, 15, -h, ontext, true, {
                 function()
                     if ZL.MainIcon then
-                        ZL.MainIcon:SetShown(ZLDb.options[name] == 1)
+                        ZL.MainIcon:SetShown(BGLite_equip.ZL.options[name] == 1)
                     end
                 end,
             })
@@ -554,7 +554,7 @@ ZL.Init(function()
         do
             local name = "mainIconScale"
             ZL.options[name .. "reset"] = 1
-            ZLDb.options[name] = tonumber(ZLDb.options[name]) or ZL.options[name .. "reset"]
+            BGLite_equip.ZL.options[name] = tonumber(BGLite_equip.ZL.options[name]) or ZL.options[name .. "reset"]
             local ontext = nil
             local slider, sliderLabel = O.CreateSlider(name, L["缩放："], parent, 0.5, 1.5, 0.01, 170, -h + 2, ontext, 80, true)
             SetParent(slider, "mainIcon")
@@ -570,7 +570,7 @@ ZL.Init(function()
         do
             local name = "mainIconFrameLevel"
             ZL.options[name .. "reset"] = "HIGH"
-            ZLDb.options[name] = ZLDb.options[name] or ZL.options[name .. "reset"]
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or ZL.options[name .. "reset"]
             local tbl = {}
             for _, strata in ipairs({ "BACKGROUND", "LOW", "MEDIUM", "HIGH", "DIALOG", "FULLSCREEN", "FULLSCREEN_DIALOG", "TOOLTIP" }) do
                 tinsert(tbl, { key = strata, text = strata })
@@ -590,7 +590,7 @@ ZL.Init(function()
         do
             local name = "showRaidCDKillNum"
             ZL.options[name .. "reset"] = 0
-            ZLDb.options[name] = ZLDb.options[name] or ZL.options[name .. "reset"]
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or ZL.options[name .. "reset"]
             local ontext = {
                 L["团本CD显示为BOSS击杀数量"],
                 L["没全通的副本，现在会显示击杀的BOSS数量，而不是显示一个绿色钩子。"],
@@ -604,7 +604,7 @@ ZL.Init(function()
         -- 显示专精图标
         do
             local name = "roleOverviewShowTalent"
-            ZLDb.options[name] = ZLDb.options[name] or 1
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or 1
             local ontext = {
                 L["显示角色专精图标"],
                 L["在角色名字前面增加显示专精图标。"],
@@ -616,7 +616,7 @@ ZL.Init(function()
         -- 显示阵营
         do
             local name = "roleOverviewShowFaction"
-            ZLDb.options[name] = ZLDb.options[name] or 0
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or 0
             local ontext = {
                 L["显示角色阵营"],
                 L["角色装等和等级会根据阵营染色为浅蓝色（联盟）或浅红色（部落），用来区分该角色是哪个阵营。"],
@@ -628,7 +628,7 @@ ZL.Init(function()
         -- 使用黑白着色
         do
             local name = "roleOverviewblackWhite"
-            ZLDb.options[name] = ZLDb.options[name] or 0
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or 0
             local ontext = {
                 L["使用黑白着色"],
                 L["勾选后每行使用黑白着色。否则使用下横线作分割。该选项仅对横向布局有效。"],
@@ -637,8 +637,8 @@ ZL.Init(function()
         end
 
         -- 小地图图标统一由主插件设置控制（只有一个按钮）
-        if not ZLDb.options.miniMap then
-            ZLDb.options.miniMap = 1
+        if not BGLite_equip.ZL.options.miniMap then
+            BGLite_equip.ZL.options.miniMap = 1
         end
     end
 
@@ -684,18 +684,18 @@ ZL.Init(function()
                 bt.Text:SetText("|cff" .. color .. diff .. (name2 or name):gsub("sod", "") .. RR)
                 bt.Text:SetWidth(buttonWidth - buttonHeight)
                 bt.Text:SetWordWrap(false)
-                if not ZLDb[dbName][name] or ZLDb[dbName][name] == 0 then
-                    ZLDb[dbName][name] = nil
+                if not BGLite_equip.ZL[dbName][name] or BGLite_equip.ZL[dbName][name] == 0 then
+                    BGLite_equip.ZL[dbName][name] = nil
                     bt:SetChecked(false)
                 else
-                    ZLDb[dbName][name] = 1
+                    BGLite_equip.ZL[dbName][name] = 1
                     bt:SetChecked(true)
                 end
                 bt:SetScript("OnClick", function(self)
                     if self:GetChecked() then
-                        ZLDb[dbName][name] = 1
+                        BGLite_equip.ZL[dbName][name] = 1
                     else
-                        ZLDb[dbName][name] = nil
+                        BGLite_equip.ZL[dbName][name] = nil
                     end
                     ZL.RefreshFBCDFrame()
                     ZL.PlaySound(1)
@@ -751,18 +751,18 @@ ZL.Init(function()
                 right = bt
                 bt.Text:SetFont(ns.Font, 15, "OUTLINE")
                 bt.Text:SetText(AddTexture(tex))
-                if not ZLDb.MONEYchoice[id] or ZLDb.MONEYchoice[id] == 0 then
-                    ZLDb.MONEYchoice[id] = nil
+                if not BGLite_equip.ZL.MONEYchoice[id] or BGLite_equip.ZL.MONEYchoice[id] == 0 then
+                    BGLite_equip.ZL.MONEYchoice[id] = nil
                     bt:SetChecked(false)
                 else
-                    ZLDb.MONEYchoice[id] = 1
+                    BGLite_equip.ZL.MONEYchoice[id] = 1
                     bt:SetChecked(true)
                 end
                 bt:SetScript("OnClick", function(self)
                     if self:GetChecked() then
-                        ZLDb.MONEYchoice[id] = 1
+                        BGLite_equip.ZL.MONEYchoice[id] = 1
                     else
-                        ZLDb.MONEYchoice[id] = nil
+                        BGLite_equip.ZL.MONEYchoice[id] = nil
                     end
                     ZL.RefreshFBCDFrame()
                     ZL.PlaySound(1)
@@ -828,13 +828,13 @@ ZL.Init(function()
                     self.child:SetHeight(1)
                     self.tex:SetTexture(130838)
                     self.open = nil
-                    ZLDb.options['roleOverviewTitleCollapse' .. name] = true
+                    BGLite_equip.ZL.options['roleOverviewTitleCollapse' .. name] = true
                 else
                     self.child2:Show()
                     self.child:SetHeight(self.height)
                     self.tex:SetTexture(130821)
                     self.open = true
-                    ZLDb.options['roleOverviewTitleCollapse' .. name] = nil
+                    BGLite_equip.ZL.options['roleOverviewTitleCollapse' .. name] = nil
                 end
                 if button then
                     ZL.PlaySound(1)
@@ -885,10 +885,10 @@ ZL.Init(function()
         -- 显示其他装备部位
         do
             local name = "roleOverviewShowOtherEquip"
-            ZLDb.options[name] = ZLDb.options[name] or 0
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or 0
             local choiceName = "roleOverviewOtherEquipSlots"
-            if type(ZLDb.options[choiceName]) ~= "table" then
-                ZLDb.options[choiceName] = {}
+            if type(BGLite_equip.ZL.options[choiceName]) ~= "table" then
+                BGLite_equip.ZL.options[choiceName] = {}
             end
             local ontext = {
                 L["显示其他装备部位"],
@@ -904,7 +904,7 @@ ZL.Init(function()
             local function UpdateChooseButtonText()
                 local count = 0
                 for _, equipInfo in ipairs(ZL.RoleOverviewOtherEquipSlots) do
-                    if ZLDb.options[choiceName][equipInfo.id] == 1 then
+                    if BGLite_equip.ZL.options[choiceName][equipInfo.id] == 1 then
                         count = count + 1
                     end
                 end
@@ -948,12 +948,12 @@ ZL.Init(function()
                 bt.Text:SetText(equipInfo.name)
                 bt.Text:SetTextColor(1, .82, 0)
                 bt:SetHitRectInsets(0, -75, 0, 0)
-                bt:SetChecked(ZLDb.options[choiceName][equipInfo.id] == 1)
+                bt:SetChecked(BGLite_equip.ZL.options[choiceName][equipInfo.id] == 1)
                 bt:SetScript("OnClick", function(self)
                     if self:GetChecked() then
-                        ZLDb.options[choiceName][equipInfo.id] = 1
+                        BGLite_equip.ZL.options[choiceName][equipInfo.id] = 1
                     else
-                        ZLDb.options[choiceName][equipInfo.id] = nil
+                        BGLite_equip.ZL.options[choiceName][equipInfo.id] = nil
                     end
                     UpdateChooseButtonText()
                     ZL.RefreshFBCDFrame()
@@ -974,25 +974,25 @@ ZL.Init(function()
         -- 显示自定义物品
         do
             local name = "roleOverviewShowCustomItem"
-            ZLDb.options[name] = ZLDb.options[name] or 1
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or 1
             local itemListName = "roleOverviewCustomItems"
             local presetPotionIDs = ns.presetPotionIDs or {}
             local presetFlaskIDs = ns.presetFlaskIDs or {}
-            if type(ZLDb.options[itemListName]) ~= "table" then
-                ZLDb.options[itemListName] = {}
-                local oldItemID = tonumber(ZLDb.options.roleOverviewCustomItemID)
-                local oldItemLink = ZLDb.options.roleOverviewCustomItemLink
+            if type(BGLite_equip.ZL.options[itemListName]) ~= "table" then
+                BGLite_equip.ZL.options[itemListName] = {}
+                local oldItemID = tonumber(BGLite_equip.ZL.options.roleOverviewCustomItemID)
+                local oldItemLink = BGLite_equip.ZL.options.roleOverviewCustomItemLink
                 if oldItemID and oldItemLink then
-                    tinsert(ZLDb.options[itemListName], {
+                    tinsert(BGLite_equip.ZL.options[itemListName], {
                         id = oldItemID,
                         link = oldItemLink,
                     })
                 end
             end
             local defaultItemsName = "roleOverviewDefaultCustomItemsAdded"
-            if not ZLDb.options[defaultItemsName] then
+            if not BGLite_equip.ZL.options[defaultItemsName] then
                 local existing = {}
-                for _, info in ipairs(ZLDb.options[itemListName]) do
+                for _, info in ipairs(BGLite_equip.ZL.options[itemListName]) do
                     if info.id then
                         existing[info.id] = true
                     end
@@ -1004,7 +1004,7 @@ ZL.Init(function()
                         id = itemID,
                         link = select(2, GetItemInfo(itemID)),
                     }
-                    tinsert(ZLDb.options[itemListName], info)
+                    tinsert(BGLite_equip.ZL.options[itemListName], info)
                     Item:CreateFromItemID(itemID):ContinueOnItemLoad(function()
                         info.link = select(2, GetItemInfo(itemID))
                     end)
@@ -1015,7 +1015,7 @@ ZL.Init(function()
                 for _, itemID in ipairs(presetFlaskIDs) do
                     AddDefaultItem(itemID)
                 end
-                ZLDb.options[defaultItemsName] = true
+                BGLite_equip.ZL.options[defaultItemsName] = true
             end
             local ontext = {
                 L["显示自定义物品"],
@@ -1139,7 +1139,7 @@ ZL.Init(function()
             emptyText:SetTextColor(.5, .5, .5)
 
             local function UpdateItemList()
-                local items = ZLDb.options[itemListName]
+                local items = BGLite_equip.ZL.options[itemListName]
                 table.sort(items, function(a, b)
                     return (a.id or 0) < (b.id or 0)
                 end)
@@ -1176,7 +1176,7 @@ ZL.Init(function()
                         row.deleteBT:SetText(L["删除"])
                         row.deleteBT:SetScript("OnClick", function(self)
                             ZL.PlaySound(1)
-                            tremove(ZLDb.options[itemListName], self.index)
+                            tremove(BGLite_equip.ZL.options[itemListName], self.index)
                             UpdateItemList()
                             RefreshCustomItems()
                         end)
@@ -1206,7 +1206,7 @@ ZL.Init(function()
 
             local function AddPresetItems(presetIDs)
                 local existing = {}
-                for _, info in ipairs(ZLDb.options[itemListName]) do
+                for _, info in ipairs(BGLite_equip.ZL.options[itemListName]) do
                     existing[info.id] = true
                 end
 
@@ -1232,7 +1232,7 @@ ZL.Init(function()
                         if expectedLoadID ~= loadID then return end
                         local _, link = GetItemInfo(itemID)
                         if link then
-                            tinsert(ZLDb.options[itemListName], {
+                            tinsert(BGLite_equip.ZL.options[itemListName], {
                                 id = itemID,
                                 link = link,
                             })
@@ -1254,7 +1254,7 @@ ZL.Init(function()
                     return
                 end
 
-                for _, info in ipairs(ZLDb.options[itemListName]) do
+                for _, info in ipairs(BGLite_equip.ZL.options[itemListName]) do
                     if info.id == itemID then
                         return
                     end
@@ -1270,7 +1270,7 @@ ZL.Init(function()
                     if not link then
                         return
                     end
-                    tinsert(ZLDb.options[itemListName], {
+                    tinsert(BGLite_equip.ZL.options[itemListName], {
                         id = itemID,
                         link = link,
                     })
@@ -1320,7 +1320,7 @@ ZL.Init(function()
         -- 备注
         do
             local name = "roleOverviewShowNote"
-            ZLDb.options[name] = ZLDb.options[name] or 0
+            BGLite_equip.ZL.options[name] = BGLite_equip.ZL.options[name] or 0
             local ontext = {
                 L["显示角色备注"],
                 L["在角色名字后面，增加显示一段自定义文本。"],
@@ -1338,17 +1338,17 @@ ZL.Init(function()
 
             local miniWidth = 60
             local name2 = "roleOverviewShowNote_width"
-            ZLDb.options[name2] = ZLDb.options[name2] or 100
+            BGLite_equip.ZL.options[name2] = BGLite_equip.ZL.options[name2] or 100
             local edit = CreateFrame("EditBox", nil, f, ZL.editTemplate)
             edit:SetSize(100, 20)
             edit:SetPoint("LEFT", t, "RIGHT", 5, 0)
-            edit:SetText(ZLDb.options[name2])
+            edit:SetText(BGLite_equip.ZL.options[name2])
             edit:SetAutoFocus(false)
             edit:SetNumeric(true)
             ZL.SetEditBaseClass(edit)
             SetParent(edit, "roleOverviewShowNote")
             edit:SetScript("OnTextChanged", function(self)
-                ZLDb.options[name2] = max(miniWidth, tonumber(self:GetText()) or 0)
+                BGLite_equip.ZL.options[name2] = max(miniWidth, tonumber(self:GetText()) or 0)
             end)
 
             local t = f:CreateFontString()
@@ -1359,7 +1359,7 @@ ZL.Init(function()
             SetParent(t, "roleOverviewShowNote")
 
             local name3 = "roleOverviewShowNote_useClassColor"
-            ZLDb.options[name3] = ZLDb.options[name3] or 1
+            BGLite_equip.ZL.options[name3] = BGLite_equip.ZL.options[name3] or 1
             local buttons = {}
             local numOptions = {
                 { name = L["是"], key = 1, },
@@ -1377,7 +1377,7 @@ ZL.Init(function()
                 bt.Text:SetText(numOptions[i].name)
                 bt.Text:SetTextColor(1, .82, 0)
                 bt:SetHitRectInsets(0, -bt.Text:GetWidth(), -5, -5)
-                if numOptions[i].key == ZLDb.options[name3] then
+                if numOptions[i].key == BGLite_equip.ZL.options[name3] then
                     bt:SetChecked(true)
                     bt.Text:SetTextColor(0, 1, 0)
                 end
@@ -1391,13 +1391,13 @@ ZL.Init(function()
                     end
                     self:SetChecked(true)
                     self.Text:SetTextColor(0, 1, 0)
-                    ZLDb.options.roleOverviewShowNote_useClassColor = numOptions[i].key
+                    BGLite_equip.ZL.options.roleOverviewShowNote_useClassColor = numOptions[i].key
                 end)
             end
         end
 
         for i, title in ipairs(titles) do
-            if ZLDb.options['roleOverviewTitleCollapse' .. title.name] and title.open then
+            if BGLite_equip.ZL.options['roleOverviewTitleCollapse' .. title.name] and title.open then
                 title:GetScript("OnMouseDown")(title)
             end
         end

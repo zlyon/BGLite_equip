@@ -1,2 +1,2 @@
-- Fixed history ledger errors on Titan (Wrath Classic) and added support for the Forever realm.
-- 修复 泰坦时光服历史账单报错问题；增加 对无限服的支持。
+- Forever realm: characters are grouped per server now, right-click a server name to tag it PVP / PVE / RP / RP-PVP, honour icons follow each character's own faction.
+- 无限服：角色按服务器分组，右键服务器名可指定 PVP / PVE / RP / RP-PVP，荣誉图标按角色自身阵营显示。

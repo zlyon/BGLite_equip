@@ -756,7 +756,10 @@ BG.Init(function()
     -- 记录服务器名称
     do
         BGLite_equip.realmName = BGLite_equip.realmName or {}
-        BGLite_equip.realmName[realmID] = realmName
+        -- 加载期客户端还没给服名时是空串，空串不能覆盖存档里已记好的真服名
+        if type(realmName) == "string" and realmName ~= "" then
+            BGLite_equip.realmName[realmID] = realmName
+        end
     end
     -- 记录每个角色的职业、等级、天赋
     do

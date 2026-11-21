@@ -207,7 +207,7 @@ local function CreateViewerFrame(viewerType, frameName, title)
     ZL.CreateCloseButton(frame)
     frame.CloseButton:SetScript("OnClick", function()
         local owner = frame.owner
-        ZLDb.options[VIEWER_OPTION[viewerType]] = false
+        BGLite_equip.ZL.options[VIEWER_OPTION[viewerType]] = false
         if owner then
             local button = viewerType == "bag" and owner.BagButton or owner.BankButton
             if button then
@@ -506,7 +506,7 @@ local function ShowViewerFrame(viewerType, owner, isAccounts, realmID, player, c
         viewerFrames[viewerType] = frame
     end
 
-    local db = isAccounts and MultiAccountDB or ZLDb
+    local db = isAccounts and MultiAccountDB or BGLite_equip.ZL
     local playerBag = db and db.bag and db.bag[realmID] and db.bag[realmID][player]
     local items
     if viewerType == "bag" then
@@ -552,8 +552,8 @@ end
 
 local function ToggleViewerFrame(viewerType, owner, isAccounts, realmID, player, class)
     local option = VIEWER_OPTION[viewerType]
-    local show = not ZLDb.options[option]
-    ZLDb.options[option] = show
+    local show = not BGLite_equip.ZL.options[option]
+    BGLite_equip.ZL.options[option] = show
     local button = viewerType == "bag" and owner.BagButton or owner.BankButton
     if button then
         button:SetChecked(show)
@@ -578,14 +578,14 @@ function ZL.ToggleBankFrame(owner, isAccounts, realmID, player, colorplayer, cla
 end
 
 function ZL.RestoreBagViewerFrames(owner, isAccounts, realmID, player, colorplayer, class)
-    owner.BagButton:SetChecked(ZLDb.options.bagViewerShowBag)
-    owner.BankButton:SetChecked(ZLDb.options.bagViewerShowBank)
-    if ZLDb.options.bagViewerShowBag then
+    owner.BagButton:SetChecked(BGLite_equip.ZL.options.bagViewerShowBag)
+    owner.BankButton:SetChecked(BGLite_equip.ZL.options.bagViewerShowBank)
+    if BGLite_equip.ZL.options.bagViewerShowBag then
         ShowViewerFrame("bag", owner, isAccounts, realmID, player, class)
     elseif viewerFrames.bag then
         viewerFrames.bag:Hide()
     end
-    if ZLDb.options.bagViewerShowBank then
+    if BGLite_equip.ZL.options.bagViewerShowBank then
         ShowViewerFrame("bank", owner, isAccounts, realmID, player, class)
     elseif viewerFrames.bank then
         viewerFrames.bank:Hide()

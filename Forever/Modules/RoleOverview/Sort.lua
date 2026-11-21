@@ -52,10 +52,9 @@ local function DefaultSort(a, b)
 end
 
 local function GetRealmName(sortRealmID)
-    local raw = (ZLDb.realmName and ZLDb.realmName[sortRealmID])
-        or (MultiAccountDB and MultiAccountDB.realmName and MultiAccountDB.realmName[sortRealmID])
-        or tostring(sortRealmID)
-    return BG.FormatRealmName(raw)
+    -- 优先用「按服务器位次」的名字（无限服 / 无限服二 …），否则两台同名服务器在下拉框里分不出来
+    local name = ns.RealmKeyName and ns.RealmKeyName(sortRealmID)
+    return BG.FormatRealmName(tostring(name or ns.RealmDisplayName(sortRealmID)))
 end
 
 local function GetRealmList()
@@ -69,7 +68,7 @@ local function GetRealmList()
             end
         end
     end
-    AddDB(ZLDb)
+    AddDB(BGLite_equip.ZL)
     AddDB(MultiAccountDB)
     if not next(realmIDs) then
         realmIDs[realmID] = true
@@ -96,9 +95,9 @@ end
 
 local function GetSortDB(sortRealmID)
     sortRealmID = sortRealmID or selectedRealmID
-    ZLDb.RoleOverviewSort = ZLDb.RoleOverviewSort or {}
-    ZLDb.RoleOverviewSort[sortRealmID] = ZLDb.RoleOverviewSort[sortRealmID] or {}
-    return ZLDb.RoleOverviewSort[sortRealmID]
+    BGLite_equip.ZL.RoleOverviewSort = BGLite_equip.ZL.RoleOverviewSort or {}
+    BGLite_equip.ZL.RoleOverviewSort[sortRealmID] = BGLite_equip.ZL.RoleOverviewSort[sortRealmID] or {}
+    return BGLite_equip.ZL.RoleOverviewSort[sortRealmID]
 end
 
 local function ResetDrag()
@@ -266,7 +265,7 @@ local function GetDB(sortRealmID)
     local function AddDB(db, isAccounts)
         if not (db and db[MONEY] and db[MONEY][sortRealmID]) then return end
         for playerName in pairs(db[MONEY][sortRealmID]) do
-            local localMoneyDB = ZLDb[MONEY] and ZLDb[MONEY][sortRealmID]
+            local localMoneyDB = BGLite_equip.ZL[MONEY] and BGLite_equip.ZL[MONEY][sortRealmID]
             if not isAccounts or not (localMoneyDB and localMoneyDB[playerName]) then
                 local playerInfo = db.playerInfo and db.playerInfo[sortRealmID] and db.playerInfo[sortRealmID][playerName]
                 local level = playerInfo and playerInfo.level
@@ -288,7 +287,7 @@ local function GetDB(sortRealmID)
             end
         end
     end
-    AddDB(ZLDb)
+    AddDB(BGLite_equip.ZL)
     AddDB(MultiAccountDB, true)
 end
 
@@ -301,9 +300,9 @@ local function AddCurrentPlayer(tbl, saveClass, sortRealmID)
         end
     end
     local classColor = class and select(4, GetClassColor(class))
-    local playerInfo = ZLDb.playerInfo and ZLDb.playerInfo[realmID] and ZLDb.playerInfo[realmID][ZL.myName]
+    local playerInfo = BGLite_equip.ZL.playerInfo and BGLite_equip.ZL.playerInfo[realmID] and BGLite_equip.ZL.playerInfo[realmID][ZL.myName]
     local iLevel = playerInfo and playerInfo.iLevel or
-        (ZLDb.PlayerItemsLevel and ZLDb.PlayerItemsLevel[realmID] and ZLDb.PlayerItemsLevel[realmID][ZL.myName])
+        (BGLite_equip.ZL.PlayerItemsLevel and BGLite_equip.ZL.PlayerItemsLevel[realmID] and BGLite_equip.ZL.PlayerItemsLevel[realmID][ZL.myName])
     if classColor and iLevel then
         tinsert(tbl, {
             player = ZL.myName,
@@ -326,7 +325,7 @@ function ZL.InitializeRoleOverviewCustomSort()
     GetDB(realmID)
     AddCurrentPlayer(info, true, realmID)
     sort(info, DefaultSort)
-    ZLDb.RoleOverviewSort[realmID] = ZL.Copy(info)
+    BGLite_equip.ZL.RoleOverviewSort[realmID] = ZL.Copy(info)
 end
 
 function ZL.CreateRoleOverviewSortFrame(bt, update)
@@ -473,8 +472,8 @@ function ZL.CreateRoleOverviewSortFrame(bt, update)
             tinsert(sortDB, newInfo)
         end
     else
-        ZLDb.RoleOverviewSort[selectedRealmID] = ZL.Copy(info)
-        sortDB = ZLDb.RoleOverviewSort[selectedRealmID]
+        BGLite_equip.ZL.RoleOverviewSort[selectedRealmID] = ZL.Copy(info)
+        sortDB = BGLite_equip.ZL.RoleOverviewSort[selectedRealmID]
     end
     if isFirstCustomSort then
         sort(sortDB, DefaultSort)

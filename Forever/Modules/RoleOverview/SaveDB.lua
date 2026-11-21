@@ -118,9 +118,9 @@ ZL.Init(function()
                 end
             end
             if next(cd) then
-                ZLDb[FBCD][realmID][ZL.myName] = cd
+                BGLite_equip.ZL[FBCD][realmID][ZL.myName] = cd
             else
-                ZLDb[FBCD][realmID][ZL.myName] = {
+                BGLite_equip.ZL[FBCD][realmID][ZL.myName] = {
                     {
                         player = ZL.myName,
                         colorplayer = colorplayer,
@@ -206,10 +206,10 @@ ZL.Init(function()
             ZL.After(1, ZL.UpdateFBCD)
         end)
 
-        for realmID, players in pairs(ZLDb[MONEY]) do
+        for realmID, players in pairs(BGLite_equip.ZL[MONEY]) do
             for player, v in pairs(players) do
-                if not ZLDb[FBCD][realmID][player] then
-                    ZLDb[FBCD][realmID][player] = {
+                if not BGLite_equip.ZL[FBCD][realmID][player] then
+                    BGLite_equip.ZL[FBCD][realmID][player] = {
                         {
                             player = player,
                             colorplayer = v.colorplayer,
@@ -221,20 +221,20 @@ ZL.Init(function()
     end
 
     -- 世界BOSS（MOP）
-    ZLDb.worldBossCD = ZLDb.worldBossCD or {}
-    ZLDb.worldBossCD[realmID] = ZLDb.worldBossCD[realmID] or {}
-    ZLDb.worldBossCD[realmID][ZL.myName] = ZLDb.worldBossCD[realmID][ZL.myName] or {}
+    BGLite_equip.ZL.worldBossCD = BGLite_equip.ZL.worldBossCD or {}
+    BGLite_equip.ZL.worldBossCD[realmID] = BGLite_equip.ZL.worldBossCD[realmID] or {}
+    BGLite_equip.ZL.worldBossCD[realmID][ZL.myName] = BGLite_equip.ZL.worldBossCD[realmID][ZL.myName] or {}
 
     -- 日常任务
     local holidayDungeonIDs = { 286, 285, 287, 288 }                                   -- 火焰节、万圣节、美酒节、情人节
     local holidayEventIDs = { [324] = true, [341] = true, [372] = true, [423] = true } -- 火焰节、万圣节、美酒节、情人节
     do
-        ZLDb.QuestCD = ZLDb.QuestCD or {}
-        ZLDb.QuestCD[realmID] = ZLDb.QuestCD[realmID] or {}
-        ZLDb.QuestCD[realmID][ZL.myName] = ZLDb.QuestCD[realmID][ZL.myName] or {}
+        BGLite_equip.ZL.QuestCD = BGLite_equip.ZL.QuestCD or {}
+        BGLite_equip.ZL.QuestCD[realmID] = BGLite_equip.ZL.QuestCD[realmID] or {}
+        BGLite_equip.ZL.QuestCD[realmID][ZL.myName] = BGLite_equip.ZL.QuestCD[realmID][ZL.myName] or {}
 
         local function IsLearnSkill(skillID)
-            return ZLDb[MONEY][realmID][ZL.myName].skill[skillID]
+            return BGLite_equip.ZL[MONEY][realmID][ZL.myName].skill[skillID]
         end
 
         local function GetQuestSkillID(questName)
@@ -248,7 +248,7 @@ ZL.Init(function()
             local timestamp = currentTimestamp + secondsUntilNext7am
 
             local colorplayer = SetClassCFF(ZL.myName, "player")
-            ZLDb.QuestCD[realmID][ZL.myName][questName] = {
+            BGLite_equip.ZL.QuestCD[realmID][ZL.myName][questName] = {
                 name = questName,
                 player = ZL.myName,
                 colorplayer = colorplayer,
@@ -276,7 +276,7 @@ ZL.Init(function()
             if count > 0 then
                 SaveDayQuest('dayQuestCount', nil, count)
             else
-                ZLDb.QuestCD[realmID][ZL.myName].dayQuestCount = nil
+                BGLite_equip.ZL.QuestCD[realmID][ZL.myName].dayQuestCount = nil
             end
         end
 
@@ -287,7 +287,7 @@ ZL.Init(function()
             local timestamp = currentTimestamp + secondsToNextThursday -- 到下周四的实际时间戳
 
             local colorplayer = SetClassCFF(ZL.myName, "player")
-            ZLDb.QuestCD[realmID][ZL.myName][questName] = {
+            BGLite_equip.ZL.QuestCD[realmID][ZL.myName][questName] = {
                 name = questName,
                 player = ZL.myName,
                 colorplayer = colorplayer,
@@ -317,7 +317,7 @@ ZL.Init(function()
         local function SavePermanentQuest(questID)
             local questName = permanentQuests[questID]
             if not questName then return end
-            ZLDb.QuestCD[realmID][ZL.myName][questName] = {
+            BGLite_equip.ZL.QuestCD[realmID][ZL.myName][questName] = {
                 name = questName,
                 questID = questID,
                 permanent = true,
@@ -378,10 +378,10 @@ ZL.Init(function()
         local function CheckQuestsCompleted()
             if ZL.dayQuests then
                 for questName, v in pairs(ZL.dayQuests) do
-                    if not ZLDb.QuestCD[realmID][ZL.myName][questName] then
+                    if not BGLite_equip.ZL.QuestCD[realmID][ZL.myName][questName] then
                         local skillID = v.skillID
                         if skillID and IsLearnSkill(skillID) then
-                            ZLDb.QuestCD[realmID][ZL.myName][questName] = {
+                            BGLite_equip.ZL.QuestCD[realmID][ZL.myName][questName] = {
                                 notFinish = true,
                             }
                         end
@@ -425,7 +425,7 @@ ZL.Init(function()
 
     -- 橙披
 
-    ZLDb.buffCD = nil
+    BGLite_equip.ZL.buffCD = nil
 
     -- 专业技能CD
 
@@ -461,7 +461,7 @@ ZL.Init(function()
                 }
             end
         end
-        ZLDb[MONEY][realmID][ZL.myName].skill = tbl
+        BGLite_equip.ZL[MONEY][realmID][ZL.myName].skill = tbl
     end
 
     ZL.Init2(function()
@@ -478,7 +478,7 @@ ZL.Init(function()
             local tbl = {}
             tbl.player = ZL.myName
             tbl.colorplayer = SetClassCFF(ZL.myName, "player")
-            tbl.skill = ZLDb[MONEY][realmID][ZL.myName].skill
+            tbl.skill = BGLite_equip.ZL[MONEY][realmID][ZL.myName].skill
             for i, v in ipairs(ZL.MONEYall_table) do
                 if v.type == "money" then
                     tbl.money = floor(GetMoney() / 1e4)
@@ -528,7 +528,7 @@ ZL.Init(function()
                     end
                     tbl[v.id] = { count = count, tex = tex, isItem = true, quest = questsCompleted, }
                 elseif v.type == "xp" then
-                    tbl.xp = ZLDb[MONEY][realmID][ZL.myName].xp
+                    tbl.xp = BGLite_equip.ZL[MONEY][realmID][ZL.myName].xp
                 elseif v.type ~= "equip" and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
                     local info = C_CurrencyInfo.GetCurrencyInfo(v.id)
                     if info then
@@ -565,7 +565,7 @@ ZL.Init(function()
                     end
                 end
             end
-            ZLDb[MONEY][realmID][ZL.myName] = tbl
+            BGLite_equip.ZL[MONEY][realmID][ZL.myName] = tbl
         end
 
         local function UpdateCD()
@@ -615,7 +615,7 @@ ZL.Init(function()
                 local maxXP = UnitXPMax("player")
                 per = exhaustion / maxXP * 100
             end
-            ZLDb[MONEY][realmID][ZL.myName].xp = {
+            BGLite_equip.ZL[MONEY][realmID][ZL.myName].xp = {
                 per = format("%.1f", per),
                 perNow = format("%d", per),
                 time = GetServerTime(),
@@ -648,16 +648,16 @@ ZL.Init(function()
                     end
                 end
             end
-            Update(ZLDb)
+            Update(BGLite_equip.ZL)
             Update(MultiAccountDB)
         end
     end
 
     -- 角色装备和装等
     do
-        ZLDb.equip = ZLDb.equip or {}
-        ZLDb.equip[realmID] = ZLDb.equip[realmID] or {}
-        ZLDb.equip[realmID][ZL.myName] = ZLDb.equip[realmID][ZL.myName] or {}
+        BGLite_equip.ZL.equip = BGLite_equip.ZL.equip or {}
+        BGLite_equip.ZL.equip[realmID] = BGLite_equip.ZL.equip[realmID] or {}
+        BGLite_equip.ZL.equip[realmID][ZL.myName] = BGLite_equip.ZL.equip[realmID][ZL.myName] or {}
 
         local ItemLevelPattern = gsub(ITEM_LEVEL, "%%d", "(%%d+)")
         local function GetItemLevelByTooltip(slot, link)
@@ -678,7 +678,7 @@ ZL.Init(function()
         end
 
         function ZL.GetPlayerEquip()
-            local tbl = ZLDb.equip[realmID][ZL.myName]
+            local tbl = BGLite_equip.ZL.equip[realmID][ZL.myName]
             wipe(tbl)
             for slot = 1, 19 do
                 local link = GetInventoryItemLink("player", slot)
@@ -700,7 +700,7 @@ ZL.Init(function()
 
         local function GetPlayerAverageItemLevel()
             local _, avgLevel = GetAverageItemLevel()
-            ZLDb.playerInfo[realmID][ZL.myName].iLevel = avgLevel or 0
+            BGLite_equip.ZL.playerInfo[realmID][ZL.myName].iLevel = avgLevel or 0
         end
 
         local delay
@@ -739,15 +739,15 @@ ZL.Init(function()
 
     -- 背包
     do
-        ZLDb.bag = ZLDb.bag or {}
-        ZLDb.bag[realmID] = ZLDb.bag[realmID] or {}
-        ZLDb.bag[realmID][ZL.myName] = ZLDb.bag[realmID][ZL.myName] or {}
-        ZLDb.bag[realmID][ZL.myName].bag = ZLDb.bag[realmID][ZL.myName].bag or {}
-        ZLDb.bag[realmID][ZL.myName].bagKey = ZLDb.bag[realmID][ZL.myName].bagKey or {}
-        ZLDb.bag[realmID][ZL.myName].bank = ZLDb.bag[realmID][ZL.myName].bank or {}
-        ZLDb.bag[realmID][ZL.myName].bagLink = ZLDb.bag[realmID][ZL.myName].bagLink or {}
-        ZLDb.bag[realmID][ZL.myName].bagKeyLink = ZLDb.bag[realmID][ZL.myName].bagKeyLink or {}
-        ZLDb.bag[realmID][ZL.myName].bankLink = ZLDb.bag[realmID][ZL.myName].bankLink or {}
+        BGLite_equip.ZL.bag = BGLite_equip.ZL.bag or {}
+        BGLite_equip.ZL.bag[realmID] = BGLite_equip.ZL.bag[realmID] or {}
+        BGLite_equip.ZL.bag[realmID][ZL.myName] = BGLite_equip.ZL.bag[realmID][ZL.myName] or {}
+        BGLite_equip.ZL.bag[realmID][ZL.myName].bag = BGLite_equip.ZL.bag[realmID][ZL.myName].bag or {}
+        BGLite_equip.ZL.bag[realmID][ZL.myName].bagKey = BGLite_equip.ZL.bag[realmID][ZL.myName].bagKey or {}
+        BGLite_equip.ZL.bag[realmID][ZL.myName].bank = BGLite_equip.ZL.bag[realmID][ZL.myName].bank or {}
+        BGLite_equip.ZL.bag[realmID][ZL.myName].bagLink = BGLite_equip.ZL.bag[realmID][ZL.myName].bagLink or {}
+        BGLite_equip.ZL.bag[realmID][ZL.myName].bagKeyLink = BGLite_equip.ZL.bag[realmID][ZL.myName].bagKeyLink or {}
+        BGLite_equip.ZL.bag[realmID][ZL.myName].bankLink = BGLite_equip.ZL.bag[realmID][ZL.myName].bankLink or {}
 
         local function GetBagSlots(bagType)
             if bagType == "bag" then
@@ -765,18 +765,18 @@ ZL.Init(function()
             for slot = 1, C_Container.GetContainerNumSlots(bag) do
                 local info = C_Container.GetContainerItemInfo(bag, slot)
                 if info then
-                    ZLDb.bag[realmID][ZL.myName][bagType][info.itemID] =
-                        (ZLDb.bag[realmID][ZL.myName][bagType][info.itemID] or 0) + info.stackCount
+                    BGLite_equip.ZL.bag[realmID][ZL.myName][bagType][info.itemID] =
+                        (BGLite_equip.ZL.bag[realmID][ZL.myName][bagType][info.itemID] or 0) + info.stackCount
                     local link = info.hyperlink
                     if not link and C_Container.GetContainerItemLink then
                         link = C_Container.GetContainerItemLink(bag, slot)
                     end
                     if link then
                         local linkType = bagType .. "Link"
-                        local oldInfo = ZLDb.bag[realmID][ZL.myName][linkType][link]
+                        local oldInfo = BGLite_equip.ZL.bag[realmID][ZL.myName][linkType][link]
                         local oldCount = type(oldInfo) == "table" and oldInfo.count or tonumber(oldInfo) or 0
                         local maxStack = select(8, GetItemInfo(link))
-                        ZLDb.bag[realmID][ZL.myName][linkType][link] = {
+                        BGLite_equip.ZL.bag[realmID][ZL.myName][linkType][link] = {
                             count = oldCount + info.stackCount,
                             stackable = (type(oldInfo) == "table" and oldInfo.stackable)
                                 or info.stackCount > 1 or (maxStack and maxStack > 1) or nil,
@@ -787,10 +787,10 @@ ZL.Init(function()
         end
 
         function ZL.SaveBag()
-            wipe(ZLDb.bag[realmID][ZL.myName].bag)
-            wipe(ZLDb.bag[realmID][ZL.myName].bagKey)
-            wipe(ZLDb.bag[realmID][ZL.myName].bagLink)
-            wipe(ZLDb.bag[realmID][ZL.myName].bagKeyLink)
+            wipe(BGLite_equip.ZL.bag[realmID][ZL.myName].bag)
+            wipe(BGLite_equip.ZL.bag[realmID][ZL.myName].bagKey)
+            wipe(BGLite_equip.ZL.bag[realmID][ZL.myName].bagLink)
+            wipe(BGLite_equip.ZL.bag[realmID][ZL.myName].bagKeyLink)
             local startBag, endBag = GetBagSlots("bag")
             for bag = startBag, endBag do
                 SaveFromBagNum(bag, "bag")
@@ -801,8 +801,8 @@ ZL.Init(function()
         function ZL.SaveBank()
             if ZL.IsNewUI then return end
             if not ZL.bankIsOpen then return end
-            wipe(ZLDb.bag[realmID][ZL.myName].bank)
-            wipe(ZLDb.bag[realmID][ZL.myName].bankLink)
+            wipe(BGLite_equip.ZL.bag[realmID][ZL.myName].bank)
+            wipe(BGLite_equip.ZL.bag[realmID][ZL.myName].bankLink)
             local startBag, endBag = GetBagSlots("bank")
             for bag = startBag, endBag do
                 SaveFromBagNum(bag, "bank")
@@ -830,7 +830,7 @@ ZL.Init(function()
     end
 
     -- 声望
-    ZLDb.bag[realmID][ZL.myName].faction = ZLDb.bag[realmID][ZL.myName].faction or {}
+    BGLite_equip.ZL.bag[realmID][ZL.myName].faction = BGLite_equip.ZL.bag[realmID][ZL.myName].faction or {}
 
     local function SaveReputation()
         for _, factionID in ipairs(ZL.factionTbl) do
@@ -844,7 +844,7 @@ ZL.Init(function()
                 barValue = factionData.currentStanding
             end
             if name then
-                ZLDb.bag[realmID][ZL.myName].faction[factionID] = {
+                BGLite_equip.ZL.bag[realmID][ZL.myName].faction[factionID] = {
                     name = name,
                     standingID = standingID,
                     currentValue = barValue - barMin,
@@ -868,16 +868,16 @@ ZL.Init(function()
     end)
 
     -- 删除重复角色装备数据
-    for realmID, v in pairs(ZLDb.equip) do
+    for realmID, v in pairs(BGLite_equip.ZL.equip) do
         if type(realmID) == "number" and type(v) == "table" then
-            if ZLDb.playerInfo[realmID] then
-                for player in pairs(ZLDb.equip[realmID]) do
-                    if not ZLDb.playerInfo[realmID][player] then
-                        ZLDb.equip[realmID][player] = nil
+            if BGLite_equip.ZL.playerInfo[realmID] then
+                for player in pairs(BGLite_equip.ZL.equip[realmID]) do
+                    if not BGLite_equip.ZL.playerInfo[realmID][player] then
+                        BGLite_equip.ZL.equip[realmID][player] = nil
                     end
                 end
             else
-                ZLDb.equip[realmID] = nil
+                BGLite_equip.ZL.equip[realmID] = nil
             end
         end
     end

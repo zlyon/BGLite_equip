@@ -80,7 +80,7 @@ local function IsCurrentRoleOverviewAccount(accountName)
 end
 
 local function GetFactionColor(faction, isNewUI, r, g, b)
-    if ZLDb.options.roleOverviewShowFaction == 1 then
+    if BGLite_equip.ZL.options.roleOverviewShowFaction == 1 then
         if faction == "Alliance" then
             return "|cffADD8E6"
         elseif faction == "Horde" then
@@ -151,7 +151,7 @@ local function CheckSameName(bt, realmID, player, mainFrame, showAccountName)
                 end
             end
             if showAccountName or #tbl > 1 then
-                local isNewUI = ZLDb.options.roleOverviewLayout == "new"
+                local isNewUI = BGLite_equip.ZL.options.roleOverviewLayout == "new"
                 local str = ""
                 for i, accountName in ipairs(tbl) do
                     str = str .. accountName .. (i ~= #tbl and (isNewUI and "\n" or L["，"]) or "")
@@ -164,7 +164,7 @@ local function CheckSameName(bt, realmID, player, mainFrame, showAccountName)
                     t:SetTextColor(1, 1, 1)
                 end
                 t:SetText(str)
-                if ZLDb.options.roleOverviewLayout == "new" then
+                if BGLite_equip.ZL.options.roleOverviewLayout == "new" then
                     t:SetPoint("BOTTOM", bt, "TOP", 0, 0)
                 else
                     t:SetPoint("RIGHT", bt, "LEFT", -15, 0)
@@ -297,7 +297,7 @@ local function GetCustomItems(realmID, player, isAccounts, configuredItems)
         return items
     end
 
-    local db = isAccounts and MultiAccountDB or ZLDb
+    local db = isAccounts and MultiAccountDB or BGLite_equip.ZL
     playerBag = db and db.bag and db.bag[realmID] and db.bag[realmID][player]
     if not playerBag or not ZL.GetItemBagCount then
         return nil
@@ -319,7 +319,7 @@ local weaponSlots = { "16", "17" }
 local hunterWeaponSlots = { "16", "17", "18" }
 local function GetOtherEquipSlots()
     local slots = {}
-    local choices = ZLDb.options.roleOverviewOtherEquipSlots
+    local choices = BGLite_equip.ZL.options.roleOverviewOtherEquipSlots
     for _, equipInfo in ipairs(ZL.RoleOverviewOtherEquipSlots or {}) do
         if choices and choices[equipInfo.id] == 1 then
             for _, slotInfo in ipairs(equipInfo.slots) do
@@ -425,20 +425,20 @@ end
 
 function ZL.RoleOverviewShowAllServer()
     local isShiftKeyDown = IsShiftKeyDown()
-    if ZLDb.options.roleOverviewDefaultShow == "one" and isShiftKeyDown then
+    if BGLite_equip.ZL.options.roleOverviewDefaultShow == "one" and isShiftKeyDown then
         return true
     end
-    if ZLDb.options.roleOverviewDefaultShow == "all" and not isShiftKeyDown then
+    if BGLite_equip.ZL.options.roleOverviewDefaultShow == "all" and not isShiftKeyDown then
         return true
     end
 end
 
 function ZL.SortRoleOverview(newTbl)
-    local isCustom = ZLDb.options["roleOverviewSort1"] == "custom"
+    local isCustom = BGLite_equip.ZL.options["roleOverviewSort1"] == "custom"
     local showAllServer = ZL.RoleOverviewShowAllServer()
     local customRanks = {}
-    if isCustom and ZLDb.RoleOverviewSort then
-        for sortRealmID, realmSortDB in pairs(ZLDb.RoleOverviewSort) do
+    if isCustom and BGLite_equip.ZL.RoleOverviewSort then
+        for sortRealmID, realmSortDB in pairs(BGLite_equip.ZL.RoleOverviewSort) do
             if type(realmSortDB) == "table" then
                 customRanks[sortRealmID] = {}
                 for i, info in ipairs(realmSortDB) do
@@ -448,7 +448,7 @@ function ZL.SortRoleOverview(newTbl)
         end
     end
     local sortKeys = isCustom and { "iLevel", "class", "player" }
-        or { strsplit("-", ZLDb.options["roleOverviewSort1"]) }
+        or { strsplit("-", BGLite_equip.ZL.options["roleOverviewSort1"]) }
     local originalIndex = {}
     for i, info in ipairs(newTbl) do
         originalIndex[info] = i
@@ -502,7 +502,7 @@ local function GetCount(db, id, _type)
     if _type == "skill" then -- 专业点数
         local v = db[_type]  -- 这个才是skill数据库
         if v then
-            local isNewUI = ZLDb.options.roleOverviewLayout == "new"
+            local isNewUI = BGLite_equip.ZL.options.roleOverviewLayout == "new"
             if id == 0 then -- 如果是主专业
                 local text = ""
                 local tbl = {}
@@ -547,6 +547,15 @@ local function GetCount(db, id, _type)
     return count
 end
 
+-- 每行按「角色自己所属的规则集」标注：存档键分不出来（全在同一个键下），
+-- 但登录时已把 GUID 第 2 段（规则集编号）写进角色记录，这里读它。
+local function RowRealmName(db, realmID, player)
+    local rec = db.playerInfo and db.playerInfo[realmID] and db.playerInfo[realmID][player]
+    local rk = type(rec) == "table" and rec.realmKey or nil
+    local name = rk and ns.RealmKeyName and ns.RealmKeyName(rk)
+    return name or ns.RealmDisplayName(realmID, db)
+end
+
 -- 获取团本CD数据
 local GetRaidCDdb
 do
@@ -554,14 +563,14 @@ do
         if db[FBCD][realmID] then
             for player, v in pairs(db[FBCD][realmID]) do
                 if (not isAccounts or IsRoleOverviewAccountPlayer(accountName, realmID, player))
-                    and (not isAccounts or not includeLocal or not (ZLDb[FBCD][realmID] and ZLDb[FBCD][realmID][player])) then
+                    and (not isAccounts or not includeLocal or not (BGLite_equip.ZL[FBCD][realmID] and BGLite_equip.ZL[FBCD][realmID][player])) then
                     local level = db.playerInfo[realmID] and db.playerInfo[realmID][player] and db.playerInfo[realmID][player].level
-                    if level and level >= ZLDb.options["roleOverviewNotShowLevel"]
-                        and (ZLDb.options.roleOverviewLayout == 'left_right' or level >= ZL.fullLevel_RoleOverview) then
+                    if level and level >= BGLite_equip.ZL.options["roleOverviewNotShowLevel"]
+                        and (BGLite_equip.ZL.options.roleOverviewLayout == 'left_right' or level >= ZL.fullLevel_RoleOverview) then
                         local class = db.playerInfo[realmID][player].class
                         local iLevel = db.playerInfo[realmID][player].iLevel or (db.PlayerItemsLevel and db.PlayerItemsLevel[realmID] and db.PlayerItemsLevel[realmID][player])
                         local talent = db.playerInfo[realmID][player].talent
-                        if class and iLevel and iLevel >= ZLDb.options["roleOverviewNotShowiLevel"] then
+                        if class and iLevel and iLevel >= BGLite_equip.ZL.options["roleOverviewNotShowiLevel"] then
                             local faction = db.playerInfo[realmID][player].faction
                             local colorplayer = "|c" .. select(4, GetClassColor(class)) .. player .. (isAccounts and "*" or "") .. "|r"
                             tinsert(newTbl, {
@@ -573,7 +582,7 @@ do
                                 talent = talent,
                                 faction = faction,
                                 realmID = realmID,
-                                realmName = BG.FormatRealmName((db.realmName and db.realmName[realmID]) or ZLDb.realmName[realmID] or realmID),
+                                realmName = RowRealmName(db, realmID, player),
                                 isAccounts = isAccounts,
                                 tbl = ZL.Copy(v)
                             })
@@ -602,7 +611,7 @@ do
         local selectedLocal = IsCurrentRoleOverviewAccount(accountName)
         local includeLocal = onlyLocal or not accountName or selectedLocal
         if includeLocal then
-            AddDB(ZLDb, newTbl, showAllServer)
+            AddDB(BGLite_equip.ZL, newTbl, showAllServer)
         end
         if not onlyLocal and not selectedLocal then
             AddDB(MultiAccountDB, newTbl, showAllServer, true, accountName, includeLocal)
@@ -668,13 +677,13 @@ do
     local function AddDB(db, newTbl, copyTbl, isAccounts, includeLocal)
         for realmID in pairs(copyTbl) do
             for player, v in pairs(copyTbl[realmID]) do
-                if not isAccounts or not includeLocal or not (ZLDb[MONEY][realmID] and ZLDb[MONEY][realmID][player]) then
+                if not isAccounts or not includeLocal or not (BGLite_equip.ZL[MONEY][realmID] and BGLite_equip.ZL[MONEY][realmID][player]) then
                     local level = db.playerInfo[realmID] and db.playerInfo[realmID][player] and db.playerInfo[realmID][player].level
-                    if (level and level >= ZLDb.options["roleOverviewNotShowLevel"]) then
+                    if (level and level >= BGLite_equip.ZL.options["roleOverviewNotShowLevel"]) then
                         local class = db.playerInfo[realmID][player].class
                         local talent = db.playerInfo[realmID][player].talent
                         local iLevel = db.playerInfo[realmID][player].iLevel or (db.PlayerItemsLevel and db.PlayerItemsLevel[realmID] and db.PlayerItemsLevel[realmID][player])
-                        if class and iLevel and iLevel >= ZLDb.options["roleOverviewNotShowiLevel"] then
+                        if class and iLevel and iLevel >= BGLite_equip.ZL.options["roleOverviewNotShowiLevel"] then
                             local faction = db.playerInfo[realmID][player].faction
                             local colorplayer = "|c" .. select(4, GetClassColor(class)) .. player .. (isAccounts and "*" or "")
                             tinsert(newTbl, {
@@ -686,7 +695,7 @@ do
                                 talent = talent,
                                 faction = faction,
                                 realmID = realmID,
-                                realmName = BG.FormatRealmName((db.realmName and db.realmName[realmID]) or ZLDb.realmName[realmID] or realmID),
+                                realmName = RowRealmName(db, realmID, player),
                                 isAccounts = isAccounts,
                                 tbl = v,
                                 equip = db.equip and db.equip[realmID] and db.equip[realmID][player],
@@ -704,13 +713,13 @@ do
         local selectedLocal = IsCurrentRoleOverviewAccount(accountName)
         local includeLocal = onlyLocal or not accountName or selectedLocal
         if includeLocal then
-            DefaultDB(ZLDb, copyTbl, showAllServer, MONEYchoice_table)
+            DefaultDB(BGLite_equip.ZL, copyTbl, showAllServer, MONEYchoice_table)
         end
         if not onlyLocal and not selectedLocal then
             DefaultDB(MultiAccountDB, copyTbl, showAllServer, MONEYchoice_table, accountName)
         end
         if includeLocal then
-            AddDB(ZLDb, newTbl, copyTbl)
+            AddDB(BGLite_equip.ZL, newTbl, copyTbl)
         end
         if not onlyLocal and not selectedLocal then
             AddDB(MultiAccountDB, newTbl, copyTbl, true, includeLocal)
@@ -759,15 +768,15 @@ local function AddBar(mainFrame, n, color, offset)
 end
 
 local function AddBarOrLine(mainFrame, realmID, player, n, DB, playerIndex, v, isNewUI, isMoney)
-    if ZL.IsMe(realmID, player) and not (ZLDb.options.roleOverviewLayout == "left_right" and isMoney) then
-        if ZLDb.options.roleOverviewblackWhite == 1 then
+    if ZL.IsMe(realmID, player) and not (BGLite_equip.ZL.options.roleOverviewLayout == "left_right" and isMoney) then
+        if BGLite_equip.ZL.options.roleOverviewblackWhite == 1 then
             AddBar(mainFrame, n, { r, g, b, .4 })
         else
             AddBar(mainFrame, n, { r, g, b, .4 }, 1)
         end
     else
-        if ZLDb.options.roleOverviewblackWhite == 1 and
-            not (ZLDb.options.roleOverviewLayout == "left_right" and isMoney) then
+        if BGLite_equip.ZL.options.roleOverviewblackWhite == 1 and
+            not (BGLite_equip.ZL.options.roleOverviewLayout == "left_right" and isMoney) then
             mainFrame.titleIndex = (mainFrame.titleIndex or 0) + 1
             if mainFrame.titleIndex % 2 == 0 then
                 AddBar(mainFrame, n)
@@ -776,7 +785,7 @@ local function AddBarOrLine(mainFrame, realmID, player, n, DB, playerIndex, v, i
     end
 
     n = n + 1
-    if ZLDb.options.roleOverviewblackWhite ~= 1 then
+    if BGLite_equip.ZL.options.roleOverviewblackWhite ~= 1 then
         local _r, _g, _b, h
         if DB[playerIndex + 1] and DB[playerIndex + 1].realmID ~= v.realmID then
             _r, _g, _b, h = 1, 1, 1, 1.5
@@ -841,7 +850,7 @@ local function CreateMoneyTitle(mainFrame, MONEYchoice_table, n, isNewUI, FBCDwi
         local t = f:CreateFontString()
         t:SetFont(ns.Font, fontsize, "OUTLINE")
         t:SetPoint("LEFT")
-        if not isNewUI and i == 1 and ZLDb.options.roleOverviewLayout == "left_right" then
+        if not isNewUI and i == 1 and BGLite_equip.ZL.options.roleOverviewLayout == "left_right" then
             t:SetText("")
         else
             t:SetText((isNewUI and v.tex ~= "" and AddTexture(v.tex) or "") .. (v.name2 or v.name))
@@ -853,13 +862,13 @@ local function CreateMoneyTitle(mainFrame, MONEYchoice_table, n, isNewUI, FBCDwi
             f:SetSize(isNewUI_TitleWidth, height)
             t:SetJustifyH("LEFT")
         else
-            if i == 1 and ZLDb.options.roleOverviewLayout == "left_right" then
+            if i == 1 and BGLite_equip.ZL.options.roleOverviewLayout == "left_right" then
                 f:SetSize(1, height)
             else
                 f:SetSize(MONEYchoice_table[i].width - 10, height)
             end
             if i == 1 then
-                if ZLDb.options.roleOverviewLayout == "left_right" then
+                if BGLite_equip.ZL.options.roleOverviewLayout == "left_right" then
                     f:SetPoint("TOPLEFT", FBCDwidth, -7 - height * n)
                 else
                     f:SetPoint("TOPLEFT", leftOffset, -7 - height * n)
@@ -896,7 +905,7 @@ local function AddUseTips(mainFrame)
         accountsText = L["，长按ALT仅显示本账号角色"]
     end
     local tipsText
-    if ZLDb.options.roleOverviewDefaultShow == "one" then
+    if BGLite_equip.ZL.options.roleOverviewDefaultShow == "one" then
         tipsText = L["|cff808080左键固定显示，长按SHIFT显示全服务器角色%s|r"]
     else
         tipsText = L["|cff808080左键固定显示，长按SHIFT显示当前服务器角色%s|r"]
@@ -956,9 +965,9 @@ function ZL.AddRoleOverviewNote(realmID, realmName, player, colorplayer, note)
     end
     StaticPopupDialogs[popupName].OnAccept = function(self)
         local edit = self.EditBox or self.editBox
-        ZLDb.roleOverviewNote = ZLDb.roleOverviewNote or {}
-        ZLDb.roleOverviewNote[realmID] = ZLDb.roleOverviewNote[realmID] or {}
-        ZLDb.roleOverviewNote[realmID][player] = edit:GetText()
+        BGLite_equip.ZL.roleOverviewNote = BGLite_equip.ZL.roleOverviewNote or {}
+        BGLite_equip.ZL.roleOverviewNote[realmID] = BGLite_equip.ZL.roleOverviewNote[realmID] or {}
+        BGLite_equip.ZL.roleOverviewNote[realmID][player] = edit:GetText()
         ZL.SetFBCD(nil, nil, true, true)
     end
     StaticPopup_Show(popupName, realmName .. colorplayer, nil, note)
@@ -990,12 +999,12 @@ function ZL.SetFBCD(self, position, click, refresh)
     local showNote
     local showAllServer = ZL.RoleOverviewShowAllServer()
     local showAccountName = (not click or refresh) and IsControlKeyDown()
-    local isNewUI = ZLDb.options.roleOverviewLayout == "new"
-    local customItems = ZLDb.options.roleOverviewCustomItems
-    local showCustomItems = ZLDb.options.roleOverviewShowCustomItem == 1
+    local isNewUI = BGLite_equip.ZL.options.roleOverviewLayout == "new"
+    local customItems = BGLite_equip.ZL.options.roleOverviewCustomItems
+    local showCustomItems = BGLite_equip.ZL.options.roleOverviewShowCustomItem == 1
         and type(customItems) == "table" and #customItems > 0
     isNewUI_PlayerNameWidth = 90
-    if isNewUI and ZLDb.options.roleOverviewShowOtherEquip == 1 then
+    if isNewUI and BGLite_equip.ZL.options.roleOverviewShowOtherEquip == 1 then
         local count = #GetOtherEquipSlots()
         if count > 0 then
             isNewUI_PlayerNameWidth = max(isNewUI_PlayerNameWidth, (itemWidth + 1) * count + 15)
@@ -1026,7 +1035,7 @@ function ZL.SetFBCD(self, position, click, refresh)
     local MONEYchoice_table = {}
     -- 根据你选择的副本，生成table
     for i, v in ipairs(ZL.FBCDall_table) do
-        for choicefbname, yes in pairs(ZLDb.FBCDchoice) do
+        for choicefbname, yes in pairs(BGLite_equip.ZL.FBCDchoice) do
             if v.name == choicefbname then
                 if not (v.name == "holiday" and not ZL.hasHoliday) and not v.name:find('^ignore') then
                     v.width = nil
@@ -1042,13 +1051,13 @@ function ZL.SetFBCD(self, position, click, refresh)
         width = (showAllServer and 200 or 140) + (yes and 20 or 0),
     })
 
-    if ZLDb.options.roleOverviewShowNote == 1 then
+    if BGLite_equip.ZL.options.roleOverviewShowNote == 1 then
         showNote = true
         tinsert(FBCDchoice_table, 2, {
             name = L["备注"],
             type = "title",
             color = "FFFFFF",
-            width = ZLDb.options.roleOverviewShowNote_width,
+            width = BGLite_equip.ZL.options.roleOverviewShowNote_width,
         })
     end
     for ii, vv in ipairs(FBCDchoice_table) do
@@ -1060,7 +1069,7 @@ function ZL.SetFBCD(self, position, click, refresh)
     -- 根据你选择的专业技能，生成table
     if ZL.SKILLall_table then
         for i, v in ipairs(ZL.SKILLall_table) do
-            for id, yes in pairs(ZLDb.SKILLchoice) do
+            for id, yes in pairs(BGLite_equip.ZL.SKILLchoice) do
                 if v.id == id then
                     tinsert(MONEYchoice_table, v)
                 end
@@ -1070,13 +1079,13 @@ function ZL.SetFBCD(self, position, click, refresh)
 
     -- 根据你选择的货币，生成table
     for i, v in ipairs(ZL.MONEYall_table) do
-        for id, yes in pairs(ZLDb.MONEYchoice) do
+        for id, yes in pairs(BGLite_equip.ZL.MONEYchoice) do
             if v.id == id then
                 tinsert(MONEYchoice_table, v)
             end
         end
     end
-    if ZLDb.options.roleOverviewShowOtherEquip == 1 and #GetOtherEquipSlots() > 0 then
+    if BGLite_equip.ZL.options.roleOverviewShowOtherEquip == 1 and #GetOtherEquipSlots() > 0 then
         local insertIndex = 1
         for i, info in ipairs(MONEYchoice_table) do
             if info.type == "skill" or info.id == "xp" or info.id == "weapons" then
@@ -1102,7 +1111,7 @@ function ZL.SetFBCD(self, position, click, refresh)
             name = L["角色"] .. " " .. ZL.STC_dis("(" .. LEVEL .. ")"),
             type = "title",
             color = "FFFFFF",
-            width = ZLDb.options.roleOverviewLayout == "left_right" and 0
+            width = BGLite_equip.ZL.options.roleOverviewLayout == "left_right" and 0
                 or (showAllServer and 165 or 105) + (yes and 20 or 0),
         })
     end
@@ -1150,15 +1159,15 @@ function ZL.SetFBCD(self, position, click, refresh)
             mainFrame:SetClampedToScreen(false)
             mainFrame:EnableMouse(true)
             mainFrame:SetMovable(true)
-            if ZLDb.point.roleOverview then
-                mainFrame:SetPoint(unpack(ZLDb.point.roleOverview))
+            if BGLite_equip.ZL.point.roleOverview then
+                mainFrame:SetPoint(unpack(BGLite_equip.ZL.point.roleOverview))
             else
                 mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
             end
             mainFrame:SetScript("OnMouseUp", function(self)
                 self:StopMovingOrSizing()
-                ZLDb.point.roleOverview = { self:GetPoint(1) }
-                ZLDb.point.roleOverview[2] = nil
+                BGLite_equip.ZL.point.roleOverview = { self:GetPoint(1) }
+                BGLite_equip.ZL.point.roleOverview[2] = nil
             end)
             mainFrame:SetScript("OnMouseDown", function(self)
                 self:StartMoving()
@@ -1357,8 +1366,8 @@ function ZL.SetFBCD(self, position, click, refresh)
         --         end
         --     end
         -- end
-        -- for p, v in pairs(ZLDb[FBCD][realmID]) do
-        --     for i, cd in pairs(ZLDb[FBCD][realmID][p]) do
+        -- for p, v in pairs(BGLite_equip.ZL[FBCD][realmID]) do
+        --     for i, cd in pairs(BGLite_equip.ZL[FBCD][realmID][p]) do
         --         if cd.resettime then
         --             if IsSmallRaid(cd.fbId) then
         --                 text3 = format(L["小团本%s"], SecondsToTime(cd.resettime, true, nil, 2))
@@ -1408,7 +1417,7 @@ function ZL.SetFBCD(self, position, click, refresh)
             -- 玩家名字
             local realmName = showAllServer and format("|c%s%s-|r", color, v.realmName) or ""
             if not isNewUI then
-                local talentText = ZLDb.options.roleOverviewShowTalent == 1 and ZL.GetTalentIcon(v.class, v.talent, 15) or ""
+                local talentText = BGLite_equip.ZL.options.roleOverviewShowTalent == 1 and ZL.GetTalentIcon(v.class, v.talent, 15) or ""
                 local bt = CreateFrame("Button", nil, ZL.FBCDFrame)
                 bt:SetPoint("TOPLEFT", FBCDchoice_table[1].width, -7 - height * n)
                 local t = bt:CreateFontString()
@@ -1438,10 +1447,10 @@ function ZL.SetFBCD(self, position, click, refresh)
                 local t = f:CreateFontString()
                 t:SetFont(ns.Font, fontsize, "OUTLINE")
                 t:SetAllPoints()
-                local note = (ZLDb.roleOverviewNote[realmID] and ZLDb.roleOverviewNote[realmID][player])
+                local note = (BGLite_equip.ZL.roleOverviewNote[realmID] and BGLite_equip.ZL.roleOverviewNote[realmID][player])
                     or (MultiAccountDB and MultiAccountDB.roleOverviewNote and MultiAccountDB.roleOverviewNote[realmID]
                         and MultiAccountDB.roleOverviewNote[realmID][player])
-                if ZLDb.options.roleOverviewShowNote_useClassColor == 1 then
+                if BGLite_equip.ZL.options.roleOverviewShowNote_useClassColor == 1 then
                     t:SetTextColor(r, g, b)
                 else
                     t:SetTextColor(1, 1, 1)
@@ -1453,7 +1462,7 @@ function ZL.SetFBCD(self, position, click, refresh)
                     f:SetPoint("TOPLEFT", x, -6 - height * 4)
                     t:SetJustifyH("CENTER")
                 else
-                    f:SetSize(ZLDb.options.roleOverviewShowNote_width, height)
+                    f:SetSize(BGLite_equip.ZL.options.roleOverviewShowNote_width, height)
                     f:SetPoint("TOPLEFT", FBCDchoice_table[2].width, -7 - height * n)
                     t:SetJustifyH("LEFT")
                 end
@@ -1506,7 +1515,7 @@ function ZL.SetFBCD(self, position, click, refresh)
                             f:SetSize(text_table[ii]:GetWidth(), height)
                             f:SetPoint("TOPLEFT", FBCDchoice_table[ii].width, -7 - height * n)
                         end
-                        if ZLDb.options.showRaidCDKillNum == 1 and cd.killNum and cd.bossSum and cd.killNum < cd.bossSum and cd.killInfo then
+                        if BGLite_equip.ZL.options.showRaidCDKillNum == 1 and cd.killNum and cd.bossSum and cd.killNum < cd.bossSum and cd.killInfo then
                             local t = f:CreateFontString()
                             t:SetFont(ns.Font, fontsize0, "OUTLINE")
                             t:SetPoint("CENTER")
@@ -1640,13 +1649,13 @@ function ZL.SetFBCD(self, position, click, refresh)
         end
     end
 
-    if ZLDb.options.roleOverviewLayout == "left_right" then
+    if BGLite_equip.ZL.options.roleOverviewLayout == "left_right" then
         FBCDwidth = FBCDwidth - 15
     end
     --------- 角色货币总览 ---------
     local allWidth = totalwidth
     if not isNewUI then
-        if ZLDb.options.roleOverviewLayout == "left_right" then
+        if BGLite_equip.ZL.options.roleOverviewLayout == "left_right" then
             n = 1
             allWidth = FBCDwidth + Moneywidth - 15
         end
@@ -1677,7 +1686,7 @@ function ZL.SetFBCD(self, position, click, refresh)
             else
                 realmName = ""
             end
-            local talentText = ZLDb.options.roleOverviewShowTalent == 1 and ZL.GetTalentIcon(v.class, v.talent, 15) or ""
+            local talentText = BGLite_equip.ZL.options.roleOverviewShowTalent == 1 and ZL.GetTalentIcon(v.class, v.talent, 15) or ""
 
             local bt = CreateFrame("Button", nil, ZL.FBCDFrame)
             local t = bt:CreateFontString()
@@ -1691,24 +1700,24 @@ function ZL.SetFBCD(self, position, click, refresh)
                 bt.width = isNewUI_PlayerNameWidth
                 bt.isFBCD = true
             else
-                if ZLDb.options.roleOverviewLayout == "left_right" then
+                if BGLite_equip.ZL.options.roleOverviewLayout == "left_right" then
                     bt:SetPoint("TOPLEFT", FBCDwidth, -7 - height * n)
                 else
                     bt:SetPoint("TOPLEFT", FBCDchoice_table[1].width, -7 - height * n)
                 end
                 t:SetPoint("LEFT")
-                if ZLDb.options.roleOverviewLayout == "left_right" then
+                if BGLite_equip.ZL.options.roleOverviewLayout == "left_right" then
                     t:SetText("")
                 else
                     t:SetText(talentText .. realmName .. colorplayer .. " " .. GetFactionColor(v.faction, isNewUI) .. "(" .. level .. ")|r")
                 end
-                bt.width = ZLDb.options.roleOverviewLayout == "left_right" and 1 or t:GetWidth()
+                bt.width = BGLite_equip.ZL.options.roleOverviewLayout == "left_right" and 1 or t:GetWidth()
                 bt.isMoney = true
             end
             bt:SetFontString(t)
             bt:SetSize(bt.width, 20)
             right = bt
-            if ZLDb.options.roleOverviewLayout ~= "left_right" then
+            if BGLite_equip.ZL.options.roleOverviewLayout ~= "left_right" then
                 SetEquipFrameFuc(bt, v.isAccounts, realmID, player, colorplayer, v.level, v.class, v.iLevel, showAllServer)
                 CheckSameName(bt, realmID, player, ZL.FBCDFrame, showAccountName)
             end
@@ -1736,6 +1745,9 @@ function ZL.SetFBCD(self, position, click, refresh)
                 local vv = MONEYchoice_table[ii]
                 local id = vv.id
                 local info = pzDB[id]
+                -- 牌子图标优先用该角色自己存下来的：荣誉点数是分阵营的图标（联盟蓝 / 部落红），
+                -- 一律用当前角色的列图标会导致所有角色都显示登录角色的阵营图标。
+                local rowTex = (type(info) == "table" and info.tex) or vv.tex
                 local count = tostring(GetCount(pzDB, vv.id, vv.type))
                 local countString, setSmall
                 if vv.type == "skill" and id == 0 then
@@ -1744,7 +1756,7 @@ function ZL.SetFBCD(self, position, click, refresh)
                         setSmall = true
                     end
                 else
-                    countString = ZL.FormatNumber(count) .. (isNewUI and "" or " " .. AddTexture(vv.tex))
+                    countString = ZL.FormatNumber(count) .. (isNewUI and "" or " " .. AddTexture(rowTex))
                 end
 
                 local t_paizi = mainFrame:CreateFontString()
@@ -1785,7 +1797,7 @@ function ZL.SetFBCD(self, position, click, refresh)
                                 ZL.FormatNumber(totalCount, 3),
                                 totalMax == 0 and UNKNOWN or ZL.FormatNumber(totalMax, 3),
                                 count,
-                                isNewUI and "" or " " .. AddTexture(vv.tex))
+                                isNewUI and "" or " " .. AddTexture(rowTex))
                         end
                     end
 
@@ -1797,13 +1809,13 @@ function ZL.SetFBCD(self, position, click, refresh)
                             ZL.FormatNumber(weekCount, 3),
                             ZL.FormatNumber(weekMax, 3),
                             count,
-                            isNewUI and "" or " " .. AddTexture(vv.tex))
+                            isNewUI and "" or " " .. AddTexture(rowTex))
                     end
                 end
 
                 t_paizi:SetFont(ns.Font, setSmall and fontsize0 or fontsize, "OUTLINE")
                 if type(info) == "table" and info.isItem and info.quest then
-                    t_paizi:SetText(L["完成"] .. (isNewUI and "" or " " .. AddTexture(vv.tex)))
+                    t_paizi:SetText(L["完成"] .. (isNewUI and "" or " " .. AddTexture(rowTex)))
                     t_paizi:SetTextColor(0, 1, 0)
                 elseif vv.type == "equip" then
                     t_paizi:SetText(" ")
@@ -1825,7 +1837,7 @@ function ZL.SetFBCD(self, position, click, refresh)
                         t_paizi:SetText(UNKNOWN)
                     end
                 elseif id == "xp" and level and level >= ZL.fullLevel then
-                    t_paizi:SetText(L["满级"] .. (isNewUI and "" or " " .. AddTexture(vv.tex)))
+                    t_paizi:SetText(L["满级"] .. (isNewUI and "" or " " .. AddTexture(rowTex)))
                     t_paizi:SetTextColor(0, 1, 0)
                 else
                     t_paizi:SetText(countString)
@@ -1861,12 +1873,12 @@ function ZL.SetFBCD(self, position, click, refresh)
             else
                 local t_name = mainFrame:CreateFontString()
                 t_name:SetFont(ns.Font, fontsize, "OUTLINE")
-                if ZLDb.options.roleOverviewLayout == "left_right" then
+                if BGLite_equip.ZL.options.roleOverviewLayout == "left_right" then
                     t_name:SetPoint("TOPLEFT", FBCDwidth, -10 - height * n)
                 else
                     t_name:SetPoint("TOPLEFT", leftOffset, -10 - height * n)
                 end
-                if ZLDb.options.roleOverviewLayout == "left_right" then
+                if BGLite_equip.ZL.options.roleOverviewLayout == "left_right" then
                     t_name:SetText("")
                 else
                     t_name:SetText(L["合计"])
@@ -1917,7 +1929,7 @@ function ZL.SetFBCD(self, position, click, refresh)
     if click and IsFrameOutsideScreen(mainFrame) then
         mainFrame:ClearAllPoints()
         mainFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-        ZLDb.point.roleOverview = { "CENTER" }
+        BGLite_equip.ZL.point.roleOverview = { "CENTER" }
     end
 end
 

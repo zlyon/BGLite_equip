@@ -793,7 +793,10 @@ function BG.HopeDaoChuUI()
         bt:SetDisabledFontObject(BG.FontDis15)
         bt:SetHighlightFontObject(BG.FontWhite15)
         bt:SetText(L["导入心愿"])
-        bt:SetSize(bt:GetFontString():GetWidth(), 30)
+        do
+            local fs = BG.EnsureButtonFontString(bt)
+            bt:SetSize(math.max(fs:GetWidth() or 0, 20), 30)
+        end
         BG.SetTextHighlightTexture(bt)
         BG.ButtonImportHope = bt
 
@@ -907,7 +910,10 @@ function BG.HopeDaoChuUI()
         bt:SetDisabledFontObject(BG.FontDis15)
         bt:SetHighlightFontObject(BG.FontWhite15)
         bt:SetText(L["导出心愿"])
-        bt:SetSize(bt:GetFontString():GetWidth(), 30)
+        do
+            local fs = BG.EnsureButtonFontString(bt)
+            bt:SetSize(math.max(fs:GetWidth() or 0, 20), 30)
+        end
         BG.SetTextHighlightTexture(bt)
         BG.ButtonExportHope = bt
 
