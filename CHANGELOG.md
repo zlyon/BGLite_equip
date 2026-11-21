@@ -1,2 +1,2 @@
-- Forever realm: characters are grouped per server now, right-click a server name to tag it PVP / PVE / RP / RP-PVP, honour icons follow each character's own faction.
-- 无限服：角色按服务器分组，右键服务器名可指定 PVP / PVE / RP / RP-PVP，荣誉图标按角色自身阵营显示。
+- The Blizzard client no longer reports a server's rule set, so characters are now grouped by server ID: right-click a server name to tag it PVP / PVE / RP / RP-PVP, and honour icons follow each character's own faction. Leftover legacy records are cleaned up as well.
+- 暴雪客户端更新后不再下发服务器规则集信息，因此改为按服务器 ID 分组，右键服务器名可指定 PVP / PVE / RP / RP-PVP，荣誉图标按角色自身阵营显示；旧存档遗留的重复、错位记录同时清理干净。

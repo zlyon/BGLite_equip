@@ -342,9 +342,16 @@ do
     BG.MigrateCharRealm = MigrateChar
 
     -- 老存档里同一个角色常在 0 号键留一份、真键又有一份（历次迁移的结果）。
-    -- 每套数据根内部各清一次：某个名字在非 0 键已经存在，就把 0 号键那份删掉，
+    -- 每套数据根内部各清一次：某个人在非 0 键已经存在，就把 0 号键那份删掉，
     -- 免得界面同一个角色出现两行、也免得同步认不出唯一名。
     -- 只在「同一个根」里比较，不跨 ZL / 顶层，避免一套有、另一套没有时误删。
+    --
+    -- ⚠ 这批表有**两种结构**，认人方式不能一概而论：
+    --   playerInfo / equip / MONEY … : [realmID][角色名] = 数据      → 键就是名字
+    --   RoleOverviewSort             : [realmID][排序号] = {player=名字, …}
+    -- 后一种如果也按键比对，0 号键的 [1] 会和某台服务器的 [1] 撞上（其实是两个人），
+    -- 于是要么该删的删不掉、要么把别人的排序误删。所以表值里带 .player 的一律用
+    -- player 认人，并在 known 里加 "#" 前缀与「名字键」区分开。
     function BG.CleanZeroDuplicates()
         local db = type(BGLite_equip) == "table" and BGLite_equip
         if not db then return 0 end
@@ -354,18 +361,35 @@ do
                 for _, key in ipairs(CHAR_TABLES) do
                     local t = root[key]
                     if type(t) == "table" and type(t[0]) == "table" then
+                        local function Ident(k, v)
+                            if type(k) == "string" then return k end
+                            if type(v) == "table" and type(v.player) == "string" then
+                                return "#" .. v.player
+                            end
+                        end
                         local known = {}
                         for id, sub in pairs(t) do
                             if type(id) == "number" and id ~= 0 and type(sub) == "table" then
-                                for nm in pairs(sub) do known[nm] = true end
+                                for k, v in pairs(sub) do
+                                    local who = Ident(k, v)
+                                    -- 名字键的表里记录也可能带 .player，两种身份都记上
+                                    if who then known[who] = true end
+                                    if type(k) == "string" and type(v) == "table"
+                                        and type(v.player) == "string" then
+                                        known["#" .. v.player] = true
+                                    end
+                                end
                             end
                         end
-                        for nm in pairs(t[0]) do
-                            if known[nm] then
-                                t[0][nm] = nil
+                        for k, v in pairs(t[0]) do
+                            local who = Ident(k, v)
+                            if who and known[who] then
+                                t[0][k] = nil
                                 removed = removed + 1
                             end
                         end
+                        -- 搬空了连壳一起丢掉，省得界面上多一个「未知服务器」空组
+                        if next(t[0]) == nil then t[0] = nil end
                     end
                 end
             end
