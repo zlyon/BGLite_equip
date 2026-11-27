@@ -1,2 +1,4 @@
-- The Blizzard client no longer reports a server's rule set, so characters are now grouped by server ID: right-click a server name to tag it PVP / PVE / RP / RP-PVP, and honour icons follow each character's own faction. Leftover legacy records are cleaned up as well.
-- 暴雪客户端更新后不再下发服务器规则集信息，因此改为按服务器 ID 分组，右键服务器名可指定 PVP / PVE / RP / RP-PVP，荣誉图标按角色自身阵营显示；旧存档遗留的重复、错位记录同时清理干净。
+- Role Overview on the Forever realm now tracks profession cooldowns (Alchemy transmute / Leatherworking salt / Tailoring cloth). A new "Profession CD" section appears in Settings - Overview; each finished cooldown is announced in chat with a sound.
+- 无限服角色总览新增「专业CD」：炼金转化（点化奥金）、制皮筛盐（看筛盐器CD）、裁缝洗布（月布）。设置-总览里新增「专业CD」分区，对应CD到期会在聊天框提醒并播放提示音，可单独勾掉某一项不再提醒。
+- Role Overview on the Forever realm now has a Battleground Marks column (Alterac Valley / Warsong Gulch / Arathi Basin / Darkspear Isles). Enabled by default; uncheck it under Settings - Overview - Currency.
+- 无限服角色总览的货币区新增「战场牌子」列（奥特兰克山谷 / 战歌峡谷 / 阿拉希盆地 / 暗矛群岛），默认勾选，可在设置-总览-货币里取消。

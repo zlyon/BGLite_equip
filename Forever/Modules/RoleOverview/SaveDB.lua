@@ -428,6 +428,176 @@ ZL.Init(function()
     BGLite_equip.ZL.buffCD = nil
 
     -- 专业技能CD
+    do
+        BGLite_equip.ZL.tradeSkillCooldown = BGLite_equip.ZL.tradeSkillCooldown or {}
+        BGLite_equip.ZL.tradeSkillCooldown[realmID] = BGLite_equip.ZL.tradeSkillCooldown[realmID] or {}
+        BGLite_equip.ZL.tradeSkillCooldown[realmID][ZL.myName] = BGLite_equip.ZL.tradeSkillCooldown[realmID][ZL.myName] or {}
+
+        -- 无限服三件套：炼金转化 / 制皮筛盐（看筛盐器物品CD） / 裁缝洗布
+        local tbl = {
+            alchemy = {
+                name = L["炼金转化"],
+                name2 = L["炼金术"],
+                skillLineID = 171,
+                spell = 17187, -- 转化奥金
+                icon = "Interface/Icons/trade_alchemy",
+            },
+            leatherworking = {
+                name = L["制皮筛盐"],
+                name2 = L["制皮"],
+                skillLineID = 165,
+                spell = 19566, -- 筛盐
+                item = 15846,  -- 筛盐器
+                icon = "Interface/Icons/trade_leatherworking",
+            },
+            tailor = {
+                name = L["裁缝洗布"],
+                name2 = L["裁缝"],
+                skillLineID = 197,
+                spell = 18560, -- 月布
+                icon = "Interface/Icons/trade_tailoring",
+            },
+        }
+        local FBCDchoice = BGLite_equip.ZL.FBCDchoice or {}
+        for name in pairs(tbl) do
+            if FBCDchoice["ignore_" .. name] == 1 then
+                tbl[name] = nil
+            end
+        end
+        for _, v in pairs(tbl) do
+            if not v.icon then
+                v.icon = C_Spell.GetSpellTexture(v.spell)
+            end
+        end
+        ZL.professionCDInfo = tbl
+
+        local myCD = BGLite_equip.ZL.tradeSkillCooldown[realmID][ZL.myName]
+        local function GetCooldown()
+            local time = GetServerTime()
+            local getTime = GetTime()
+            for profession, v in pairs(tbl) do
+                local startTime, duration, cooldown
+                if v.item and C_Item.GetItemCooldown then
+                    startTime, duration = C_Item.GetItemCooldown(v.item)
+                elseif ZL.IsNewUI then
+                    local info = C_Spell.GetSpellCooldown(v.spell)
+                    startTime = info and info.startTime
+                    duration = info and info.duration
+                else
+                    startTime, duration = GetSpellCooldown(v.spell)
+                end
+                if not ZL.IsSecret(startTime) and not ZL.IsSecret(duration)
+                    and startTime and duration and duration > 2 then
+                    -- 服务器时间可能带 2^32 偏移，先换算成本地 GetTime 口径
+                    startTime = startTime > getTime and (startTime - 2 ^ 32 / 1000) or startTime
+                    cooldown = startTime + duration - getTime
+                end
+                if cooldown and cooldown > 0 then
+                    myCD[profession] = {
+                        class = select(2, UnitClass("player")),
+                        resettime = cooldown,
+                        endtime = cooldown + time,
+                        ready = nil,
+                    }
+                end
+            end
+        end
+
+        local pending
+        local function Go()
+            pending = nil
+            GetCooldown()
+        end
+        local function QueueCooldownUpdate()
+            if pending then return end
+            pending = true
+            ZL.After(1, Go)
+        end
+        ZL.RegisterEvent("BAG_UPDATE_COOLDOWN", QueueCooldownUpdate)
+        ZL.RegisterEvent("PLAYER_REGEN_ENABLED", QueueCooldownUpdate)
+        ZL.RegisterEvent("SPELL_UPDATE_COOLDOWN", function()
+            if InCombatLockdown() then return end
+            QueueCooldownUpdate()
+        end)
+
+        -- 检查其他角色的CD是否到期
+        local doneSound = "Interface\\AddOns\\" .. AddonName .. "\\Forever\\Media\\sound\\other\\done.mp3"
+        local function UpdateProfessionCD()
+            local time = GetServerTime()
+            local delay = 3
+            for _, dbName in pairs(dbNames) do
+                local data = dbName == AddonName and BGLite_equip.ZL or _G[dbName]
+                if data and data.tradeSkillCooldown then
+                    for rid in pairs(data.tradeSkillCooldown) do
+                        if type(rid) == "number" and type(data.tradeSkillCooldown[rid]) == "table" then
+                            for player in pairs(data.tradeSkillCooldown[rid]) do
+                                for profession, v in pairs(data.tradeSkillCooldown[rid][player]) do
+                                    if v.endtime then
+                                        if time >= v.endtime then
+                                            v.resettime = nil
+                                            v.endtime = nil
+                                            v.ready = true
+                                            -- 只提醒本账号：其他子账号的 endtime 删不掉，否则会重复提醒
+                                            if dbName == AddonName and tbl[profession]
+                                                and (BGLite_equip.ZL.FBCDchoice or {}).professionCD == 1 then
+                                                local color
+                                                if v.class then
+                                                    color = select(4, GetClassColor(v.class))
+                                                end
+                                                local name = ZL.IsMe(rid, player) and L["我"] or player
+                                                local colorName = color and "|c" .. color .. name .. "|r" or name
+                                                local msg = ZL.STC_g1(format(L["%s：%s已就绪！"], colorName, tbl[profession].name))
+                                                ZL.After(delay, function()
+                                                    ZL.SendSystemMessage(msg)
+                                                    local pack = BGLite_equip.options.Sound
+                                                    if pack and BG and BG["sound_" .. profession .. "Ready" .. pack] then
+                                                        BG.PlaySound(profession .. "Ready")
+                                                    else
+                                                        PlaySoundFile(doneSound, "Master")
+                                                    end
+                                                end)
+                                                delay = delay + 3
+                                            end
+                                        elseif time < v.endtime then
+                                            v.resettime = v.endtime - time
+                                        end
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        -- 专业遗忘了就删掉对应CD记录
+        local function CheckSkillIsForget()
+            local first, second = GetProfessions()
+            if not first and not second then return end
+            local learned = {}
+            for _, index in pairs({ first, second }) do
+                local skillLineID = select(7, GetProfessionInfo(index))
+                if not skillLineID or skillLineID <= 0 then return end
+                learned[skillLineID] = true
+            end
+            for profession, v in pairs(tbl) do
+                if not learned[v.skillLineID] then
+                    myCD[profession] = nil
+                end
+            end
+        end
+        ZL.RegisterEvent("SKILL_LINES_CHANGED", function()
+            ZL.After(2, CheckSkillIsForget)
+        end)
+
+        ZL.Init2(function()
+            ZL.After(2, function()
+                GetCooldown()
+                UpdateProfessionCD()
+            end)
+        end)
+        C_Timer.NewTicker(19, UpdateProfessionCD)
+    end
 
     -- 专业技能点数
     local skillInfo = {

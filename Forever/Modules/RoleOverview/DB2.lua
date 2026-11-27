@@ -77,6 +77,15 @@ ZL.Init(function()
             end
         end)
 
+        ZL.Once("MONEYchoice", 261127, function()
+            BGLite_equip.ZL.MONEYchoice["battlegroundMarks"] = 1
+        end)
+
+        -- 默认勾选专业CD
+        ZL.Once("FBCDchoice", 261127, function()
+            BGLite_equip.ZL.FBCDchoice.professionCD = 1
+        end)
+
         -- 默认勾选饰品和武器
         ZL.Once("MONEYchoice", 260731, function()
             BGLite_equip.ZL.MONEYchoice.trinkets = 1
@@ -98,9 +107,22 @@ ZL.Init(function()
             { name = 'BDforever', name2 = L['深穴'], color = "00BFFF", fbId = -100, type = "fb" },
         }
         ZL.FBCount = #ZL.FBCDall_table
+        -- 专业CD（炼金转化 / 制皮筛盐 / 裁缝洗布）
+        tinsert(ZL.FBCDall_table, { name = "professionCD", name2 = L["专业技能CD"], color = "ADFF2F", type = "profession" })
+        tinsert(ZL.FBCDall_table, { name = "ignore_alchemy", name2 = L["忽略炼金转化（需重载）"], color = "ADFF2F", type = "profession" })
+        tinsert(ZL.FBCDall_table, { name = "ignore_leatherworking", name2 = L["忽略制皮筛盐（需重载）"], color = "ADFF2F", type = "profession" })
+        tinsert(ZL.FBCDall_table, { name = "ignore_tailor", name2 = L["忽略裁缝洗布（需重载）"], color = "ADFF2F", type = "profession" })
+        ZL.skillCount = #ZL.FBCDall_table - ZL.FBCount
 
         ZL.MONEYall_table = {
             { name = L["双倍经验"], color = "99ff99", type = "xp", id = "xp", tex = 1080931, width = 70 }, -- 双倍经验
+            -- 战场牌子：奥特兰克山谷 / 战歌峡谷 / 阿拉希盆地 / 暗矛群岛
+            {
+                name = L["战场牌子"], color = "ffff00", type = "items", id = "battlegroundMarks",
+                ids = { 20560, 20558, 20559, 274895 },
+                tex = C_Item.GetItemIconByID(20560) or "Interface\\Icons\\INV_Jewelry_TrinketPVP_01",
+                minWidth = 70, width = 70,
+            },
             { color = "ffffff", id = 3469, width = 70 }, -- 褪色的安德麦雷亚尔
             { color = "ffffff", id = 3402, width = 70 }, -- 商人青睐
             { color = "ffffff", id = 1792, width = 70 }, -- 荣誉点数

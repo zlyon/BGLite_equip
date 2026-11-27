@@ -848,16 +848,16 @@ ZL.Init(function()
             end)
             return frame
         end
-        local z = { ZL.FBCount, #ZL.factionTbl }
-        local x = {}
-        for i, v in ipairs(z) do
-            x[i] = (x[i - 1] or 0) + v
-        end
-        local startNum = 1
+        -- FBCDall_table 顺序：团本 / 专业CD / 声望
+        local professionEnd = ZL.FBCount + (ZL.skillCount or 0)
         lastFrame = CreateTitle(L["团本"], "00BFFF")
-        CreateFBCDbutton(1, x[startNum])
+        CreateFBCDbutton(1, ZL.FBCount)
+        if professionEnd > ZL.FBCount then
+            lastFrame = CreateTitle(L["专业CD"], "ADFF2F")
+            CreateFBCDbutton(ZL.FBCount + 1, professionEnd)
+        end
         lastFrame = CreateTitle(L["声望"], "FFFF00")
-        CreateFBCDbutton(x[startNum] + 1, x[startNum + 1])
+        CreateFBCDbutton(professionEnd + 1, #ZL.FBCDall_table)
         lastFrame = CreateTitle(L["专业技能点"], ZL.SKILLall_table[1].color)
         CreateFBCDbutton(1, #ZL.SKILLall_table, nil, "SKILLall_table", "SKILLchoice")
         lastFrame = CreateTitle(L["货币"], "FFFFFF")

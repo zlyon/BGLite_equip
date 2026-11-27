@@ -43,6 +43,13 @@ local fontsize3 = 15
 local fontsize0 = 12
 local r, g, b = GetClassRGB(nil, "player")
 local dbNames = { AddonName, "MultiAccountDB" }
+-- 本插件的数据挂在 BGLite_equip.ZL 下（无限服统一数据根），MultiAccountDB 的数据直接在根上
+local function GetDBData(name)
+    if name == AddonName then
+        return BGLite_equip.ZL
+    end
+    return _G[name]
+end
 
 local height = 20
 local leftOffset = 15
@@ -104,13 +111,14 @@ end
 
 local function GetProCDMaxWidth()
     local professionCDStrWidth = 0
-    for _, db in pairs(dbNames) do
-        if _G[db] and _G[db].tradeSkillCooldown then
-            for realmID in pairs(_G[db].tradeSkillCooldown) do
-                for player in pairs(_G[db].tradeSkillCooldown[realmID]) do
+    for _, dbName in pairs(dbNames) do
+        local db = GetDBData(dbName)
+        if db and db.tradeSkillCooldown then
+            for realmID in pairs(db.tradeSkillCooldown) do
+                for player in pairs(db.tradeSkillCooldown[realmID]) do
                     local str = ''
-                    for profession, v in pairs(_G[db].tradeSkillCooldown[realmID][player]) do
-                        if ZL.professionCDInfo[profession] then
+                    for profession, v in pairs(db.tradeSkillCooldown[realmID][player]) do
+                        if ZL.professionCDInfo and ZL.professionCDInfo[profession] then
                             local icon = ZL.professionCDInfo[profession].icon
                             if icon then
                                 str = str .. (str == '' and '' or ' ')
@@ -1555,9 +1563,10 @@ function ZL.SetFBCD(self, position, click, refresh)
             -- 世界BOSS/橙披进度
 
             -- 日常
-            for _, db in pairs(dbNames) do
-                if _G[db] and _G[db].QuestCD and _G[db].QuestCD[realmID] and _G[db].QuestCD[realmID][player] then
-                    for questName, v in pairs(_G[db].QuestCD[realmID][player]) do
+            for _, dbName in pairs(dbNames) do
+                local db = GetDBData(dbName)
+                if db and db.QuestCD and db.QuestCD[realmID] and db.QuestCD[realmID][player] then
+                    for questName, v in pairs(db.QuestCD[realmID][player]) do
                         for ii, vv in ipairs(FBCDchoice_table) do
                             if questName == vv.name then
                                 local x, y = GetYesPoint(FBCDchoice_table, ii, text_table, n, playerIndex, isNewUI)
@@ -1595,11 +1604,12 @@ function ZL.SetFBCD(self, position, click, refresh)
             -- 专业CD
             if professionCDIndex then
                 local _fontsize = isNewUI and fontsize0 or fontsize
-                for _, db in pairs(dbNames) do
-                    if _G[db] and _G[db].tradeSkillCooldown and _G[db].tradeSkillCooldown[realmID] and _G[db].tradeSkillCooldown[realmID][player] then
+                for _, dbName in pairs(dbNames) do
+                    local db = GetDBData(dbName)
+                    if db and db.tradeSkillCooldown and db.tradeSkillCooldown[realmID] and db.tradeSkillCooldown[realmID][player] then
                         local str = ''
-                        for profession, v in pairs(_G[db].tradeSkillCooldown[realmID][player]) do
-                            if ZL.professionCDInfo[profession] then
+                        for profession, v in pairs(db.tradeSkillCooldown[realmID][player]) do
+                            if ZL.professionCDInfo and ZL.professionCDInfo[profession] then
                                 local icon = ZL.professionCDInfo[profession].icon
                                 if icon then
                                     str = str .. ((str == '' or isNewUI) and '' or ' ')
@@ -1619,12 +1629,13 @@ function ZL.SetFBCD(self, position, click, refresh)
             end
 
             -- 声望
-            for _, db in pairs(dbNames) do
-                if _G[db] and _G[db].bag and _G[db].bag[realmID] and _G[db].bag[realmID][player] and _G[db].bag[realmID][player].faction then
-                    for id in pairs(_G[db].bag[realmID][player].faction) do
+            for _, dbName in pairs(dbNames) do
+                local db = GetDBData(dbName)
+                if db and db.bag and db.bag[realmID] and db.bag[realmID][player] and db.bag[realmID][player].faction then
+                    for id in pairs(db.bag[realmID][player].faction) do
                         for ii, vv in ipairs(FBCDchoice_table) do
                             if vv.type == "faction" and id == vv.id then
-                                local info = _G[db].bag[realmID][player].faction[id]
+                                local info = db.bag[realmID][player].faction[id]
                                 local x, y = GetYesPoint(FBCDchoice_table, ii, text_table, n, playerIndex, isNewUI)
                                 SetFactionText(mainFrame, info, x, y, isNewUI)
                             end
